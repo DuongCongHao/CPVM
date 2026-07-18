@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- 🔥 ĐÃ TỐI ƯU SEO: Giúp Google dễ dàng tìm thấy game của bạn hơn -->
+    <title>Cờ Tỷ Phú Hali Cyber - Chơi Online Miễn Phí Với Bạn Bè</title>
+    <meta name="description" content="Trải nghiệm game Cờ Tỷ Phú Đại Chiến Hali Online. Xúc xắc, mua đất, xây nhà và tranh tài cùng bạn bè trực tuyến ngay trên trình duyệt tự do.">
+    <meta name="keywords" content="co ty phu online, dai chien hali, game hali, choi co ty phu voi ban be, co ty phu mien phi">
+
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Chèn thêm một chút style mini cho các nút bấm mới ở Lobby mà không làm ảnh hưởng file styles.css cũ -->
+    <style>
+        /* 1. Căn giữa toàn cục */
+        body {
+            margin:0;
+            padding:0;
+            min-height:100vh;
+            background:#0f172a;
+        }
+
+        /* 2. Container chính: Ép nội dung nằm giữa */
+        .lobby-container, #game-screen {
+            width: 100%;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        /* 3. BÀN CỜ: Kỹ thuật chống tràn bằng cách thu nhỏ (scale) */
+        .board {
+            max-width: 95vw; /* Không bao giờ vượt quá 95% chiều rộng màn hình */
+            max-height: 90vh; /* Không bao giờ vượt quá 90% chiều cao màn hình */
+            transform-origin: center;
+        }
+
+        /* --- CÁC STYLE NÚT BẤM VÀ CẤU TRÚC CŨ CỦA BẠN --- */
+        .lobby-card { width: 90%; max-width: 400px; background: #1e1b4b; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .lobby-buttons-group { display: flex; flex-direction: column; gap: 12px; margin-top: 15px; width: 100%; }
+        .btn-lobby { width: 100%; padding: 12px; font-size: 15px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; text-transform: uppercase; }
+        .btn-quick { background: linear-gradient(90deg, #38bdf8, #0284c7); color: white; }
+        .btn-create { background: linear-gradient(90deg, #a855f7, #7e22ce); color: white; }
+        .btn-join { background: linear-gradient(90deg, #10b981, #059669); color: white; padding: 12px 20px; }
+        
+        /* Input */
+        .room-input-box { display: flex; gap: 8px; margin-top: 5px; width: 100%; }
+        .room-input-box input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #475569; background: #1e293b; color: white; text-align: center; }
+
+        /* Nút hỏi và Popup */
+        #help-btn { position: fixed; top: 20px; right: 20px; width: 40px; height: 40px; background: #facc15; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 9999; }
+        /* ============================= */
+        /* RESPONSIVE GAME ENGINE */
+        /* ============================= */
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        html, body {
+            width:100%;
+            height:100%;
+            overflow:hidden;
+        }
+
+
+        /* Màn lobby */
+
+        .lobby-container,
+        #game-screen {
+
+            width:100%;
+            min-height:100vh;
+
+            display:flex;
+            justify-content:center;
+            align-items:center;
+
+            padding:20px;
+        }
+
+
+
+        /* GAME */
+
+        #game-screen {
+
+            flex-direction:column;
+
+        }
+
+
+        #game-screen h1 {
+
+            font-size:clamp(18px,3vw,32px);
+
+        }
+
+
+
+        /* Khung game */
+
+        .container {
+
+            width:100%;
+            max-width:1200px;
+
+            display:flex;
+
+            justify-content:center;
+            align-items:center;
+
+            gap:20px;
+
+        }
+
+
+
+        /* ================= */
+        /* BÀN CỜ */
+        /* ================= */
+
+
+        .board {
+
+            width:min(70vw,700px);
+
+            aspect-ratio:1/1;
+
+
+            flex-shrink:0;
+
+
+        }
+
+
+
+        /* ================= */
+        /* PANEL */
+        /* ================= */
+
+
+        .side-panel {
+
+            width:min(30vw,350px);
+
+        }
+
+
+
+        /* ================= */
+        /* MOBILE */
+        /* ================= */
+        @media(max-width:768px){
+            html,body{
+                overflow:auto
+            }
+            #game-screen{
+                justify-content:flex-start;
+            }
+            .container{
+                flex-direction:column;
+                width:100%;
+                gap:10px;
+            }
+            .board{
+                width:min(92vw,500px);
+
+            }
+            .side-panel{
+                width:95%;
+
+            }
+            .room-display-tag{
+
+                font-size:13px;
+
+            }
+        }
+        /* Điện thoại nhỏ */
+
+        @media(max-width:430px){
+            .board{
+                width:96vw;
+            }
+            .action-btn{
+                font-size:14px;
+                padding:10px;
+            }
+            .status-card{
+                font-size:13px;
+            }
+        }
+        .action-buttons{
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            gap:15px;
+            margin-top:20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ================= MÀN HÌNH CHỜ NHẬP TÊN & CHỌN CHẾ ĐỘ PHÒNG ================= -->
+    <div id="lobby-screen" class="lobby-container">
+        <div class="lobby-card">
+            <h2>ĐẠI CHIẾN HALI</h2>
+            <p>Nhập tên của bạn và chọn phương thức tham gia đấu trường</p>
+            
+            <!-- Nhập tên nhân vật -->
+            <div class="input-group" style="margin-bottom: 15px;">
+                <input type="text" id="username-input" placeholder="Nhập tên của bạn..." maxlength="14">
+            </div>
+
+            <div class="lobby-buttons-group">
+                <!-- Lựa chọn 1: Ghép ngẫu nhiên (Đã bật lại hàm gọi trực tiếp) -->
+                <button id="btn-quick-match" class="btn-lobby btn-quick" onclick="startQuickMatch()">GHÉP NGẪU NHIÊN</button>
+                
+                <div class="lobby-divider"></div>
+                
+                <!-- Lựa chọn 2: Tự tạo phòng riêng tư (Đã bật lại hàm gọi trực tiếp) -->
+                <button id="btn-create-room" class="btn-lobby btn-create" onclick="createNewRoom()">TẠO PHÒNG RIÊNG TƯ</button>
+                
+                <!-- Lựa chọn 3: Nhập ID phòng có sẵn -->
+                <div class="room-input-box">
+                    <input type="text" id="room-id-input" placeholder="Nhập ID phòng bạn gửi..." maxlength="10">
+                    <button id="btn-join-room" class="btn-lobby btn-join" onclick="joinRoomWithId()">VÀO PHÒNG</button>
+                </div>
+            </div>
+            
+            <!-- Trạng thái thông báo xử lý kết nối phòng -->
+            <div id="lobby-status" style="margin-top: 20px; font-size: 14px; color: #38bdf8; font-weight: bold; line-height: 1.6;"></div>
+        </div>
+    </div>
+
+    <!-- ================= GIAO DIỆN CHÍNH CỦA TRÒ CHƠI ================= -->
+    <div id="game-screen">
+        <h1 style="text-align: center; margin-bottom: 5px;">ĐẠI CHIẾN HALI</h1>
+        
+        <!-- Khu vực hiển thị mã phòng cho người chơi theo dõi (Sửa lỗi thiếu ID element) -->
+        <div class="room-display-tag" id="room-id-display">Mã Phòng: <strong style="color: #f59e0b;">---</strong></div>
+        
+        <div class="container">
+            <!-- BÀN CỜ 6x6 -->
+            <div class="board" id="board">
+                <div class="cell-center">
+                    <div class="turn-indicator" id="turn-txt">Đang khởi tạo trận đấu...</div>
+                    
+                    <div class="dice-area">
+                        <div class="cube" id="cube1">
+                            <div class="cube-face face-1">1</div>
+                            <div class="cube-face face-6">6</div>
+                            <div class="cube-face face-2">2</div>
+                            <div class="cube-face face-5">5</div>
+                            <div class="cube-face face-3">3</div>
+                            <div class="cube-face face-4">4</div>
+                        </div>
+                        <div class="cube" id="cube2">
+                            <div class="cube-face face-1">1</div>
+                            <div class="cube-face face-6">6</div>
+                            <div class="cube-face face-2">2</div>
+                            <div class="cube-face face-5">5</div>
+                            <div class="cube-face face-3">3</div>
+                            <div class="cube-face face-4">4</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Kích hoạt tính năng đổ xúc xắc đồng bộ trực tuyến -->
+                    <div>
+                        <button class="action-btn" id="roll-btn" onclick="rollDice3D()">ĐỔ XÚC XẮC</button>
+                        <button
+                            id="use-skill-btn"
+                            class="action-btn"
+                            onclick="useSkill()"
+                            disabled>
+                            🎴 Dùng kỹ năng
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BẢNG ĐIỀU KHIỂN & ĐIỂM SỐ -->
+            <div class="side-panel">
+                <div class="status-card">
+                    <div class="player-info p1-card">
+                        <div class="player-top">   
+                            <span>
+                                🔴
+                                <span id="p1-name-display">Người chơi 1</span>
+                                <span class="player-round" id="p1-round">Vòng: 0</span>
+                            </span>
+
+                            
+
+                            <span class="player-money">
+                                <span id="p1-money">1000</span>$
+                            </span>
+                        </div>
+                        <div id="p1-skill" class="skill-tag">
+                                🎴 Chưa có thẻ
+                        </div>
+                    </div>
+                        <div id="p1-skip" style="display:none;color:#ff4444;font-weight:bold">
+                            🚫 Mất lượt
+                        </div> 
+                    <div class="player-info p2-card"> 
+                        <div class="player-top">   
+                            <span>
+                                🔵 
+                                <span id="p2-name-display">Người chơi 2</span> 
+                                <span class="player-round" id="p2-round">Vòng: 0</span> 
+                            </span>
+                            
+                            <span class="player-money">
+                                <span id="p2-money">1000</span>$ 
+                            </span>
+                        </div>
+                        <div id="p2-skill" class="skill-tag"> 
+                                🎴 Chưa có thẻ
+                        </div>
+                        <div id="p2-skip" style="display:none;color:#ff4444;font-weight:bold">
+                            🚫 Mất lượt
+                        </div>
+                    </div>
+                </div>
+                <div class="status-card">
+                    <h3 style="margin: 0 0 8px 0; font-size: 13px; text-transform: uppercase; color: #94a3b8;">Nhật ký trận đấu</h3>
+                    <div class="log-box" id="log"></div>
+                </div>
+
+                <!-- KHU VỰC THÔNG BÁO TẠM THỜI TRONG GAME -->
+                <div class="notification-panel" id="notify-panel">
+                    <div class="notify-title" id="notify-title">Yêu cầu đầu tư</div>
+                    <div class="notify-desc" id="notify-desc">Nội dung thông báo mua đất...</div>
+                    <div class="notify-btns" id="notify-btns-box">
+                        <button class="btn-confirm" id="btn-ok" onclick="handleDecision(true)">Đồng Ý</button>
+                        <button class="btn-cancel" id="btn-no" onclick="handleDecision(false)">Bỏ Qua</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= POPUP THÔNG BÁO KẾT THÚC TRẬN ĐẤU ================= -->
+    <div id="game-over-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(8px);">
+        <div style="background: linear-gradient(135deg, #1e1b4b, #311042); padding: 40px; border-radius: 24px; border: 3px solid #f43f5e; text-align: center; box-shadow: 0 0 40px rgba(244, 63, 94, 0.5); max-width: 450px; width: 90%; font-family: sans-serif;">
+            <h2 style="color: #f43f5e; font-size: 32px; font-weight: 900; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 2px;">Trận Đấu Kết Thúc</h2>
+            <div id="winner-text" style="font-size: 22px; color: #ffffff; margin: 25px 0; font-weight: bold; background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 12px; line-height: 1.5;">
+                Đang xác định người chiến thắng...
+            </div>
+            <button onclick="location.reload()" style="background: linear-gradient(90deg, #10b981, #059669); color: white; border: none; padding: 14px 40px; font-size: 18px; font-weight: bold; border-radius: 12px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
+                CHƠI LẠI
+            </button>
+        </div>
+    </div>
+<!-- Nút dấu hỏi -->
+<div id="help-btn" onclick="showHelpModal()">?</div>
+
+<!-- Bảng luật chơi (ẩn mặc định) -->
+<div id="help-modal" style="
+display:none;
+position:fixed;
+top:10%;
+left:10%;
+width:80%;
+background:#1e293b;
+color:#ffffff;
+padding:25px;
+z-index:10000;
+border-radius:15px;
+border:2px solid #38bdf8;
+box-shadow:0 0 30px rgba(0,0,0,0.6);
+">
+    <ul style="text-align: left;">
+        <li>Gieo xúc xắc để di chuyển trên bàn cờ.</li>
+        <li>Dừng ở ô đất trống để mua và thu thuế đối thủ.</li>
+        <li>Dừng ở ô Mạng nhện sẽ bị khóa lượt.</li>
+        <li>Dừng ở ô Sấm sét sẽ bị trừ 50% tiền</li>
+        <li>Người hết tiền trước là người thua cuộc!</li>
+        <li>Khi có người chạm đến vòng số 7 mà chưa ai phá sản, sẽ tính giá trị đất mà người chơi có</li>
+        <li>Khi đi hết 1 vòng sẽ xuất hiện ô quà ngẫu nhiên(Cả 2 người chơi có thể nhận)</li>
+        <li>Vào trận sẽ có các thẻ bài được phát ngẫu nhiên:</li>
+        <li>- Điều hướng: Tăng hoặc giảm 3 bước di chuyển.</li>
+        <li>- Thần Thor: Đánh đối thủ mất 25% tiền</li>
+        <li>- Đổi vận may: Đổi lại kết quả xúc xắc vừa tung.</li>
+        <li>- Đổi vị trí: Đổi vị trí hiện tại với đối thủ.</li>
+        <li>- Cướp tiền: Lấy 15% tiền hiện có của đối thủ.</li>
+    </ul>
+    <button onclick="hideHelpModal()">Đóng</button>
+</div>
+    <!-- ================= THỨ TỰ NẠP JAVASCRIPT CHUẨN KIẾN TRÚC GAME ONLINE ================= -->
+    
+    <!-- 1. Thư viện Socket.IO cốt lõi từ CDN tải nhanh -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+    <!-- 2. Dữ liệu tĩnh và cấu hình bản đồ (Phải có trước để các file khác đọc dữ liệu cấu trúc bàn cờ) -->
+    <script src="js/config.js"></script>
+    <script src="js/cells.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/skills.js"></script>
+    <!-- 3. File Main khởi tạo biến `socket` môi trường và các hàm sảnh chờ toàn cục -->
+    <script src="js/main.js"></script>
+
+    <!-- 4. File Handlers lắng nghe các package đồng bộ gửi từ Server -->
+    <script src="js/socket-handlers.js"></script>
+
+    <!-- 5. Các logic tính toán bổ trợ vận hành game -->
+    <script src="js/ui.js"></script>
+    <script src="js/determine-turn.js"></script>
+    <script src="js/dice.js"></script>
+    <script src="js/movement.js"></script>
+    <script>
+        function showHelpModal() { document.getElementById('help-modal').style.display = 'block'; }
+        function hideHelpModal() { document.getElementById('help-modal').style.display = 'none'; }
+    </script>
+</body>
+</html>

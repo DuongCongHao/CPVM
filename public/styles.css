@@ -1,0 +1,1000 @@
+/* ===== SYSTEM RESET & CORE ===== */
+* { 
+    box-sizing: border-box; 
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+}
+
+body { 
+    background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 70%, #020617 100%); 
+    margin: 0; 
+    padding: 20px; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    min-height: 100vh; 
+    color: #f8fafc;
+    overflow-x: hidden;
+}
+
+h1 { 
+    margin: 0 0 20px 0; 
+    font-size: 32px; 
+    font-weight: 900; 
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: linear-gradient(to right, #38bdf8, #818cf8, #f43f5e); 
+    -webkit-background-clip: text; 
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 15px rgba(129, 140, 248, 0.3));
+}
+
+.container { 
+    display: flex; 
+    gap: 30px; 
+    max-width: 1100px; 
+    width: 100%; 
+    justify-content: center; 
+    align-items: flex-start; 
+}
+
+/* ===== BÀN CỜ 6x6 (HIỆU ỨNG VIỀN LED PHÁT SÁNG) ===== */
+.board { 
+    display: grid; 
+    grid-template-columns: repeat(6, 105px); 
+    grid-template-rows: repeat(6, 105px); 
+    gap: 8px; 
+    background: rgba(15, 23, 42, 0.6); 
+    padding: 12px; 
+    border-radius: 20px;
+    border: 1px solid rgba(56, 189, 248, 0.2) !important;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.1) !important;
+    backdrop-filter: blur(8px);
+}
+
+.cell { 
+    background: #1e293b; 
+    border-radius: 12px; 
+    border: 1px solid #334155;
+    display: flex; 
+    flex-direction: column; 
+    justify-content: space-between; 
+    align-items: center; 
+    padding: 10px 6px; 
+    font-size: 11px; 
+    font-weight: 700;
+    position: relative; 
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    color: #cbd5e1; 
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 6px rgba(0,0,0,0.15);
+}
+
+.cell:hover {
+    border-color: #475569;
+    transform: translateY(-2px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 16px rgba(0,0,0,0.3);
+}
+
+.cell-title { 
+    font-size: 10px; 
+    text-transform: uppercase; 
+    letter-spacing: 0.5px; 
+    text-align: center; 
+    width: 100%; 
+    z-index: 1; 
+    opacity: 0.9;
+}
+
+.cell-price { 
+    color: #38bdf8; 
+    font-size: 11px; 
+    margin-top: auto; 
+    font-weight: 800; 
+    z-index: 1; 
+    background: rgba(0, 0, 0, 0.25);
+    padding: 2px 6px;
+    border-radius: 6px;
+}
+
+/* LÒNG TRUNG TÂM BÀN CỜ */
+.cell-center { 
+    grid-column: 2 / 6; 
+    grid-row: 2 / 6; 
+    background: radial-gradient(circle, #1e1b4b 0%, #0f172a 100%); 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center; 
+    align-items: center; 
+    border-radius: 16px; 
+    border: 1px solid #312e81; 
+    padding: 15px; 
+    position: relative;
+    box-shadow: inset 0 4px 20px rgba(0,0,0,0.6);
+}
+
+/* Các Ô Đất Trạng Thái Đặc Biệt */
+.start-cell { 
+    background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%) !important; 
+    color: #0f172a !important; 
+    font-size: 13px; 
+    font-weight: 900; 
+    border: 1px solid #fef08a !important; 
+    box-shadow: 0 0 20px rgba(234, 179, 8, 0.4) !important;
+}
+
+.start-cell .cell-title { color: #0f172a; font-weight: 900; }
+
+.p1-owner { 
+    background: linear-gradient(135deg, #7f1d1d 0%, #450a0a 100%) !important; 
+    border-color: #ef4444 !important; 
+    color: #fecaca; 
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 0 10px rgba(239, 68, 68, 0.15);
+}
+
+.p1-owner .cell-price { 
+    color: #ffffff !important; 
+    background: #ef4444;
+}
+
+.p2-owner { 
+    background: linear-gradient(135deg, #1e3a8a 0%, #172554 100%) !important; 
+    border-color: #3b82f6 !important; 
+    color: #dbeafe; 
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 0 10px rgba(59, 130, 246, 0.15);
+}
+
+.p2-owner .cell-price { 
+    color: #ffffff !important; 
+    background: #3b82f6;
+}
+
+/* ===== ICON HỘP QUÀ ===== */
+.gift-box {
+    position: absolute; 
+    top: 25px; 
+    font-size: 24px; 
+    z-index: 2;
+    animation: bounceGift 0.6s infinite alternate ease-in-out;
+    filter: drop-shadow(0 0 8px #eab308);
+    display: none;
+}
+
+.has-gift .gift-box { 
+    display: block; 
+}
+
+@keyframes bounceGift {
+    from { transform: translateY(0); } 
+    to { transform: translateY(-6px); }
+}
+
+/* ===== ĐỊNH VỊ VỊ TRÍ ĐỨNG RIÊNG BIỆT TRÊN Ô ĐẤT ===== */
+.token-slot {
+    position: absolute; 
+    width: 44px; 
+    height: 54px;
+    bottom: 8px; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: flex-end;
+    pointer-events: none; 
+    opacity: 0; 
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); 
+    z-index: 3;
+    background: rgba(15, 23, 42, 0.7);
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.slot-p1 { left: 6px; border-color: rgba(239, 68, 68, 0.4); }
+.slot-p2 { right: 6px; border-color: rgba(59, 130, 246, 0.4); }
+
+.has-p1 .slot-p1 { opacity: 1; transform: scale(1); }
+.has-p2 .slot-p2 { opacity: 1; transform: scale(1); }
+
+/* ===== TAG CHỮ P1 P2 TRÊN ĐẦU ===== */
+.p-tag {
+    font-size: 8px; 
+    font-weight: 900; 
+    padding: 1px 5px; 
+    border-radius: 4px;
+    color: #fff; 
+    margin-bottom: 0px; 
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.slot-p1 .p-tag { 
+    background: #ef4444; 
+    border: 1px solid #fca5a5; 
+    text-shadow: 0 0 2px #000; 
+}
+
+.slot-p2 .p-tag { 
+    background: #3b82f6; 
+    border: 1px solid #93c5fd; 
+    text-shadow: 0 0 2px #000; 
+}
+
+/* ===== HÌNH NGƯỜI TO HƠN & RÕ MÀU ===== */
+.p-avatar { 
+    font-size: 26px; 
+    line-height: 1; 
+    display: inline-block; 
+}
+
+.slot-p1 .p-avatar { 
+    filter: drop-shadow(0 0 8px #ef4444) drop-shadow(0 2px 3px rgba(0,0,0,0.5)); 
+}
+
+.slot-p2 .p-avatar { 
+    filter: drop-shadow(0 0 8px #3b82f6) drop-shadow(0 2px 3px rgba(0,0,0,0.5)); 
+}
+
+@keyframes hop {
+    0% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-14px) scale(1.15); }
+    100% { transform: translateY(0) scale(1); }
+}
+
+.moving .p-avatar { 
+    animation: hop 0.24s ease-in-out infinite; 
+}
+
+/* ===== BẢNG ĐIỀU KHIỂN BÊN PHẢI ===== */
+.side-panel { 
+    width: 350px; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 15px; 
+}
+
+.status-card { 
+    background: #1e293b; 
+    padding: 16px; 
+    border-radius: 16px; 
+    border: 1px solid rgba(56, 189, 248, 0.2) !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1) !important;
+}
+
+.player-info { 
+    padding: 14px; 
+    border-radius: 12px; 
+    margin-bottom: 12px; 
+    color: white; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    border: 1px solid rgba(255,255,255,0.05); 
+    position: relative;
+    overflow: hidden;
+}
+.player-info:last-child { margin-bottom: 0; }
+
+.p1-card { 
+    background: linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%); 
+    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.25);
+}
+
+.p2-card { 
+    background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%); 
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.25);
+}
+
+.player-money { 
+    font-size: 20px; 
+    font-weight: 900; 
+    letter-spacing: 0.5px;
+}
+
+.player-round { 
+    font-size: 10px; 
+    background: rgba(0,0,0,0.35); 
+    padding: 3px 8px; 
+    border-radius: 6px; 
+    margin-left: 6px; 
+    font-weight: 600;
+}
+
+.skip-badge { 
+    position: absolute; 
+    top: -5px; 
+    right: -5px; 
+    background: #eab308; 
+    color: #0f172a; 
+    font-size: 9px; 
+    padding: 2px 7px; 
+    border-radius: 10px; 
+    font-weight: 900; 
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4); 
+}
+
+.turn-indicator { 
+    font-size: 13px; 
+    font-weight: 800; 
+    text-align: center; 
+    margin-bottom: 15px; 
+    padding: 8px 14px; 
+    border-radius: 30px; 
+    letter-spacing: 1px; 
+    text-transform: uppercase;
+    background: #0f172a;
+    border: 1px solid #3b82f6;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.35); 
+    transition: all 0.3s;
+}
+
+/* ===== XÚC XẮC 3D ===== */
+.dice-area { 
+    display: flex; 
+    gap: 30px; 
+    justify-content: center; 
+    margin: 15px 0 25px 0; 
+    perspective: 400px; 
+}
+.cube {
+    width: 46px; 
+    height: 46px; 
+    position: relative; 
+    transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.3, 1); 
+    transform: rotateX(45deg) rotateY(45deg);
+}
+
+.cube-face {
+    position: absolute; 
+    width: 46px; 
+    height: 46px; 
+    background: #f8fafc;
+    border: 2px solid #0f172a; 
+    border-radius: 10px; 
+    display: flex;
+    justify-content: center; 
+    align-items: center; 
+    font-size: 22px; 
+    font-weight: 900; 
+    color: #0f172a;
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.25);
+}
+
+.face-1 { transform: rotateY(0deg) translateZ(23px); }
+.face-6 { transform: rotateY(180deg) translateZ(23px); }
+.face-2 { transform: rotateY(90deg) translateZ(23px); }
+.face-5 { transform: rotateY(-90deg) translateZ(23px); }
+.face-3 { transform: rotateX(90deg) translateZ(23px); }
+.face-4 { transform: rotateX(-90deg) translateZ(23px); }
+
+/* ===== NÚT HÀNH ĐỘNG ===== */
+button.action-btn { 
+    width: 100%; 
+    padding: 13px; 
+    font-size: 15px; 
+    font-weight: 800; 
+    border: none; 
+    border-radius: 12px; 
+    cursor: pointer; 
+    color: white; 
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35); 
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+}
+
+button.action-btn:hover:not(:disabled) { 
+    transform: translateY(-2px); 
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.5); 
+}
+
+button.action-btn:disabled { 
+    background: #475569; 
+    color: #94a3b8; 
+    cursor: not-allowed; 
+    box-shadow: none; 
+    transform: none; 
+}
+
+/* ===== NHẬT KÝ TRẬN ĐẤU ===== */
+.log-box { 
+    background: #0f172a; 
+    color: #cbd5e1; 
+    padding: 14px; 
+    border-radius: 12px; 
+    height: 145px; 
+    overflow-y: auto; 
+    font-size: 12px; 
+    line-height: 1.6;
+    border: 1px solid rgba(56, 189, 248, 0.2) !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1) !important;
+}
+
+.log-box::-webkit-scrollbar { width: 5px; }
+.log-box::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+.log-entry { 
+    margin-bottom: 6px; 
+    border-left: 3px solid #38bdf8; 
+    padding-left: 8px; 
+}
+
+/* ===== KHU VỰC THÔNG BÁO ===== */
+.notification-panel {
+    display: none; 
+    background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+    border: 2px solid #10b981; 
+    padding: 16px; 
+    border-radius: 16px;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.25);
+    animation: slideIn 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    flex-direction: column; 
+    gap: 12px;
+}
+
+@keyframes slideIn { 
+    from { transform: translateY(10px); opacity: 0; } 
+    to { transform: translateY(0); opacity: 1; } 
+}
+
+.notify-title { 
+    font-size: 13px; 
+    font-weight: 900; 
+    text-transform: uppercase; 
+    color: #10b981; 
+    letter-spacing: 0.5px; 
+}
+
+.notify-desc { 
+    color: #f8fafc; 
+    font-size: 13px; 
+    line-height: 1.5; 
+    margin: 2px 0; 
+    text-align: left;
+}
+
+.notify-btns { 
+    display: flex; 
+    gap: 10px; 
+    margin-top: 5px; 
+}
+
+.notify-btns button { 
+    flex: 1; 
+    padding: 11px; 
+    border: none; 
+    border-radius: 10px; 
+    font-weight: 700; 
+    font-size: 13px; 
+    cursor: pointer; 
+    color: white; 
+    transition: all 0.2s; 
+}
+
+.btn-confirm { background: #10b981; }
+.btn-confirm:hover { background: #059669; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+.btn-cancel { background: #ef4444; }
+.btn-cancel:hover { background: #dc2626; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); }
+.btn-single { background: #3b82f6 !important; }
+.btn-single:hover { background: #2563eb !important; }
+
+/* ===== GIAO DIỆN MÀN HÌNH CHỜ NHẬP TÊN ===== */
+.lobby-container {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: radial-gradient(circle, #1e1b4b 0%, #090d16 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 99999; 
+}
+
+.lobby-card {
+    background: rgba(15, 23, 42, 0.75);
+    padding: 40px;
+    border-radius: 24px;
+    border: 1px solid #3b82f6;
+    box-shadow: 0 0 40px rgba(59, 130, 246, 0.35);
+    backdrop-filter: blur(12px);
+    text-align: center;
+    max-width: 410px;
+    width: 90%;
+}
+
+.lobby-card h2 {
+    margin: 0 0 10px 0;
+    font-size: 34px;
+    font-weight: 900;
+    background: linear-gradient(to right, #38bdf8, #818cf8, #f43f5e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 2px;
+}
+
+.lobby-card p {
+    color: #94a3b8;
+    font-size: 14px;
+    margin-bottom: 25px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.input-group input {
+    background: #0f172a;
+    border: 2px solid #334155;
+    padding: 14px;
+    border-radius: 12px;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.input-group input:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+}
+
+.input-group button {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(29, 78, 216, 0.4);
+    transition: all 0.2s ease;
+}
+
+.input-group button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(29, 78, 216, 0.6);
+}
+/* Hiệu ứng mạng nhện giăng bẫy */
+.has-spider-web {
+    background: radial-gradient(circle at center, #2e1065 0%, #1e1b4b 100%) !important;
+    border-color: #a855f7 !important;
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.4) !important;
+}
+
+.spider-icon {
+    animation: webPulse 1s infinite alternate ease-in-out;
+}
+
+@keyframes webPulse {
+    from { transform: scale(0.9) rotate(-5deg); opacity: 0.7; }
+    to { transform: scale(1.1) rotate(5deg); opacity: 1; }
+}
+
+/* Hiệu ứng ô đất được nâng cấp Thần tốc */
+.upgraded-cyber {
+    border: 2px dashed #f43f5e !important;
+    animation: glowUpgrade 1.5s infinite alternate;
+}
+
+@keyframes glowUpgrade {
+    from { box-shadow: inset 0 0 4px rgba(244, 63, 94, 0.2), 0 0 8px rgba(244, 63, 94, 0.2); }
+    to { box-shadow: inset 0 0 10px rgba(244, 63, 94, 0.4), 0 0 16px rgba(244, 63, 94, 0.5); }
+}
+/* Ô đất bị dính bẫy sấm sét */
+.has-lightning {
+    background: linear-gradient(135deg, #eab308 0%, #78350f 100%) !important;
+    border: 2px solid #facc15 !important;
+    color: #ffffff !important;
+    animation: lightningGlow 0.4s infinite alternate ease-in-out;
+}
+
+.lightning-icon {
+    animation: lightningShock 0.2s infinite alternate;
+    left: 40%;
+}
+
+/* Hiệu ứng nhấp nháy luồng điện áp cao */
+@keyframes lightningGlow {
+    from { box-shadow: 0 0 5px #facc15, inset 0 0 5px #facc15; opacity: 0.85; }
+    to { box-shadow: 0 0 20px #eab308, inset 0 0 15px #eab308; opacity: 1; }
+}
+
+/* Hiệu ứng tia sét giật rung lắc */
+@keyframes lightningShock {
+    0% { transform: scale(1) skewX(-5deg); filter: drop-shadow(0 0 2px #fff); }
+    100% { transform: scale(1.2) skewX(5deg); filter: drop-shadow(0 0 8px #facc15); }
+}
+/* Hiệu ứng rung lắc khi mua đất */
+@keyframes dangerShake {
+    0% { transform: translate(1px, 1px) rotate(0deg); }
+    10% { transform: translate(-1px, -2px) rotate(-1deg); }
+    20% { transform: translate(-3px, 0px) rotate(1deg); }
+    30% { transform: translate(3px, 2px) rotate(0deg); }
+    40% { transform: translate(1px, -1px) rotate(1deg); }
+    100% { transform: translate(0px, 0px) rotate(0deg); }
+}
+#help-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    background: #f1c40f;
+    color: white;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 40px;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    z-index: 9999;
+}
+
+#help-btn:hover {
+    background: #d4ac0d;
+    transform: scale(1.1);
+}
+/* ==================================================
+   RESPONSIVE GAME SYSTEM
+   Không ảnh hưởng logic JS
+================================================== */
+
+
+html,body{
+
+    width:100%;
+    min-height:100%;
+}
+body{
+
+    overflow-x:hidden;
+
+}
+/* =====================
+   MAIN GAME CONTAINER
+===================== */
+.container{
+    width:100%;
+
+    max-width:1200px;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    gap:20px;
+
+
+}
+
+
+/* =====================
+       BOARD SCALE
+===================== */
+
+
+.board{
+
+
+    width:min(70vw,700px);
+
+    aspect-ratio:1 / 1;
+
+
+    display:grid;
+
+
+    grid-template-columns:repeat(6,1fr);
+
+    grid-template-rows:repeat(6,1fr);
+
+
+    gap:clamp(3px,0.7vw,8px);
+
+
+    padding:clamp(5px,1vw,12px);
+
+
+}
+
+
+
+/* =====================
+       CELL
+===================== */
+
+
+.cell{
+
+
+    min-width:0;
+
+    min-height:0;
+
+
+    padding:clamp(3px,0.7vw,10px);
+
+
+    font-size:clamp(7px,1vw,11px);
+
+
+    overflow:hidden;
+
+
+}
+
+
+
+.cell-title{
+
+    font-size:clamp(7px,1vw,10px);
+
+}
+
+
+.cell-price{
+
+    font-size:clamp(7px,1vw,11px);
+
+}
+
+
+
+/* =====================
+ PLAYER TOKEN
+===================== */
+
+
+.token-slot{
+
+    width:35%;
+
+    height:45%;
+
+
+}
+
+
+.p-avatar{
+
+    font-size:clamp(14px,2vw,26px);
+
+}
+
+
+
+.p-tag{
+
+    font-size:clamp(6px,0.8vw,8px);
+
+}
+
+
+/* =====================
+ CENTER AREA
+===================== */
+
+
+.cell-center{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+
+    gap:12px;
+
+    width:100%;
+    height:100%;
+
+    padding:12px;
+}
+#use-skill-btn{
+    display:block;
+    width:85%;
+    margin:10px auto 0 auto;
+}
+
+#use-skill-btn:disabled{
+    background:#475569;
+}
+
+
+
+.turn-indicator{
+
+    font-size:clamp(8px,1vw,13px);
+
+}
+
+
+
+/* =====================
+ SIDE PANEL
+===================== */
+
+
+.side-panel{
+
+
+    width:min(30vw,350px);
+
+}
+
+
+
+/* =====================
+ TABLET
+===================== */
+
+
+@media(max-width:900px){
+
+
+.container{
+
+
+    flex-direction:column;
+
+
+}
+
+
+
+.board{
+
+
+    width:min(90vw,600px);
+
+
+}
+
+
+
+.side-panel{
+
+
+    width:min(90vw,500px);
+
+
+}
+
+
+
+}
+
+
+/* =====================
+ MOBILE
+===================== */
+
+
+@media(max-width:480px){
+
+
+body{
+
+    padding:5px;
+
+}
+
+
+
+h1{
+
+    font-size:22px;
+
+    margin-bottom:10px;
+
+}
+
+
+
+.container{
+
+    gap:10px;
+
+}
+
+
+
+.board{
+
+    width:95vw;
+
+}
+
+
+
+.side-panel{
+
+
+    width:95vw;
+
+
+}
+
+.status-card{
+    padding:10px;
+}
+.player-money{
+    font-size:15px;
+}
+.log-box{
+    height:120px;
+}
+.dice-area{
+
+    gap:15px;
+
+}
+.cube,
+.cube-face{
+    width:35px;
+    height:35px;
+}
+.face-1 { transform: rotateY(0deg) translateZ(17px); }
+.face-6 { transform: rotateY(180deg) translateZ(17px); }
+.face-2 { transform: rotateY(90deg) translateZ(17px); }
+.face-5 { transform: rotateY(-90deg) translateZ(17px); }
+.face-3 { transform: rotateX(90deg) translateZ(17px); }
+.face-4 { transform: rotateX(-90deg) translateZ(17px); }
+}
+.skill-tag{
+    margin:6px 0;
+    padding:4px 8px;
+
+    background:#4338ca;
+    color:white;
+
+    border-radius:8px;
+
+    font-size:12px;
+    font-weight:bold;
+
+    text-align:center;
+}
+.player-top {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    width:100%;
+}
+
+
+.skill-tag {
+
+    margin-top:8px;
+
+    width:100%;
+
+    text-align:center;
+
+    padding:6px 8px;
+
+    border-radius:8px;
+
+    background:rgba(15,23,42,0.8);
+
+    color:#facc15;
+
+    font-weight:800;
+
+    font-size:13px;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    white-space:nowrap;
+
+}
