@@ -495,6 +495,14 @@ io.on('connection', (socket) => {
         });
 
     });
+    socket.on("gameOver", (data) => {
+
+        io.to(socket.roomId).emit("gameOverResult", {
+            winnerId: data.winnerId,
+            reason: data.reason
+        });
+
+    });
     // Xử lý khi người chơi bất ngờ mất kết nối hoặc thoát ứng dụng
     socket.on('disconnect', () => {
         console.log(`❌ Thiết bị ngắt kết nối: ${socket.id}`);

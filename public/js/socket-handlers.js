@@ -316,4 +316,9 @@ if (typeof socket !== 'undefined' && socket) {
         });
 
     });
+    socket.off("gameOverResult").on("gameOverResult", (data) => {
+
+        gameOver(data.winnerId, data.reason);
+
+    });
 }
