@@ -37,19 +37,7 @@ h1 {
     align-items: flex-start; 
 }
 
-/* ===== BÀN CỜ 6x6 (HIỆU ỨNG VIỀN LED PHÁT SÁNG) ===== */
-.board { 
-    display: grid; 
-    grid-template-columns: repeat(6, 105px); 
-    grid-template-rows: repeat(6, 105px); 
-    gap: 8px; 
-    background: rgba(15, 23, 42, 0.6); 
-    padding: 12px; 
-    border-radius: 20px;
-    border: 1px solid rgba(56, 189, 248, 0.2) !important;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.1) !important;
-    backdrop-filter: blur(8px);
-}
+
 
 .cell { 
     background: #1e293b; 
@@ -106,9 +94,12 @@ h1 {
     align-items: center; 
     border-radius: 16px; 
     border: 1px solid #312e81; 
-    padding: 15px; 
+    padding: 12px;
     position: relative;
     box-shadow: inset 0 4px 20px rgba(0,0,0,0.6);
+    gap:12px;
+    width:100%;
+    height:100%;
 }
 
 /* Các Ô Đất Trạng Thái Đặc Biệt */
@@ -262,17 +253,74 @@ h1 {
     box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1) !important;
 }
 
-.player-info { 
-    padding: 14px; 
-    border-radius: 12px; 
-    margin-bottom: 12px; 
-    color: white; 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center;
-    border: 1px solid rgba(255,255,255,0.05); 
-    position: relative;
-    overflow: hidden;
+.player-info{
+    padding:6px 10px;
+    border-radius:12px;
+    margin-bottom:6px;
+    color:white;
+
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+
+    border:1px solid rgba(255,255,255,.05);
+    position:relative;
+}
+.player-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:6px;
+}
+
+.player-top > span:first-child{
+    flex:1;
+    min-width:0;
+
+    display:flex;
+    align-items:center;
+    gap:6px;
+
+    overflow:hidden;
+}
+.player-left{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex:1;
+    min-width:0;
+}
+
+.player-meta{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    min-width:0;
+}
+
+.player-name{
+    font-size:15px;
+    font-weight:700;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    line-height:1.1;
+}
+
+.player-icon{
+    font-size:18px;
+    flex-shrink:0;
+}
+#p1-name-display,
+#p2-name-display{
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+
+    white-space:nowrap;
+
+    font-weight:700;
 }
 .player-info:last-child { margin-bottom: 0; }
 
@@ -286,21 +334,22 @@ h1 {
     box-shadow: 0 4px 15px rgba(37, 99, 235, 0.25);
 }
 
-.player-money { 
-    font-size: 20px; 
-    font-weight: 900; 
-    letter-spacing: 0.5px;
+.player-money{
+    flex-shrink:0;
+    font-size:16px;
+    font-weight:800;
+    min-width:60px;
+    text-align:right;
 }
 
-.player-round { 
-    font-size: 10px; 
-    background: rgba(0,0,0,0.35); 
-    padding: 3px 8px; 
-    border-radius: 6px; 
-    margin-left: 6px; 
-    font-weight: 600;
+.player-round{
+    flex-shrink:0;
+    font-size:9px;
+    background:rgba(0,0,0,.3);
+    padding:1px 6px;
+    border-radius:5px;
+    font-weight:700;
 }
-
 .skip-badge { 
     position: absolute; 
     top: -5px; 
@@ -328,7 +377,6 @@ h1 {
     box-shadow: 0 0 12px rgba(59, 130, 246, 0.35); 
     transition: all 0.3s;
 }
-
 /* ===== XÚC XẮC 3D ===== */
 .dice-area { 
     display: flex; 
@@ -345,7 +393,6 @@ h1 {
     transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.3, 1); 
     transform: rotateX(45deg) rotateY(45deg);
 }
-
 .cube-face {
     position: absolute; 
     width: 46px; 
@@ -361,7 +408,6 @@ h1 {
     color: #0f172a;
     box-shadow: inset 0 0 8px rgba(0,0,0,0.25);
 }
-
 .face-1 { transform: rotateY(0deg) translateZ(23px); }
 .face-6 { transform: rotateY(180deg) translateZ(23px); }
 .face-2 { transform: rotateY(90deg) translateZ(23px); }
@@ -384,12 +430,10 @@ button.action-btn {
     transition: all 0.2s;
     letter-spacing: 0.5px;
 }
-
 button.action-btn:hover:not(:disabled) { 
     transform: translateY(-2px); 
     box-shadow: 0 6px 18px rgba(16, 185, 129, 0.5); 
 }
-
 button.action-btn:disabled { 
     background: #475569; 
     color: #94a3b8; 
@@ -646,17 +690,6 @@ button.action-btn:disabled {
    Không ảnh hưởng logic JS
 ================================================== */
 
-
-html,body{
-
-    width:100%;
-    min-height:100%;
-}
-body{
-
-    overflow-x:hidden;
-
-}
 /* =====================
    MAIN GAME CONTAINER
 ===================== */
@@ -736,7 +769,7 @@ body{
 
 .cell-title{
 
-    font-size:clamp(7px,1vw,10px);
+    font-size:clamp(8px,1vw,10px);
 
 }
 
@@ -875,126 +908,215 @@ body{
 ===================== */
 
 
-@media(max-width:480px){
-
+@media (max-width:480px){
 
 body{
+    padding:6px;
+}
+.player-top{
 
-    padding:5px;
-
+    gap:6px;
 }
 
+.player-money{
 
+    font-size:15px;
 
+    min-width:55px;
+}
+
+.player-round{
+
+    font-size:9px;
+
+    padding:2px 5px;
+}
+
+.skill-tag{
+    font-size:10px;
+    padding:3px 6px;
+}
 h1{
-
-    font-size:22px;
-
-    margin-bottom:10px;
-
+    font-size:20px;
+    margin-bottom:8px;
+    text-align:center;
 }
-
-
 
 .container{
-
-    gap:10px;
-
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    align-items:center;
 }
-
-
 
 .board{
-
-    width:95vw;
-
+    width: 98vw;
+    max-width:480px;
+    margin:0 auto;
+    aspect-ratio:1;
 }
 
-
-
 .side-panel{
-
-
-    width:95vw;
-
-
+    width:96vw;
+    max-width:430px;
+    display:flex;
+    flex-direction:column;
+    gap: 6px;
+    margin-bottom:20px;
 }
 
 .status-card{
-    padding:10px;
+    padding:8px;
 }
+
+.player-info{
+    padding:5px 8px;
+    margin-bottom:5px;
+}
+
 .player-money{
-    font-size:15px;
+    font-size:14px;
+    min-width:52px;
 }
-.log-box{
-    height:120px;
+
+.player-round{
+    font-size:8px;
+    padding:1px 5px;
 }
+
+.turn-indicator{
+    font-size:12px;
+    padding:4px;
+    margin-bottom:10px;
+}
+
 .dice-area{
-
-    gap:15px;
-
+    gap:12px;
+    margin:6px 0 10px;
 }
+
 .cube,
 .cube-face{
-    width:35px;
-    height:35px;
+    width:34px;
+    height:34px;
 }
-.face-1 { transform: rotateY(0deg) translateZ(17px); }
-.face-6 { transform: rotateY(180deg) translateZ(17px); }
-.face-2 { transform: rotateY(90deg) translateZ(17px); }
-.face-5 { transform: rotateY(-90deg) translateZ(17px); }
-.face-3 { transform: rotateX(90deg) translateZ(17px); }
-.face-4 { transform: rotateX(-90deg) translateZ(17px); }
+
+.face-1{transform:rotateY(0) translateZ(17px);}
+.face-2{transform:rotateY(90deg) translateZ(17px);}
+.face-3{transform:rotateX(90deg) translateZ(17px);}
+.face-4{transform:rotateX(-90deg) translateZ(17px);}
+.face-5{transform:rotateY(-90deg) translateZ(17px);}
+.face-6{transform:rotateY(180deg) translateZ(17px);}
+
+button.action-btn{
+    padding:9px;
+    font-size:14px;
+}
+
+#use-skill-btn{
+    width:100%;
+    margin-top:8px;
+}
+.log-box{
+    height:55px;
+    min-height:55px;
+    max-height:55px;
+
+    padding:6px;
+
+    font-size:10px;
+    line-height:1.25;
+}
+
+.cell{
+    padding:2px;
+}
+
+.cell-title{
+    font-size:8px;
+}
+
+.cell-price{
+    font-size:7px;
+}
+
+.token-slot{
+    width:34%;
+    height:42%;
+}
+
+.p-avatar{
+    font-size:18px;
+}
+
+.p-tag{
+    font-size:6px;
+    padding:1px 3px;
+}
+
+/* popup thắng */
+
+#game-over-overlay{
+    padding:10px;
+}
+
+.victory-box{
+    width:95%;
+    max-width:320px;
+    padding:16px;
+    border-radius:15px;
+}
+
+.victory-box h1{
+    font-size:22px !important;
+}
+
+.stat-line{
+    font-size:14px;
+}
+
+.victory-box button{
+    width:100%;
+}
+}
+
+.notification-panel{
+    padding:10px;
+    gap:8px;
+    border-radius:10px;
+}
+
+.notify-title{
+    font-size:14px;
+    margin-bottom:2px;
+}
+
+.notify-desc{
+    font-size:12px;
+    line-height:1.35;
+}
+
+.notify-btns{
+    gap:6px;
+}
+
+.notify-btns button,
+.btn-confirm,
+.btn-cancel{
+    padding:8px 10px;
+    font-size:12px;
 }
 .skill-tag{
-    margin:6px 0;
+    width:100%;
     padding:4px 8px;
-
-    background:#4338ca;
-    color:white;
-
-    border-radius:8px;
-
-    font-size:12px;
-    font-weight:bold;
-
+    border-radius:7px;
+    background:rgba(0,0,0,.25);
     text-align:center;
-}
-.player-top {
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:10px;
-    width:100%;
-}
-
-
-.skill-tag {
-
-    margin-top:8px;
-
-    width:100%;
-
-    text-align:center;
-
-    padding:6px 8px;
-
-    border-radius:8px;
-
-    background:rgba(15,23,42,0.8);
-
-    color:#facc15;
-
-    font-weight:800;
-
-    font-size:13px;
-
+    font-size:11px;
+    font-weight:700;
     overflow:hidden;
-
     text-overflow:ellipsis;
-
     white-space:nowrap;
-
 }
 .thor-hit{
 
@@ -1003,28 +1125,7 @@ h1{
     box-shadow:0 0 40px cyan;
 
 }
-@keyframes thorFlash{
 
-0%{
-transform:scale(1);
-background:white;
-}
-
-30%{
-transform:scale(1.2);
-background:#00ffff;
-}
-
-60%{
-background:yellow;
-}
-
-100%{
-transform:scale(1);
-background:inherit;
-}
-
-}
 /* Tia sét */
 .thor-lightning{
     position:absolute;
