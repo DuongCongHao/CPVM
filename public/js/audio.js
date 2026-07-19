@@ -1,5 +1,7 @@
 // ===== KHỞI TẠO HỆ THỐNG ÂM THANH CỤC BỘ =====
 const audioGame = {
+    danger: new Audio("audio/danger.mp3"),
+    bgm: new Audio("audio/nhacnen.mp3"),
     dice: new Audio('audio/dice.mp3'),       
     run: new Audio('audio/run.mp3'),         
     buyLand: new Audio('audio/muadat.mp3'),   
@@ -8,6 +10,9 @@ const audioGame = {
 };
 
 // Cấu hình âm lượng
+audioGame.bgm.loop = true;
+audioGame.bgm.volume = 0.35;
+audioGame.danger.volume = 0.9;
 audioGame.dice.volume = 0.8;
 audioGame.run.volume = 0.6; 
 audioGame.buyLand.volume = 0.9;

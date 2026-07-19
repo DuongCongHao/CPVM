@@ -35,6 +35,25 @@ let determineTurnData = { p1Roll: null, p2Roll: null, currentPlayer: 1 };
 let spiderWebIndex = 15; // 🔥 MẶC ĐỊNH: Mạng nhện ở ô số 15 (offline chơi sẽ dùng)
 let lightningIndex = null; // Thiên tai (sẽ được cập nhật từ Server khi startGame)
 
+// 🔥 TRẠNG THÁI SKILL: Theo dõi khi nào skill được dùng
+let skillUsedThisTurn = false; // Flag này sẽ được reset khi chuyển lượt
+
+// 🔥 HỖ TRỢ: Reset skill state khi chuyển lượt
+function resetSkillState() {
+    skillUsedThisTurn = false;
+    // Reset flag skillUsed cho player nào được chuyển lượt
+    if (typeof players !== 'undefined' && players[currentTurn]) {
+        players[currentTurn].skillUsed = false;
+    }
+    // 🔥 Cập nhật UI ngay sau reset
+    if (typeof updateSkillUI === 'function') {
+        updateSkillUI();
+    }
+    if (typeof updateSkillButton === 'function') {
+        updateSkillButton();
+    }
+}
+
 // ===== CẤU HÌNH QUAY XÚC XẮC =====
 const cubeRotations = {
     1: "rotateX(0deg) rotateY(0deg)",

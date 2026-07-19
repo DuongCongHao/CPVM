@@ -1,27 +1,28 @@
 // ===== ĐÁNH GIÁ Ô ĐẤT =====
 function evaluateTargetCell() {
-    
-    let p = players[currentTurn];
+    let targetPlayer = window.isLuckyMove 
+        ? myPlayerNumber 
+        : currentTurn;
+    let p = players[targetPlayer];
     let targetCell = cellsData[p.pos];
 
     // 🔥 FIX CHÍNH: KIỂM TRA MẠNG NHỆN TRƯỚC TIÊN
     if (p.pos === spiderWebIndex) {
         addLog(`🕷️ <strong>${p.name}</strong> dẫm vào Mạng Nhện! Mất lượt xúc xắc ở vòng kế tiếp!`);
-        players[currentTurn].skipNextTurn = true;
+        players[targetPlayer].skipNextTurn = true;
         updateUI();
         if (typeof syncGameToRemote === 'function') syncGameToRemote();
         
-        if (socket) {
-            socket.emit('skipTurnRequest', { currentTurn: currentTurn });
-        } else {
-            // Offline: Chuyển lượt ngay lập tức sau 1.5 giây
-            setTimeout(() => {
-                currentTurn = currentTurn === 1 ? 2 : 1;
-                isMoving = false;
-                if (typeof checkMyTurnControl === 'function') checkMyTurnControl();
-            }, 1500);
-        }
+        socket.emit('skipTurnRequest', { targetPlayer: targetPlayer });
         return; // Thoát khỏi hàm, không xử lý các điều kiện khác
+    }
+
+    // 🔥 KIỂM TRA DÙNG SKILL - NẾU CÓ THÌ BỎ QUA MUA ĐẤT VÀ CHUYỂN LƯỢT
+    if (skillUsedThisTurn) {
+        addLog(`⏭️ <strong>${p.name}</strong> đã dùng kỹ năng, bỏ qua cơ hội mua đất lần này!`);
+        skillUsedThisTurn = false; // Reset lại flag
+        endTurn();
+        return;
     }
 
     // 🔥 FIX CHÍNH: KIỂM TRA THIÊN TAI TRƯỚC TIÊN
@@ -50,13 +51,15 @@ function evaluateTargetCell() {
 
     if (p.pos === 0) {
         endTurn();
-    } else if (targetCell.owner === null) {
+    } else if (targetCell.owner === null) 
         if (p.money >= targetCell.price) {
+            // 🔥 FIX: Lưu player ID ngay bây giờ, vì targetPlayer có thể bị đổi trước khi callback chạy
+            const buyerPlayerId = targetPlayer;
             showNotification("💰 Mua Đất Trống", `Khu Đất số ${p.pos} chưa thuộc về ai. Bạn muốn chi <strong>${targetCell.price}$</strong> để sở hữu ô này?`, '#10b981', () => {
-                p.money -= targetCell.price;
-                targetCell.owner = currentTurn; // Chỉ cập nhật dữ liệu owner
+                players[buyerPlayerId].money -= targetCell.price;
+                targetCell.owner = buyerPlayerId; // Dùng giá trị lưu, không dùng targetPlayer
                 
-                addLog(`🏠 <strong>${p.name}</strong> mua thành công Khu Đất ${p.pos} (${targetCell.price}$)`);
+                addLog(`🏠 <strong>${players[buyerPlayerId].name}</strong> mua thành công Khu Đất ${p.pos} (${targetCell.price}$)`);
                 
                 updateUI();
                 if (typeof syncGameToRemote === 'function') syncGameToRemote();
@@ -65,17 +68,19 @@ function evaluateTargetCell() {
                 addLog(`⏭️ <strong>${p.name}</strong> quyết định không mua Khu Đất ${p.pos}.`);
                 endTurn();
             });
-        } else {
-            addLog(`💸 Không đủ tài chính đầu tư Khu Đất ${p.pos}.`);
-            endTurn();
-        }
-    } else if (targetCell.owner === currentTurn) {
+                } else {
+                    addLog(`💸 Không đủ tài chính đầu tư Khu Đất ${p.pos}.`);
+                    endTurn();
+        
+    } else if (targetCell.owner === targetPlayer) {
         if (p.money >= 100) {
+            // 🔥 FIX: Lưu player ID
+            const upgraderPlayerId = targetPlayer;
             showNotification("📈 Nâng Cấp Bất Động Sản", `Bạn đang đứng ở Khu Đất số ${p.pos} của chính mình. Bỏ ra <strong>100$</strong> để nâng cấp giá trị đất lên gấp đôi không?`, '#eab308', () => {
-                p.money -= 100;
+                players[upgraderPlayerId].money -= 100;
                 targetCell.price *= 2;
                 
-                addLog(`⚡ <strong>${p.name}</strong> nâng cấp Khu Đất ${p.pos}! Giá trị mới tăng lên: <strong>${targetCell.price}$</strong>!`);
+                addLog(`⚡ <strong>${players[upgraderPlayerId].name}</strong> nâng cấp Khu Đất ${p.pos}! Giá trị mới tăng lên: <strong>${targetCell.price}$</strong>!`);
                 
                 updateUI();
                 if (typeof syncGameToRemote === 'function') syncGameToRemote();
@@ -89,7 +94,7 @@ function evaluateTargetCell() {
             endTurn();
         }
     } else {
-        let enemyId = currentTurn === 1 ? 2 : 1;
+        let enemyId = targetPlayer === 1 ? 2 : 1;
         let fine = targetCell.price * 2;
         
         addLog(`⚠️ Dẫm bẫy! Bạn bước vào địa bàn của ${players[enemyId].name}. Nộp tiền phạt: <strong>${fine}$</strong>`);
@@ -106,12 +111,14 @@ function evaluateTargetCell() {
         }
 
         if (p.money >= fine) {
+            // 🔥 FIX: Lưu player ID
+            const forceBuyerPlayerId = targetPlayer;
             showNotification("🔥 Mua Đứt Tài Sản", `Chi thêm <strong>${fine}$</strong> để cưỡng chế mua đứt lại Khu Đất ${p.pos} từ đối thủ?`, '#ef4444', () => {
-                p.money -= fine;
-                targetCell.owner = currentTurn;
+                players[forceBuyerPlayerId].money -= fine;
+                targetCell.owner = forceBuyerPlayerId;
                 targetCell.price = fine; 
                 
-                addLog(`🔥 <strong>${p.name}</strong> THU MUA ĐỨT Khu Đất ${p.pos}! Giá đất tăng lên ${fine}$`);
+                addLog(`🔥 <strong>${players[forceBuyerPlayerId].name}</strong> THU MUA ĐỨT Khu Đất ${p.pos}! Giá đất tăng lên ${fine}$`);
                 
                 updateUI();
                 if (typeof syncGameToRemote === 'function') syncGameToRemote();
@@ -129,8 +136,13 @@ function evaluateTargetCell() {
 
 // ===== XỬ LÝ HỘP QUÀ =====
 function triggerGiftAction() {
-    let p = players[currentTurn];
-    let enemyId = currentTurn === 1 ? 2 : 1;
+    let giftPlayer = window.isLuckyMove
+        ? myPlayerNumber
+        : currentTurn;
+
+    let p = players[giftPlayer];
+
+    let enemyId = giftPlayer === 1 ? 2 : 1;
     
     const actions = ["money_plus", "money_minus", "free_buy", "go_forward", "go_backward", "skip_turn"];
     const chosenAction = actions[Math.floor(Math.random() * actions.length)];
@@ -166,7 +178,7 @@ function triggerGiftAction() {
 
         if (enemyCellIndices.length > 0) {
             let randomIdx = enemyCellIndices[Math.floor(Math.random() * enemyCellIndices.length)];
-            cellsData[randomIdx].owner = currentTurn;
+            cellsData[randomIdx].owner = giftPlayer;
             
             showSingleNotification("👑 SIÊU QUÀ ĐẶC QUYỀN", `Bạn nhận được Sắc lệnh tịch thu! Chiếm quyền sở hữu <strong>Khu Đất số ${randomIdx}</strong> của đối thủ hoàn toàn <strong>MIỄN PHÍ</strong>!`, '#10b981', () => {
                 addLog(`🎁 👑 Quà đặc quyền: <strong>${p.name}</strong> tước đoạt thành công Khu Đất số ${randomIdx} của đối thủ miễn phí.`);

@@ -192,6 +192,8 @@ if (typeof socket !== 'undefined' && socket) {
                 players[pId].pos = data.players[pId].pos;
                 players[pId].rounds = data.players[pId].rounds;
                 players[pId].skipNextTurn = data.players[pId].skipNextTurn;
+                players[pId].skill = data.players[pId].skill;
+                players[pId].skillUsed = data.players[pId].skillUsed;
             }
         }
         if (data.cellsData) {
@@ -254,14 +256,23 @@ if (typeof socket !== 'undefined' && socket) {
             }
         }
         
-        isMoving = false;
+        if (document.getElementById("notify-panel").style.display !== "flex") {
+            isMoving = false;
+        }
         if (typeof updateUI === 'function') updateUI(); // Đảm bảo quân cờ di chuyển đúng vị trí sau khi nhận gói tin từ đối thủ
         if (typeof checkMyTurnControl === 'function') checkMyTurnControl();
     });
 
     socket.off('syncEndTurnResult').on('syncEndTurnResult', (data) => {
         currentTurn = data.nextTurn;
-        isMoving = false; 
+        isMoving = false;
+        
+        // 🔥 FIX: Reset skillUsed cho player mới khi chuyển lượt
+        // Player mới chưa dùng skill trong lượt này
+        if (currentTurn && players[currentTurn]) {
+            players[currentTurn].skillUsed = false;
+        }
+        
         if (typeof checkMyTurnControl === 'function') checkMyTurnControl();
     });
     // ===============================
@@ -271,25 +282,38 @@ if (typeof socket !== 'undefined' && socket) {
 
         players = data.players;
         cellsData = data.cellsData;
-        currentTurn = data.currentTurn;
-
-        // 🔒 Khóa kỹ năng sau khi đã sử dụng
-        if(data.skillUsed && data.player){
-            players[data.player].skill = null;
-            players[data.player].skillUsed = true;
+        if (data.player === myPlayerNumber) {
+            players[myPlayerNumber].skill = null;
+            players[myPlayerNumber].skillUsed = true;
         }
+        
+        // 🔥 FIX: Không set currentTurn ở đây!
+        // Để cho syncEndTurnResult xử lý currentTurn
+        
+        // 🔥 FIX: Chỉ call updateSkillUI() 1 lần
+        document.getElementById("use-skill-btn").disabled = true;
+        updateUI();
+        updateSkillUI();
+
+    });
+    socket.off("thorEffect").on("thorEffect",(data)=>{
+
+        players = data.players;
+        cellsData = data.cellsData;
 
         updateUI();
 
-        // cập nhật chữ kỹ năng
-        if(typeof updateSkillUI === "function"){
-            updateSkillUI();
-        }
+        data.cells.forEach((cell,index)=>{
 
-        // cập nhật trạng thái nút dùng kỹ năng
-        if(typeof updateSkillButton === "function"){
-            updateSkillButton();
-        }
+            setTimeout(()=>{
+
+                showThorStrike(cell);
+
+                playSFX(audioGame.lightning);
+
+            },index*250);
+
+        });
 
     });
 }

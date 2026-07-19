@@ -360,26 +360,20 @@ io.on('connection', (socket) => {
     });
 
     // Nhận dữ liệu cập nhật hành động mua đất đai, tiền bạc thông thường
-    socket.on('syncActionData', (data) => {
+    socket.on("syncActionData", (data) => {
+
         const roomId = socket.roomId;
         if (!roomId || !rooms[roomId]) return;
 
-        const room = rooms[roomId];
+        // lưu trạng thái mới nhất
+        rooms[roomId].playersState = JSON.parse(JSON.stringify(data.players));
+        rooms[roomId].cellsState   = JSON.parse(JSON.stringify(data.cellsData));
+        rooms[roomId].currentTurn = data.currentTurn;
+        socket.to(roomId).emit("updateActionDataResult",{
+            players:data.players,
+            cellsData:data.cellsData
+        });
 
-        if (data && data.players) {
-            const playersArray = Array.isArray(data.players) 
-                ? data.players 
-                : Object.values(data.players);
-
-            // Lưu số vòng của người chơi vào phòng để đồng bộ bộ nhớ
-            playersArray.forEach(pData => {
-                if (!pData) return;
-                let matchedPlayer = room.players.find(p => p.playerNumber === pData.playerNumber);
-                if (matchedPlayer) matchedPlayer.rounds = pData.rounds;
-            });
-        }
-        // Phát dữ liệu đồng bộ mua đất/nâng cấp combo cho đối thủ chung phòng nhận diện
-        socket.to(roomId).emit('updateActionDataResult', data);
     });
 
     // Người chơi chủ động bấm "Kết thúc lượt" thông thường
@@ -406,19 +400,24 @@ io.on('connection', (socket) => {
             p => p.playerNumber === me
         );
 
+        // 🔥 Kiểm tra skill đã dùng chưa
         if(playerData.skillUsed){
             console.log("❌ Skill đã được dùng");
             return;
         }
 
+        // 🔥 Đánh dấu skill đã dùng ở server
         playerData.skillUsed = true;
         playerData.skill = null;
         data.players[me].skill = null;
         const enemy = me === 1 ? 2 : 1;
 
+        // 🔥 XỬ LÝ LOGIC TỪNG LOẠI SKILL
+        // Lưu ý: Một số skill được xử lý ở client, server chỉ cần broadcast lại
+        //        Skill "thor" và "cuopTien" cần xử lý ở server (random hoặc tính toán)
         switch(data.skill){
 
-            case "Cướp tiền": {
+            case "cuopTien": {
 
                 if(data.players[enemy].money <= 0){
                     break;
@@ -432,26 +431,67 @@ io.on('connection', (socket) => {
                 break;
             }
 
-            case "doiViTri":
+            case "doiViTri": {
+                // Đổi vị trí được xử lý ở client, server chỉ cần broadcast lại
                 break;
+            }
 
-            case "dieuHuong":
+            case "dieuHuong": {
+                // Điều hướng được xử lý ở client, server chỉ cần broadcast lại
                 break;
+            }
 
-            case "doiVanMay":
+            case "doiVanMay": {
+                // Đổi vận may được xử lý ở client, server chỉ cần broadcast lại
                 break;
+            }
 
-            case "thor":
+            case "thor": {
+                const TOTAL_CELLS = data.cellsData.length;
+                let thunderCells = [];
+
+                while(thunderCells.length < 5){
+
+                    let x = Math.floor(Math.random() * TOTAL_CELLS);
+
+                    if(!thunderCells.includes(x))
+                        thunderCells.push(x);
+                }
+
+                // kiểm tra người chơi
+
+                for(let i=1;i<=2;i++){
+
+                    if(thunderCells.includes(data.players[i].pos)){
+
+                        let lost = Math.floor(data.players[i].money * 0.25);
+
+                        data.players[i].money -= lost;
+                    }
+                }
+
+                io.to(roomId).emit("thorEffect",{
+
+                    cells: thunderCells,
+
+                    players:data.players,
+
+                    cellsData:data.cellsData
+
+                });
+
                 break;
+            }
         }
 
+        // 🔥 BROADCAST HASIL SKILL DÙNG KỲ NGƯỜI CHƠI KHÁC
+        // Phía client sẽ tự động update UI và gọi endTurn() nếu đã dùng skill
         io.to(roomId).emit("useSkillResult",{
             players:data.players,
             cellsData:data.cellsData,
             currentTurn:data.currentTurn,
-            player:data.player,
-            skillUser: true,
-            player:me
+            player: me,
+            skillUsed: true
         });
 
     });

@@ -1,3 +1,4 @@
+
 let lastDiceResult = 0;
 // ===== QUAY XÚX XẮC 3D ONLINE =====
 function rollDice3D() {
@@ -22,18 +23,8 @@ function rollDice3D() {
         updateUI();
         
         // 3. Gửi lệnh thông báo cho Server biết lượt này bị bỏ qua để Server phát lệnh đổi lượt cho cả 2 máy
-        if (typeof socket !== 'undefined' && socket) {
-            // Đồng bộ biến skipNextTurn = false qua trước, rồi gọi skip lượt
-            socket.emit('syncActionData', { players: players, cellsData: cellsData });
-            socket.emit('skipTurnRequest', { currentTurn: currentTurn });
-        } else {
-            // Chế độ dự phòng Local offline
-            setTimeout(() => {
-                isMoving = false;
-                currentTurn = currentTurn === 1 ? 2 : 1;
-                if (typeof checkMyTurnControl === 'function') checkMyTurnControl();
-            }, 1500);
-        }
+        socket.emit('syncActionData', { players: players, cellsData: cellsData });
+        socket.emit('skipTurnRequest', { currentTurn: currentTurn });
         return;
     }
 
@@ -42,14 +33,7 @@ function rollDice3D() {
     hideNotification();
     
     // GỬI LỆNH LÊN SERVER: Yêu cầu tung xúc xắc
-    if (typeof socket !== 'undefined' && socket) {
-        socket.emit('requestRollDice');
-    } else {
-        console.warn("Chưa kết nối Socket.io! Đang chạy chế độ dự phòng (Local).");
-        const d1 = Math.floor(Math.random() * 6) + 1;
-        const d2 = Math.floor(Math.random() * 6) + 1;
-        executeDiceAnimation(d1, d2);
-    }
+    socket.emit('requestRollDice');
 }
 
 // LẮNG NGHE KẾT QUẢ TỪ SERVER TRẢ VỀ (Dùng chung cho cả 2 máy người chơi)
@@ -71,9 +55,7 @@ function executeDiceAnimation(d1, d2) {
 
     if (!cube1 || !cube2) {
         // Phòng trường hợp không tìm thấy phần tử HTML xúc xắc
-        if (currentTurn === myPlayerNumber || !socket) {
-            moveStepByStep(d1 + d2, d1, d2);
-        }
+        moveStepByStep(d1 + d2, d1, d2);
         return;
     }
 
@@ -101,10 +83,16 @@ function executeDiceAnimation(d1, d2) {
                 extraTurnGranted = false;
             }
             
-            // SỬA LỖI LOẠN HOẠT ẢNH: Chỉ có tab đang tới lượt của mình mới được chạy hàm di chuyển tính bước
-            // Tab đối thủ chỉ ngồi đợi dữ liệu vị trí chốt được bắn qua từ hàm syncActionData công khai.
-            if (currentTurn === myPlayerNumber || !socket) {
+            // Chỉ có tab đang tới lượt của mình mới được chạy hàm di chuyển
+            // Tab đối thủ chỉ ngồi đợi dữ liệu vị trí chốt được bắn qua từ hàm syncActionData
+            // Chỉ có tab đang tới lượt của mình mới được chạy hàm di chuyển
+            if (currentTurn === myPlayerNumber) {
+
+                // Lưu vị trí trước khi tung xúc xắc
+                lastPositionBeforeRoll = players[currentTurn].pos;
+
                 moveStepByStep(d1 + d2, d1, d2);
+
             } else {
                 addLog(`🎲 <strong>${players[currentTurn].name}</strong> di chuyển <strong>${d1 + d2} ô</strong>...`);
             }

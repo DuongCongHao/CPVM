@@ -1,7 +1,11 @@
 // ===== DI CHUYỂN TỪNG BƯỚC =====
 function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = null) {
     isMoving = true;
-    let p = players[currentTurn];
+    let movePlayer = window.isLuckyMove 
+        ? myPlayerNumber 
+        : currentTurn;
+
+    let p = players[movePlayer];
     let stepsLeft = Math.abs(totalSteps);
     let direction = totalSteps >= 0 ? 1 : -1; 
     
@@ -11,7 +15,7 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
 
     function step() {
         if (stepsLeft > 0) {
-            let currentSlot = document.getElementById(`slot-p${currentTurn}-${p.pos}`);
+            let currentSlot = document.getElementById(`slot-p${movePlayer}-${p.pos}`);
             if (currentSlot) currentSlot.classList.remove('moving');
 
             /// 🔥 FIX DELAY: Ép nhạc chạy phát ngay lập tức không độ trễ
@@ -31,27 +35,40 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
 }
 
             if (direction === 1) {
+
                 p.pos = (p.pos + 1) % TOTAL_CELLS;
+
                 if (p.pos === 0) {
+
                     p.money += 300;
                     p.rounds += 1;
+
                     console.log("======== ROUND +1 ========");
                     console.log(p.name);
                     console.log("Rounds =", p.rounds);
+
                     addLog(`🎁 <strong>${p.name}</strong> hoàn thành 1 vòng (Ô START), nhận lương <strong>+300$</strong>!`);
-                    
-                    // 🔥 CHÈN VÀO ĐÂY: Phát tiếng tinh tinh nhận tiền thưởng qua vòng
+
+                    // phát âm nhận tiền
                     if (typeof playSFX === 'function' && audioGame && audioGame.buyLand) {
                         playSFX(audioGame.buyLand);
                     }
 
+                    // sinh hộp quà
                     checkSpawnGiftEvent();
+
+                    // kiểm tra Boss
+                    checkHaoBossEvent(movePlayer);
+
                 }
+
             } else {
+
                 p.pos = (p.pos - 1 + TOTAL_CELLS) % TOTAL_CELLS;
+
             }
             
-            let nextSlot = document.getElementById(`slot-p${currentTurn}-${p.pos}`);
+            let nextSlot = document.getElementById(`slot-p${movePlayer}-${p.pos}`);
             if (nextSlot) nextSlot.classList.add('moving');
             
             stepsLeft--;
@@ -69,7 +86,7 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
                 audioGame.run.pause();
                 audioGame.run.currentTime = 0;
             }
-            let finalSlot = document.getElementById(`slot-p${currentTurn}-${p.pos}`);
+            let finalSlot = document.getElementById(`slot-p${movePlayer}-${p.pos}`);
             if (finalSlot) finalSlot.classList.remove('moving');
             isMoving = false;
             
@@ -78,18 +95,30 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
                 syncGameToRemote();
             }
 
-            if(callback) {
+            if (callback) {
                 callback();
             } else {
-                // Xử lý ô đất vừa đặt chân tới
-                evaluateTargetCell();
 
-                // SỬA LỖI KẸT LƯỢT: Nếu đứng ở ô START (pos === 0), không có thông báo mua bán gì, 
-                // ta phải ép kết thúc lượt luôn để nhường cho người tiếp theo.
-                if (p.pos === 0) {
-                    if (typeof endTurn === 'function') {
-                        endTurn();
-                    }
+                if(audioGame && audioGame.run){
+                    audioGame.run.pause();
+                    audioGame.run.currentTime = 0;
+                }
+
+                let finalSlot = document.getElementById(`slot-p${movePlayer}-${p.pos}`);
+                if (finalSlot) finalSlot.classList.remove('moving');
+
+                isMoving = false;
+
+
+                if(typeof syncGameToRemote === 'function'){
+                    syncGameToRemote();
+                }
+                evaluateTargetCell();
+                if(window.isLuckyMove){
+                    window.isLuckyMove = false;
+                }
+                if(p.pos === 0){
+                    endTurn();
                 }
             }
         }

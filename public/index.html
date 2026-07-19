@@ -340,7 +340,12 @@
             </div>
         </div>
     </div>
+    <!-- CẢNH BÁO BỐ HẢO -->
+    <div id="hao-warning">
 
+    💀🔥 BỐ HẢO SẮP XUẤT HIỆN 🔥💀
+
+    </div>
     <!-- ================= POPUP THÔNG BÁO KẾT THÚC TRẬN ĐẤU ================= -->
     <div id="game-over-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(8px);">
         <div style="background: linear-gradient(135deg, #1e1b4b, #311042); padding: 40px; border-radius: 24px; border: 3px solid #f43f5e; text-align: center; box-shadow: 0 0 40px rgba(244, 63, 94, 0.5); max-width: 450px; width: 90%; font-family: sans-serif;">
@@ -357,36 +362,52 @@
 <div id="help-btn" onclick="showHelpModal()">?</div>
 
 <!-- Bảng luật chơi (ẩn mặc định) -->
-<div id="help-modal" style="
-display:none;
-position:fixed;
-top:10%;
-left:10%;
-width:80%;
-background:#1e293b;
-color:#ffffff;
-padding:25px;
-z-index:10000;
-border-radius:15px;
-border:2px solid #38bdf8;
-box-shadow:0 0 30px rgba(0,0,0,0.6);
-">
-    <ul style="text-align: left;">
-        <li>Gieo xúc xắc để di chuyển trên bàn cờ.</li>
-        <li>Dừng ở ô đất trống để mua và thu thuế đối thủ.</li>
-        <li>Dừng ở ô Mạng nhện sẽ bị khóa lượt.</li>
-        <li>Dừng ở ô Sấm sét sẽ bị trừ 50% tiền</li>
-        <li>Người hết tiền trước là người thua cuộc!</li>
-        <li>Khi có người chạm đến vòng số 7 mà chưa ai phá sản, sẽ tính giá trị đất mà người chơi có</li>
-        <li>Khi đi hết 1 vòng sẽ xuất hiện ô quà ngẫu nhiên(Cả 2 người chơi có thể nhận)</li>
-        <li>Vào trận sẽ có các thẻ bài được phát ngẫu nhiên:</li>
-        <li>- Điều hướng: Tăng hoặc giảm 3 bước di chuyển.</li>
-        <li>- Thần Thor: Đánh đối thủ mất 25% tiền</li>
-        <li>- Đổi vận may: Đổi lại kết quả xúc xắc vừa tung.</li>
-        <li>- Đổi vị trí: Đổi vị trí hiện tại với đối thủ.</li>
-        <li>- Cướp tiền: Lấy 15% tiền hiện có của đối thủ.</li>
-    </ul>
-    <button onclick="hideHelpModal()">Đóng</button>
+<div id="help-modal" class="help-modal">
+
+    <div class="help-box">
+
+        <h2>📜 LUẬT CHƠI</h2>
+
+        <div class="help-content">
+
+            <ul>
+
+                <li>🏡 Dừng ở ô đất trống để mua và thu thuế đối thủ.</li>
+
+                <li>🕸️ Ô Mạng Nhện: mất 1 lượt.</li>
+
+                <li>⚡ Ô Sấm Sét: mất 50% số tiền hiện có.</li>
+
+                <li>💀 Hết tiền là thua ngay lập tức.</li>
+
+                <li>🏆 Khi người đầu tiên hoàn thành vòng 7, nếu chưa ai phá sản thì so sánh tổng tài sản (Tiền + Giá trị đất).</li>
+
+                <li>🎁 Mỗi khi cả hai người chơi đi hết 1 vòng sẽ xuất hiện Hộp Quà Bí Ẩn.</li>
+
+                <li>🎴 Thẻ bài ngẫu nhiên:
+                    <ul>
+                        <li>➡️ Điều hướng: tăng hoặc giảm 3 bước.</li>
+                        <li>⚡ Thần Thor: đánh 5 ô ngẫu nhiên, trúng sẽ mất 25% tiền.</li>
+                        <li>🎲 Đổi vận may: tung lại xúc xắc.</li>
+                        <li>🔄 Đổi vị trí với đối thủ.</li>
+                        <li>💰 Cướp 15% tiền của đối thủ.</li>
+                    </ul>
+                </li>
+
+                <li>☠️ Khi người đầu tiên đến vòng 4 sẽ xuất hiện cảnh báo Bố Hảo.</li>
+
+                <li>🔥 Sang vòng 5, Bố Hảo xuất hiện tại ô START. Người chơi nào không đứng ở START hoặc trên đất của mình sẽ bị phạt 500$.</li>
+
+            </ul>
+
+        </div>
+
+        <button class="help-close" onclick="hideHelpModal()">
+            ĐÓNG
+        </button>
+
+    </div>
+
 </div>
     <!-- ================= THỨ TỰ NẠP JAVASCRIPT CHUẨN KIẾN TRÚC GAME ONLINE ================= -->
     
@@ -410,7 +431,7 @@ box-shadow:0 0 30px rgba(0,0,0,0.6);
     <script src="js/dice.js"></script>
     <script src="js/movement.js"></script>
     <script>
-        function showHelpModal() { document.getElementById('help-modal').style.display = 'block'; }
+        function showHelpModal() { document.getElementById('help-modal').style.display = 'flex'; }
         function hideHelpModal() { document.getElementById('help-modal').style.display = 'none'; }
     </script>
 </body>

@@ -69,14 +69,15 @@ function updateUI() {
         if (
             gameStarted &&
             currentTurn === myPlayerNumber &&
-            mySkill
+            mySkill &&
+            !players[myPlayerNumber].skillUsed
         ) {
             skillBtn.disabled = false;
             skillBtn.innerText = "🎴 " + mySkill.name;
         } else {
             skillBtn.disabled = true;
 
-            if (mySkill) {
+            if (mySkill && !players[myPlayerNumber].skillUsed) {
                 skillBtn.innerText = "🎴 " + mySkill.name;
             } else {
                 skillBtn.innerText = "🎴 Đã dùng";
@@ -91,7 +92,56 @@ function addLog(text) {
     logBox.innerHTML += `<div class="log-entry">${text}</div>`;
     logBox.scrollTop = logBox.scrollHeight;
 }
+function animateThor(cells){
 
+    cells.forEach((id,index)=>{
+
+        setTimeout(()=>{
+
+            let cell=document.getElementById("cell-"+id);
+
+            if(!cell) return;
+
+            cell.classList.add("thor-hit");
+
+            setTimeout(()=>{
+
+                cell.classList.remove("thor-hit");
+
+            },800);
+
+        },index*250);
+
+    });
+
+}
+// ===============================
+// HIỆU ỨNG SÉT THẦN THOR
+// ===============================
+function showThorStrike(cellIndex) {
+
+    const cell = document.getElementById("cell-" + cellIndex);
+
+    if (!cell) return;
+
+    cell.style.position = "relative";
+
+    const bolt = document.createElement("div");
+
+    bolt.className = "thor-lightning";
+
+    cell.appendChild(bolt);
+
+    cell.classList.add("thor-flash");
+
+    bolt.onanimationend = () => {
+
+        bolt.remove();
+
+        cell.classList.remove("thor-flash");
+
+    };
+}
 // Biến toàn cục để quản lý trạng thái nút bấm bất đồng bộ
 let pendingCancelAction = null;
 // ===== TIMER QUYẾT ĐỊNH MUA ĐẤT =====

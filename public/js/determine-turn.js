@@ -46,15 +46,9 @@ function determineTurn() {
 
 // Hàm gửi yêu cầu tung xúc xắc tranh lượt lên Server
 function requestDetermineTurn(playerNum) {
-    if (typeof socket !== 'undefined' && socket !== null) {
-        // Khóa nút ngay lập tức sau khi bấm để tránh spam click
-        document.getElementById('roll-btn').disabled = true;
-        socket.emit('requestDetermineRoll', { player: playerNum });
-    } else {
-        console.warn("Chưa kết nối Socket.io! Đang chạy chế độ dự phòng (Local).");
-        if (playerNum === 1) p1DetermineTurnLocal();
-        else p2DetermineTurnLocal();
-    }
+    // Khóa nút ngay lập tức sau khi bấm để tránh spam click
+    document.getElementById('roll-btn').disabled = true;
+    socket.emit('requestDetermineRoll', { player: playerNum });
 }
 
 // LẮNG NGHE KẾT QUẢ PHÂN CHIA LƯỢT TỪ SERVER
@@ -109,6 +103,12 @@ function executeDetermineAnimation(player, d1, d2, sum) {
                 
                 // Khởi động trận đấu chính thức trên cả 2 máy
                 gameStarted = true;
+                // 🎵 BẬT NHẠC NỀN KHI TRẬN ĐẤU BẮT ĐẦU
+                if (audioGame.bgm) {
+                    audioGame.bgm.currentTime = 0;
+                    audioGame.bgm.play()
+                    .catch(err => console.log("Không thể phát nhạc nền:", err));
+                }
                 // Kiểm tra lượt xem ai được quyền đổ xúc xắc chính thức đầu tiên
                 if (typeof checkMyTurnControl === 'function') {
                     checkMyTurnControl();
@@ -124,12 +124,3 @@ function executeDetermineAnimation(player, d1, d2, sum) {
     }, 600);
 }
 
-// ===== CÁC HÀM DỰ PHÒNG CHẠY LOCAL =====
-function p1DetermineTurnLocal() {
-    const d1 = Math.floor(Math.random() * 6) + 1; const d2 = Math.floor(Math.random() * 6) + 1;
-    executeDetermineAnimation(1, d1, d2, d1 + d2);
-}
-function p2DetermineTurnLocal() {
-    const d1 = Math.floor(Math.random() * 6) + 1; const d2 = Math.floor(Math.random() * 6) + 1;
-    executeDetermineAnimation(2, d1, d2, d1 + d2);
-}

@@ -1,3 +1,5 @@
+window.haoBossTriggered = false;
+window.haoWarningPlayed=false;
 // ===== KHỞI TẠO KẾT NỐI SOCKET.IO THÔNG MINH (TỰ ĐỘNG ĐỔI URL) =====
 const NODE_JS_PORT = 3000; 
 window.lightningIndex = null;
@@ -197,8 +199,191 @@ function displayRoomId(roomId) {
         roomDisplayEl.innerHTML = `Mã Phòng: <strong style="color: #f59e0b;">${roomId}</strong>`;
     }
 }
+// ===============================
+// BỐ HẢO EVENT
+// ===============================
+// Kiểm tra mỗi khi người chơi hoàn thành 1 vòng
+function checkHaoBossEvent(playerId){
+
+    const p = players[playerId];
+
+    // ===== VÒNG 4 : CHỈ CẢNH BÁO =====
+    if(
+        p.rounds >= 4 &&
+        !window.haoWarningPlayed
+    ){
+
+        window.haoWarningPlayed = true;
+
+        addLog("🚨 BỐ HẢO SẮP XUẤT HIỆN!");
+
+        showHaoBossWarning();
+
+    }
+
+    // ===== VÒNG 5 : BOSS XUẤT HIỆN =====
+    if(
+        p.rounds >= 5 &&
+        !window.haoBossTriggered
+    ){
+
+        window.haoBossTriggered = true;
+
+        addLog("🔥 BỐ HẢO ĐÃ XUẤT HIỆN!");
+
+        spawnHaoBoss();
+
+        setTimeout(()=>{
+
+            haoBossSweep();
+
+        },3000);
+
+    }
+
+}
 
 
+// ===============================
+// BỐ HẢO QUÉT
+// ===============================
+function haoBossSweep(){
+
+    addLog("🔥 BỐ HẢO BẮT ĐẦU CÀN QUÉT!");
+
+    for(let i=1;i<=2;i++){
+
+        const p = players[i];
+
+        const currentCell = cellsData[p.pos];
+
+        const safe =
+            p.pos===0 ||
+            (
+                currentCell &&
+                currentCell.owner===i
+            );
+
+        if(!safe){
+
+            p.money-=500;
+
+            addLog(
+                `🔥 <strong>${p.name}</strong> không đứng trên đất của mình.<br>-500$`
+            );
+
+            if(p.money<0){
+
+                const enemy=i===1?2:1;
+
+                removeHaoBoss();
+
+                gameOver(enemy,"money");
+
+                return;
+
+            }
+
+        }
+        else{
+
+            addLog(
+                `🏠 <strong>${p.name}</strong> đang ở nhà nên được an toàn.`
+            );
+
+        }
+
+    }
+
+    removeHaoBoss();
+
+    updateUI();
+
+    if(typeof syncGameToRemote==="function"){
+        syncGameToRemote();
+    }
+
+}
+
+
+
+// ===============================
+// HIỆN CẢNH BÁO
+// ===============================
+function showHaoBossWarning(){
+
+    const warning=document.getElementById("hao-warning");
+
+    if(!warning) return;
+
+    // phát âm thanh danger
+    if(audioGame && audioGame.danger){
+
+        audioGame.danger.currentTime=0;
+
+        audioGame.danger.play().catch(()=>{});
+
+    }
+
+    // rung màn hình
+    document.body.classList.add("hao-shake");
+
+    // reset animation
+    warning.classList.remove("show");
+
+    void warning.offsetWidth;
+
+    warning.classList.add("show");
+
+    setTimeout(()=>{
+
+        warning.classList.remove("show");
+
+        document.body.classList.remove("hao-shake");
+
+    },3000);
+
+}
+
+
+
+// ===============================
+// SINH BỐ HẢO
+// ===============================
+function spawnHaoBoss(){
+
+    const startCell=document.getElementById("cell-0");
+
+    if(!startCell) return;
+
+    if(document.getElementById("hao-boss")) return;
+
+    const boss=document.createElement("div");
+
+    boss.id="hao-boss";
+
+    boss.innerHTML="💀";
+
+    startCell.appendChild(boss);
+
+}
+
+
+
+// ===============================
+// XÓA BỐ HẢO
+// ===============================
+function removeHaoBoss(){
+
+    const boss=document.getElementById("hao-boss");
+
+    if(boss){
+
+        boss.remove();
+
+    }
+
+}
 // ===== KHỞI TẠO BÀN CỜ VẼ LƯỚI MA TRẬN =====
 function initializeBoard() {
     console.log("========== DRAW BOARD ==========");
@@ -265,9 +450,17 @@ function initializeBoard() {
 }
 
 function syncGameToRemote() {
-    if (socket && myPlayerNumber === currentTurn) {
-        socket.emit('syncActionData', { players: players, cellsData: cellsData });
+
+    if(socket && myPlayerNumber === currentTurn){
+
+        socket.emit('syncActionData',{
+            players: players,
+            cellsData: cellsData,
+            currentTurn: currentTurn
+        });
+
     }
+
 }
 
 function checkAndUpgradeCombo(playerNum) {
@@ -415,9 +608,13 @@ function endTurn() {
     console.log(players[1].rounds);
     console.log(players[2].rounds);
     if (players[1].rounds >= 7 || players[2].rounds >= 7) {
-        let p1Value = calculateTotalLandValue(1);
-        let p2Value = calculateTotalLandValue(2);
-        addLog(`🏁 MỐC GIỚI HẠN! 7 vòng kết thúc hành trình.`);
+        let p1Value = calculateTotalAsset(1);
+        let p2Value = calculateTotalAsset(2);
+        addLog(
+        `🏁 Kết thúc trận!
+        P1: ${p1Value}$
+        P2: ${p2Value}$`
+        );
         if (p1Value > p2Value) return gameOver(1, "value_compare");
         else if (p2Value > p1Value) return gameOver(2, "value_compare");
         else return gameOver(players[1].money >= players[2].money ? 1 : 2, "value_compare");
@@ -532,10 +729,28 @@ function checkMyTurnControl() {
             determineTurn();
         }
     }
-    if (typeof updateUI === 'function') updateUI(); updateSkillUI();
+    if (typeof updateUI === 'function') {
+        updateUI();
+    }
+
+    if (typeof updateSkillUI === 'function') {
+        updateSkillUI();
+    }
+}
+function calculateTotalAsset(playerId){
+
+    let money = players[playerId].money;
+
+    let landValue = calculateTotalLandValue(playerId);
+
+    return money + landValue;
 }
 // ===== KẾT THÚC TRÒ CHƠI HOÀN TOÀN =====
 function gameOver(winnerId, reason = "money") {
+    if(audioGame.bgm){
+        audioGame.bgm.pause();
+        audioGame.bgm.currentTime = 0;
+    }
     const rollBtn = document.getElementById('roll-btn');
     if (rollBtn) rollBtn.disabled = true;
     
@@ -549,12 +764,103 @@ function gameOver(winnerId, reason = "money") {
     if (overlay) overlay.style.display = 'flex';
     
     if (winText) {
-        if (reason === "value_compare") {
-            let finalValue = calculateTotalLandValue(winnerId);
-            winText.innerHTML = `🏆 ĐẠI ĐIỀN CHỦ TÀI BA!<br><span style="color: #10b981; font-size: 26px; font-weight: 900;">${players[winnerId].name.toUpperCase()}</span><br><span style="font-size:14px;color:#cbd5e1;">Thắng ở vòng 7 với tài sản đất: ${finalValue}$!</span>`;
-        } else {
-            winText.innerHTML = `🏆 CHIẾN THẮNG TỐI HẬU THUỘC VỀ:<br><span style="color: #10b981; font-size: 26px; font-weight: 900;">${players[winnerId].name.toUpperCase()}</span>`;
-        }
+
+        let winner = players[winnerId];
+        let loserId = winnerId === 1 ? 2 : 1;
+        let loser = players[loserId];
+
+
+        let winnerLand = calculateTotalLandValue(winnerId);
+        let loserLand = calculateTotalLandValue(loserId);
+
+
+        let winnerTotal = winner.money + winnerLand;
+        let loserTotal = loser.money + loserLand;
+
+
+        winText.innerHTML = `
+
+        <div class="victory-box">
+
+            <div style="
+                font-size:60px;
+                animation: trophy 1s infinite alternate;
+            ">
+            🏆
+            </div>
+
+
+            <h1 style="
+                color:#facc15;
+                font-size:32px;
+                margin:10px;
+            ">
+            CHIẾN THẮNG!
+            </h1>
+
+
+            <div style="
+                font-size:28px;
+                font-weight:900;
+                color:#10b981;
+            ">
+            ${winner.name.toUpperCase()}
+            </div>
+
+
+            <hr>
+
+
+            <div class="stat-line">
+                💰 Tiền mặt:
+                <b>${winner.money}$</b>
+            </div>
+
+
+            <div class="stat-line">
+                🏠 Giá trị đất:
+                <b>${winnerLand}$</b>
+            </div>
+
+
+            <div class="stat-line total">
+                👑 Tổng tài sản:
+                <b>${winnerTotal}$</b>
+            </div>
+
+
+            <br>
+
+
+            <div style="
+                color:#94a3b8;
+                font-size:14px;
+            ">
+                Đối thủ ${loser.name}
+                <br>
+                💰 ${loser.money}$
+                |
+                🏠 ${loserLand}$
+                <br>
+                Tổng: ${loserTotal}$
+            </div>
+
+
+            <div style="
+                margin-top:15px;
+                color:#38bdf8;
+            ">
+            🎮 Trận đấu kết thúc sau ${Math.max(
+                players[1].rounds,
+                players[2].rounds
+            )} vòng
+            </div>
+
+
+        </div>
+
+        `;
+
     }
     addLog(`👑 <strong>NHÀ VÔ ĐỊCH: ${players[winnerId].name}</strong> thâu tóm toàn bộ sàn đấu!`);
 }

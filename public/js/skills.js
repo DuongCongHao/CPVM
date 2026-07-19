@@ -109,7 +109,10 @@ function useSkill(){
     }
 
     // Không còn kỹ năng
-    if(!players[myPlayerNumber].skill){
+    if (
+        !players[myPlayerNumber].skill ||
+        players[myPlayerNumber].skillUsed
+    ) {
         alert("Bạn đã dùng hết kỹ năng!");
         return;
     }
@@ -183,37 +186,18 @@ function useSkill(){
         // ⚡ THẦN THOR
         // =========================
         case "thor":
-            playSFX(audioGame.lightning);
-
-            let target =
-                myPlayerNumber === 1 ? 2 : 1;
-
-
-            let lostMoney =
-                Math.floor(players[target].money * 0.25);
-
-
-            players[target].money -= lostMoney;
-
 
             addLog(
                 "⚡ " +
                 players[myPlayerNumber].name +
-                " triệu hồi Thor đánh mất " +
-                lostMoney +
-                "$ của đối thủ"
+                " triệu hồi Thần Thor..."
             );
 
             break;
-
         // =========================
-        // 🔮 ĐỔI VẬN MAY
-        // =========================
-        case "doiVanMay":
+        case "doiVanMay": {
 
-            let newDice =
-                Math.floor(Math.random()*11)+2;
-
+            let newDice = Math.floor(Math.random() * 11) + 2;
 
             addLog(
                 "🔮 " +
@@ -223,11 +207,18 @@ function useSkill(){
                 " ô"
             );
 
-
             playSFX(audioGame.luck);
 
 
-            // di chuyển lại theo kết quả mới
+            // quay về vị trí trước khi tung
+            players[myPlayerNumber].pos = lastPositionBeforeRoll;
+
+
+            // đánh dấu đang di chuyển bằng skill
+            window.isLuckyMove = true;
+
+
+            // di chuyển lại theo số mới
             moveStepByStep(
                 newDice,
                 0,
@@ -235,7 +226,8 @@ function useSkill(){
             );
 
 
-        break;
+            break;
+        }
         // =========================
         // 🧭 ĐIỀU HƯỚNG
         // =========================
@@ -277,39 +269,62 @@ function useSkill(){
 
             updateUI();
 
+            // 🔥 FIX: Reset flag sau Điều Hướng
+            skillUsedThisTurn = false;
 
             break;
 
     }
-
-    // ===== XÓA KỸ NĂNG SAU KHI DÙNG =====
-    // ===== KHÓA KỸ NĂNG SAU KHI DÙNG =====
+// ===== XÓA KỸ NĂNG SAU KHI DÙNG =====
 players[myPlayerNumber].skill = null;
 players[myPlayerNumber].skillUsed = true;
+
+// 🔥 FIX: Chỉ set skillUsedThisTurn cho những kỹ năng KHÔNG DI CHUYỂN
+if (skill.id !== "doiVanMay" && skill.id !== "dieuHuong") {
+    skillUsedThisTurn = true;
+}
+
+console.log("===== SAU KHI DÙNG SKILL =====");
+console.log(players[myPlayerNumber]);
 
 updateUI();
 updateSkillUI();
 updateSkillButton();
-    if(typeof socket !== "undefined"){
+socket.emit("useSkill",{
 
-        socket.emit("useSkill",{
+    player: myPlayerNumber,
 
-            player: myPlayerNumber,
+    skill: skill.id,
 
-            skill: skill.id,
+    players: players,
 
-            players: players,
+    cellsData: cellsData,
 
-            cellsData: cellsData,
+    currentTurn: currentTurn,
+    skillUser: true
+});
 
-            currentTurn: currentTurn,
-            skillUser: true
-        });
+hideNotification();
 
-    }
-    updateUI();
+if (skill.id === "doiVanMay") {
+    return;
+}
+
+// 🔥 FIX: Dừng tiếng chạy nếu đã play
+if (audioGame && audioGame.run) {
+    audioGame.run.pause();
+    audioGame.run.currentTime = 0;
+}
+
+// 🔥 FIX: Reset flag trước khi end turn
+skillUsedThisTurn = false;
+
+endTurn();
+updateUI();
 }
 function updateSkillUI(){
+    console.log("===== updateSkillUI =====");
+    console.log(players[myPlayerNumber]);
 
     // ===== PLAYER 1 =====
     const p1Skill = document.getElementById("p1-skill");
