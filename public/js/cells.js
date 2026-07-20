@@ -10,12 +10,19 @@ function evaluateTargetCell() {
     if (p.pos === spiderWebIndex) {
         addLog(`🕷️ <strong>${p.name}</strong> dẫm vào Mạng Nhện! Mất lượt xúc xắc ở vòng kế tiếp!`);
         players[targetPlayer].skipNextTurn = true;
+
+        addLog(`🕷️ ${players[targetPlayer].name} sẽ bị mất lượt ở vòng tiếp theo!`);
+
         updateUI();
-        if (typeof syncGameToRemote === 'function') syncGameToRemote();
+
+        if (typeof syncGameToRemote === 'function')
+            syncGameToRemote();
         
-        socket.emit('skipTurnRequest', { targetPlayer: targetPlayer });
-        return; // Thoát khỏi hàm, không xử lý các điều kiện khác
+        // 🔥 FIX: Chuyển lượt ngay lập tức
+        endTurn();
+        return;
     }
+        // KHÔNG emit ở đây
 
     // 🔥 KIỂM TRA DÙNG SKILL - NẾU CÓ THÌ BỎ QUA MUA ĐẤT VÀ CHUYỂN LƯỢT
     if (skillUsedThisTurn) {
@@ -222,12 +229,33 @@ function triggerGiftAction() {
         });
     } 
     else if (chosenAction === "skip_turn") {
-        p.skipNextTurn = true;
-        showSingleNotification("💤 HỘP QUÀ CHÓNG MẶT", `Bạn trúng thuốc ngủ! Bạn sẽ bị **Khóa lượt xúc** (mất lượt) ở vòng kế tiếp.`, '#eab308', () => {
-            addLog(`🎁 ❌ Hình phạt: <strong>${p.name}</strong> bị dính trạng thái mất lượt xúc ở vòng sau.`);
-            updateUI();
-            if (typeof syncGameToRemote === 'function') syncGameToRemote();
-            endTurn();
-        });
+
+        let opponentId = giftPlayer === 1 ? 2 : 1;
+
+
+        showSingleNotification(
+            "💤 HỘP QUÀ CHÓNG MẶT",
+            `Đối thủ được thêm <strong>2 lượt liên tiếp</strong>.`,
+            '#eab308',
+            () => {
+
+                addLog(
+                    `🎁 💤 ${p.name} bị khóa chân! ${players[opponentId].name} được thêm 2 lượt.`
+                );
+
+
+                window.extraTurns = 2;
+
+
+                currentTurn = opponentId;
+
+
+                updateUI();
+
+
+                checkMyTurnControl();
+
+            }
+        );
     }
 }

@@ -145,32 +145,6 @@ if (typeof socket !== 'undefined' && socket) {
         if (typeof checkMyTurnControl === 'function') checkMyTurnControl();
     });
 
-    // 🔥 FIX CHÍNH: THÊM HANDLER CHO skipTurnResult (Mạng Nhện)
-    socket.off('skipTurnResult').on('skipTurnResult', (data) => {
-        // Server trả về thông tin sau khi xử lý lệnh bỏ qua lượt
-        if (data && data.nextTurn) {
-            currentTurn = data.nextTurn;
-            
-            // Cập nhật biến skipNextTurn nếu có từ server
-            if (data.players) {
-                for (let pId in data.players) {
-                    if (players[pId]) {
-                        players[pId].skipNextTurn = data.players[pId].skipNextTurn || false;
-                    }
-                }
-            }
-            
-            if (typeof addLog === 'function') {
-                addLog(`⏭️ <strong>${players[data.previousTurn] ? players[data.previousTurn].name : "Người chơi"}</strong> bị mất lượt do dẫm vào Mạng Nhện!`);
-            }
-            
-            addLog(`🎲 <strong>LƯỢT TIẾP THEO:</strong> Đến lượt của <strong>${players[currentTurn].name}</strong>`);
-        }
-        
-        isMoving = false;
-        if (typeof updateUI === 'function') updateUI();
-        if (typeof checkMyTurnControl === 'function') checkMyTurnControl();
-    });
 
     socket.off('timerUpdate').on('timerUpdate', (data) => {
         const turnTxt = document.getElementById('turn-txt');

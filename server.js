@@ -170,7 +170,22 @@ io.on('connection', (socket) => {
             console.log(`👥 ${socket.username} (${socket.id}) đang nằm chờ trong hàng đợi ghép trận...`);
         }
     });
+    socket.on('playerHitGiftSync',(data)=>{
 
+        const roomId = socket.roomId;
+
+        if(!roomId || !rooms[roomId]) return;
+
+
+        rooms[roomId].currentTurn = data.nextTurn;
+
+
+        io.to(roomId).emit(
+            'sync-gift-effect',
+            data
+        );
+
+    });
     // 🏠 2. XỬ LÝ TỰ TẠO PHÒNG RIÊNG (PRIVATE ROOM)
     socket.on('request-create-room', (data) => {
         socket.username = data.name || "Chủ phòng";
@@ -297,37 +312,6 @@ io.on('connection', (socket) => {
     // 🔥 ĐỒNG BỘ HIỆU ỨNG BẪY ĐẶC BIỆT THEO MÃ PHÒNG (FIX LỖI HIỂN THỊ MỘT BÊN)
     // =========================================================================
 
-    // 🕸️ FIX CHÍNH: THÊM HANDLER skipTurnRequest (Mạng Nhện)
-    socket.on('skipTurnRequest', (data) => {
-        const roomId = socket.roomId;
-        if (!roomId || !rooms[roomId]) return;
-
-        const room = rooms[roomId];
-        const currentPlayer = data.currentTurn;
-        if(!currentPlayer){
-            console.log("⚠️ Lỗi: currentTurn bị undefined");
-            return;
-        }
-        const nextTurn = currentPlayer === 1 ? 2 : 1;
-
-        // 1. Tắt bộ đếm hiện tại
-        if (room.timer) clearInterval(room.timer);
-
-        // 2. Cập nhật lượt cho phòng
-        room.currentTurn = nextTurn;
-
-        // 3. Phát tín hiệu skipTurnResult về cho tất cả client trong phòng
-        io.to(roomId).emit('skipTurnResult', {
-            nextTurn: nextTurn,
-            previousTurn: currentPlayer,
-            players: room.players
-        });
-
-        console.log(`🕸️ [Phòng ${roomId}] P${currentPlayer} dẫm Mạng Nhện. Lượt chuyển sang P${nextTurn}`);
-
-        // 4. Khởi động lại bộ đếm cho người tiếp theo
-        startTurnCountdown(roomId, nextTurn);
-    });
 
     // 🕸️ A. Đồng bộ sự kiện đạp trúng MẠNG NHỆN (CẬP NHẬT MỚI)
     socket.on('playerHitSpiderWebSync', (data) => {
@@ -425,7 +409,19 @@ io.on('connection', (socket) => {
         });
 
     });
+    socket.on('syncExtraTurn',(data)=>{
 
+        const roomId = socket.roomId;
+
+        if(!roomId || !rooms[roomId]) return;
+
+
+        io.to(roomId).emit(
+            'extraTurnResult',
+            data
+        );
+
+    });
     // Người chơi chủ động bấm "Kết thúc lượt" thông thường
     socket.on('syncEndTurn', (data) => {
         const roomId = socket.roomId;

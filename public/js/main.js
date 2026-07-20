@@ -51,18 +51,52 @@ if (socket) {
         console.log(`[SOCKET] Mạng nhện trận này được đặt tại ô: ${window.spiderWebIndex}`);
         initializeBoard();
     });
+    socket.on('extraTurnResult',(data)=>{
 
+        currentTurn = data.currentTurn;
+
+        window.extraTurns = data.extraTurns;
+
+        isMoving = false;
+
+        updateUI();
+
+        checkMyTurnControl();
+
+    });
     // 🕸️ Lắng nghe khi có người đạp trúng Mạng Nhện (Cả 2 bên nhận cùng lúc)
     socket.on('sync-spider-web-effect', (data) => {
         addLog(data.logMsg);
         window.players = data.players;
         window.currentTurn = data.nextTurn; // Ép đối thủ xúc xắc luôn
-        window.isMoving = false;
-        
-        if (typeof updateUI === 'function') updateUI();
-        checkMyTurnControl();
-    });
 
+        // Chỉ người được đi mới có lượt thưởng
+        window.extraTurns = data.extraTurns || 0;
+
+        window.isMoving = false;
+
+        updateUI();
+        checkMyTurnControl();
+        });
+    // 🎁 Đồng bộ hiệu ứng hộp quà mất lượt / thêm lượt
+    socket.on('sync-gift-effect', (data) => {
+
+        addLog(data.logMsg);
+
+        window.players = data.playersUpdate || data.players;
+
+        window.currentTurn = data.nextTurn;
+
+        window.extraTurns = data.extraTurns || 0;
+
+        window.isMoving = false;
+
+
+        updateUI();
+
+        checkMyTurnControl();
+
+    });
     // 🚨 Lắng nghe thông báo Server kích hoạt Thiên tai ngẫu nhiên sau vòng 1
     socket.on('disaster-spawned', (data) => {
 
@@ -696,19 +730,22 @@ function handleLandOnCell(cellIndex) {
     if (targetIndex === Number(spiderWebIndex)) {
         playSFX(audioGame.loseMoney);
         const opponentTurn = currentTurn === 1 ? 2 : 1;
-        
+        console.log("currentTurn =", currentTurn);
+        console.log("myPlayerNumber =", myPlayerNumber);
+        console.log("opponentTurn =", opponentTurn);
         // Cấp 2 lượt cho đối thủ
-        window.extraTurns = 2;
         window.isMoving = false; // Giải phóng nút ngay lập tức
 
         const logMsg = `🕸️ BẪY MẠNG NHỆN! ${players[currentTurn].name} bị khóa chân. Đối thủ ${players[opponentTurn].name} được đi 2 lượt!`;
 
         if (socket && socket.connected) {
+            window.extraTurns = 2;
             socket.emit('playerHitSpiderWebSync', {
-                logMsg: logMsg,
-                nextTurn: opponentTurn,
-                extraTurns: 2 // Gửi thông tin này lên server để đồng bộ
-            });
+            logMsg: logMsg,
+            nextTurn: opponentTurn,
+            extraTurns: 2,
+            playersUpdate: players
+        });
         } else {
             addLog(logMsg);
             window.currentTurn = opponentTurn;
@@ -791,16 +828,41 @@ function endTurn() {
     
     // XỬ LÝ LƯỢT ƯU TIÊN (NẾU CÓ)
     if (typeof window.extraTurns !== 'undefined' && window.extraTurns > 0) {
-        window.extraTurns -= 1; 
-        addLog(`🔄 Lượt ưu tiên: ${players[currentTurn].name} được đi thêm lượt. Còn lại ${window.extraTurns} lượt.`);
-        // KHÔNG ĐỔI LƯỢT, GIỮ NGUYÊN currentTurn
-    } else if (typeof extraTurnGranted !== 'undefined' && extraTurnGranted) {
+
+        window.extraTurns--;
+
+        if(window.extraTurns > 0){
+
+            addLog(
+            `🔄 ${players[currentTurn].name} còn ${window.extraTurns} lượt thưởng`
+            );
+
+            isMoving = false;
+
+            socket.emit('syncExtraTurn',{
+                currentTurn: currentTurn,
+                extraTurns: window.extraTurns
+            });
+
+            checkMyTurnControl();
+
+            return;
+        }
+
+        window.extraTurns = 0;
+
+    }
+    else if (typeof extraTurnGranted !== 'undefined' && extraTurnGranted) {
+
         extraTurnGranted = false;
+
         addLog(`🔄 <strong>${players[currentTurn].name}</strong> nhận thêm lượt bổ sung!`);
-        // KHÔNG ĐỔI LƯỢT
-    } else {
-        // ĐỔI LƯỢT BÌNH THƯỜNG
+
+    }
+    else {
+
         currentTurn = currentTurn === 1 ? 2 : 1;
+
     }
     
     isMoving = false; 

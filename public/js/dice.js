@@ -9,24 +9,6 @@ function rollDice3D() {
     if (typeof myPlayerNumber !== 'undefined' && myPlayerNumber !== currentTurn) {
         return; 
     }
-    
-    // 🔥 FIX LỖI: Nếu đến lượt của mình nhưng đang bị dính trạng thái mất lượt (Hộp quà/Mạng nhện)
-    if (players[currentTurn].skipNextTurn) {
-        addLog(`❌ <strong>${players[currentTurn].name}</strong> bị mất lượt này do hiệu ứng bẫy hoặc hộp quà!`);
-        
-        // 1. Khóa cứng trạng thái để không cho bấm spam liên tục
-        isMoving = true;
-        document.getElementById('roll-btn').disabled = true;
-        
-        // 2. Tháo bỏ trạng thái mất lượt để lượt sau đi lại bình thường
-        players[currentTurn].skipNextTurn = false; 
-        updateUI();
-        
-        // 3. Gửi lệnh thông báo cho Server biết lượt này bị bỏ qua để Server phát lệnh đổi lượt cho cả 2 máy
-        socket.emit('syncActionData', { players: players, cellsData: cellsData });
-        socket.emit('skipTurnRequest', { currentTurn: currentTurn });
-        return;
-    }
 
     // Tạm thời vô hiệu hóa nút bấm để tránh người chơi spam click khi đang đợi kết quả
     document.getElementById('roll-btn').disabled = true;
