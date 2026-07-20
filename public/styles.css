@@ -3,7 +3,9 @@
     box-sizing: border-box; 
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
 }
-
+#room-id-display{
+    display:none;
+}
 body { 
     background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 70%, #020617 100%); 
     margin: 0; 
