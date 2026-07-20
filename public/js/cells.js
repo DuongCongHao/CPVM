@@ -106,7 +106,10 @@ function evaluateTargetCell() {
         if (typeof syncGameToRemote === 'function') syncGameToRemote();
 
         if (p.money < 0) {
-
+            console.log("🏆 CLIENT GỌI GAMEOVER", {
+                winnerId: enemyId,
+                reason:"money"
+            });
             socket.emit("gameOver", {
                 winnerId: enemyId,
                 reason: "money"

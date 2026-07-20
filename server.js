@@ -1,8 +1,11 @@
+require("dotenv").config();
 const express = require('express');
+const axios = require("axios");
 const app = express();
 const http = require('http');
 const server = http.createServer(app);
-
+app.use(express.json());
+const authRoutes = require("./routes/auth");
 // Cấu hình CORS để nhận mọi kết nối từ các thiết bị khác nhau
 const { Server } = require("socket.io");
 const io = new Server(server, {
@@ -13,7 +16,7 @@ const io = new Server(server, {
 });
 
 app.use(express.static('public'));
-
+app.use("/api", authRoutes);
 // =========================================================================
 // 🌐 HỆ THỐNG LƯU TRỮ ĐA PHÒNG QUỐC TẾ (MULTI-ROOM)
 // =========================================================================
@@ -89,7 +92,10 @@ io.on('connection', (socket) => {
 
     // 🌐 1. XỬ LÝ GHÉP TRẬN NGẪU NHIÊN (QUICK MATCH)
     socket.on('request-quick-match', (data) => {
+
         socket.username = data.name || "Vô danh";
+
+        socket.userId = data.userId;
         
         // Lọc bỏ các socket đã đứt kết nối hoặc chính socket này để tránh tự ghép với mình
         quickMatchQueue = quickMatchQueue.filter(s => s.connected && s.id !== socket.id);
@@ -111,8 +117,25 @@ io.on('connection', (socket) => {
             const skills = randomSkills();
             rooms[roomId] = {
                 players: [
-                    { id: opponentSocket.id, name: opponentSocket.username, playerNumber: 1, rounds: 0, skillUsed: false },
-                    { id: socket.id, name: socket.username, playerNumber: 2, rounds: 0, skillUsed: false }
+
+                {
+                    id: opponentSocket.id,
+                    userId: opponentSocket.userId,
+                    name: opponentSocket.username,
+                    playerNumber:1,
+                    rounds:0,
+                    skillUsed:false
+                },
+
+                {
+                    id: socket.id,
+                    userId: socket.userId,
+                    name: socket.username,
+                    playerNumber:2,
+                    rounds:0,
+                    skillUsed:false
+                }
+
                 ],
                 currentTurn: null,
                 spiderWebIndex: Math.floor(Math.random() * 19) + 1,
@@ -151,6 +174,7 @@ io.on('connection', (socket) => {
     // 🏠 2. XỬ LÝ TỰ TẠO PHÒNG RIÊNG (PRIVATE ROOM)
     socket.on('request-create-room', (data) => {
         socket.username = data.name || "Chủ phòng";
+        socket.userId = data.userId;
         let roomId = 'ROOM_' + Math.floor(1000 + Math.random() * 9000); // Mã 4 chữ số ngẫu nhiên
         
         socket.join(roomId);
@@ -158,7 +182,14 @@ io.on('connection', (socket) => {
         const skills = randomSkills();
         rooms[roomId] = {
             players: [
-                { id: socket.id, name: socket.username, playerNumber: 1, rounds: 0, skillUsed: false }
+                {
+                id:socket.id,
+                userId:socket.userId,
+                name:socket.username,
+                playerNumber:1,
+                rounds:0,
+                skillUsed:false
+                }
             ],
             currentTurn: null,
             spiderWebIndex: null,
@@ -177,6 +208,7 @@ io.on('connection', (socket) => {
     // 🚪 3. XỬ LÝ VÀO PHÒNG QUA ID BẠN BÈ
     socket.on('request-join-room', (data) => {
         let roomId = data.roomId;
+        socket.userId = data.userId;
         socket.username = data.name || "Khách";
 
         if (!rooms[roomId]) {
@@ -189,7 +221,21 @@ io.on('connection', (socket) => {
         socket.join(roomId);
         socket.roomId = roomId;
 
-        rooms[roomId].players.push({ id: socket.id, name: socket.username, playerNumber: 2, rounds: 0, skillUsed: false });
+        rooms[roomId].players.push({
+
+        id:socket.id,
+
+        userId:socket.userId,
+
+        name:socket.username,
+
+        playerNumber:2,
+
+        rounds:0,
+
+        skillUsed:false
+
+        });
         rooms[roomId].status = 'playing';
 
         socket.emit('room-joined', { roomId: roomId });
@@ -258,6 +304,10 @@ io.on('connection', (socket) => {
 
         const room = rooms[roomId];
         const currentPlayer = data.currentTurn;
+        if(!currentPlayer){
+            console.log("⚠️ Lỗi: currentTurn bị undefined");
+            return;
+        }
         const nextTurn = currentPlayer === 1 ? 2 : 1;
 
         // 1. Tắt bộ đếm hiện tại
@@ -495,12 +545,93 @@ io.on('connection', (socket) => {
         });
 
     });
-    socket.on("gameOver", (data) => {
+    const finishedRooms = new Set();
 
-        io.to(socket.roomId).emit("gameOverResult", {
-            winnerId: data.winnerId,
-            reason: data.reason
-        });
+
+    socket.on("gameOver", async (data)=>{
+
+        const roomId = socket.roomId;
+
+        if(!roomId || !rooms[roomId]){
+            return;
+        }
+
+
+        // chống gửi nhiều lần
+        if(finishedRooms.has(roomId)){
+            console.log("⚠️ GAMEOVER đã xử lý rồi:", roomId);
+            return;
+        }
+
+
+        finishedRooms.add(roomId);
+
+
+        console.log(
+            "🔥 SERVER NHẬN GAMEOVER:",
+            data
+        );
+
+
+        // gửi kết quả cho cả phòng
+        io.to(roomId).emit(
+            "gameOver",
+            data
+        );
+
+
+
+        // ===============================
+        // CỘNG EXP + COIN CHO NGƯỜI CHƠI
+        // ===============================
+
+
+        const room = rooms[roomId];
+
+
+        for(const player of room.players){
+
+
+            try{
+
+
+                await axios.post(
+                    `${process.env.API_URL}/api/update-result`,
+                    {
+                        id: player.userId,
+
+                        win:
+                        player.playerNumber === data.winnerId
+                    }
+                );
+
+
+                console.log(
+                    "✅ Đã cộng thưởng:",
+                    player.name
+                );
+
+
+            }
+            catch(err){
+
+
+                console.log(
+                    "❌ Lỗi cộng thưởng:",
+                    err.message
+                );
+
+
+            }
+
+        }
+
+
+    });
+    socket.on("match-finished", async(data)=>{
+
+        console.log("🏆 NHẬN KẾT QUẢ:",data);
+
 
     });
     // Xử lý khi người chơi bất ngờ mất kết nối hoặc thoát ứng dụng

@@ -86,6 +86,14 @@ if (socket) {
             updateUI();
         }
     });
+    socket.on("gameOver", (data)=>{
+
+        showGameOver(
+            data.winnerId,
+            data.reason
+        );
+
+    });
     // ⚡ Lắng nghe khi có người dẫm trúng Thiên tai (Trừ tiền, xóa đất, ghi log 2 bên)
     socket.on('sync-lightning-effect', (data) => {
         data.logs.forEach(msg => addLog(msg));
@@ -135,64 +143,222 @@ function enableLobbyButtons() {
 }
 
 function startQuickMatch() {
+
     const username = getValidUsername();
+
     if (!username) return;
 
-    if (socket && socket.connected) {
-        disableLobbyButtons();
-        const lobbyStatus = document.getElementById('lobby-status');
-        if (lobbyStatus) {
-            lobbyStatus.innerHTML = "⏳ Đang tìm kiếm đối thủ phù hợp trên hệ thống...<br>Vui lòng đợi người chơi khác vào trận.";
-        }
-        socket.emit('request-quick-match', { name: username });
-    } else {
-        alert("❌ Thất bại: Hiện tại mất kết nối tới máy chủ, không thể ghép trận!");
-        enableLobbyButtons();
+
+    const user = JSON.parse(
+        localStorage.getItem("currentUser")
+    );
+
+
+    if (!user) {
+
+        alert("Bạn chưa đăng nhập!");
+
+        return;
+
     }
+
+
+
+    if (socket && socket.connected) {
+
+
+        disableLobbyButtons();
+
+
+        const lobbyStatus =
+            document.getElementById('lobby-status');
+
+
+        if (lobbyStatus) {
+
+            lobbyStatus.innerHTML =
+            "⏳ Đang tìm kiếm đối thủ phù hợp trên hệ thống...<br>Vui lòng đợi người chơi khác vào trận.";
+
+        }
+
+
+
+        socket.emit(
+            'request-quick-match',
+            {
+
+                name: username,
+
+                userId: user.id
+
+            }
+        );
+
+
+    } else {
+
+
+        alert(
+            "❌ Thất bại: Hiện tại mất kết nối tới máy chủ, không thể ghép trận!"
+        );
+
+
+        enableLobbyButtons();
+
+    }
+
 }
 
 function createNewRoom() {
+
     const username = getValidUsername();
+
     if (!username) return;
 
-    if (socket && socket.connected) {
-        disableLobbyButtons();
-        const lobbyStatus = document.getElementById('lobby-status');
-        if (lobbyStatus) {
-            lobbyStatus.innerHTML = "⚙️ Đang gửi yêu cầu khởi tạo phòng riêng tư lên Server...";
-        }
-        socket.emit('request-create-room', { name: username });
-    } else {
-        alert("❌ Thất bại: Mất kết nối máy chủ, không thể tạo phòng riêng tư!");
-        enableLobbyButtons();
+
+    const user = JSON.parse(
+        localStorage.getItem("currentUser")
+    );
+
+
+    if(!user){
+
+        alert("Bạn chưa đăng nhập!");
+
+        return;
+
     }
+
+
+    if (socket && socket.connected) {
+
+
+        disableLobbyButtons();
+
+
+        const lobbyStatus =
+        document.getElementById('lobby-status');
+
+
+        if (lobbyStatus) {
+
+            lobbyStatus.innerHTML =
+            "⚙️ Đang gửi yêu cầu khởi tạo phòng riêng tư lên Server...";
+
+        }
+
+
+        socket.emit(
+            'request-create-room',
+            {
+
+                name: username,
+
+                userId:user.id
+
+            }
+        );
+
+
+    } else {
+
+
+        alert(
+        "❌ Thất bại: Mất kết nối máy chủ, không thể tạo phòng riêng tư!"
+        );
+
+
+        enableLobbyButtons();
+
+    }
+
 }
 
 function joinRoomWithId() {
+
     const username = getValidUsername();
+
     if (!username) return;
 
-    const roomIdInput = document.getElementById('room-id-input');
-    const roomId = roomIdInput ? roomIdInput.value.trim() : "";
+
+    const user = JSON.parse(
+        localStorage.getItem("currentUser")
+    );
+
+
+    if(!user){
+
+        alert("Bạn chưa đăng nhập!");
+
+        return;
+
+    }
+
+
+    const roomIdInput =
+    document.getElementById('room-id-input');
+
+
+    const roomId =
+    roomIdInput ? roomIdInput.value.trim() : "";
+
 
     if (!roomId) {
-        alert("Vui lòng nhập ID phòng (Mã phòng) do bạn của bạn gửi!");
+
+        alert(
+        "Vui lòng nhập ID phòng (Mã phòng) do bạn của bạn gửi!"
+        );
+
         return;
+
     }
+
 
     if (socket && socket.connected) {
-        disableLobbyButtons();
-        const lobbyStatus = document.getElementById('lobby-status');
-        if (lobbyStatus) {
-            lobbyStatus.innerHTML = `🏃‍♂️ Đang kết nối vào phòng [${roomId}]...`;
-        }
-        socket.emit('request-join-room', { name: username, roomId: roomId });
-    } else {
-        alert("❌ Thất bại: Không thể kết nối đến máy chủ để vào phòng!");
-        enableLobbyButtons();
-    }
-}
 
+
+        disableLobbyButtons();
+
+
+        const lobbyStatus =
+        document.getElementById('lobby-status');
+
+
+        if (lobbyStatus) {
+
+            lobbyStatus.innerHTML =
+            `🏃‍♂️ Đang kết nối vào phòng [${roomId}]...`;
+
+        }
+
+
+        socket.emit(
+            'request-join-room',
+            {
+
+                name: username,
+
+                userId:user.id,
+
+                roomId:roomId
+
+            }
+        );
+
+
+    } else {
+
+
+        alert(
+        "❌ Thất bại: Không thể kết nối đến máy chủ để vào phòng!"
+        );
+
+
+        enableLobbyButtons();
+
+    }
+
+}
 function displayRoomId(roomId) {
     const roomDisplayEl = document.getElementById('room-id-display');
     if (roomDisplayEl) {
@@ -746,48 +912,123 @@ function calculateTotalAsset(playerId){
     return money + landValue;
 }
 // ===== KẾT THÚC TRÒ CHƠI HOÀN TOÀN =====
+let matchResultSent = false;
+
+// ===== GỬI GAMEOVER LÊN SERVER =====
 function gameOver(winnerId, reason = "money") {
-    if(audioGame.bgm){
-        audioGame.bgm.pause();
-        audioGame.bgm.currentTime = 0;
+
+    // báo server trận đấu kết thúc
+    if(socket){
+
+        socket.emit("gameOver", {
+
+            winnerId: winnerId,
+
+            reason: reason
+
+        });
+
     }
+
+
+    // hiển thị kết quả trên máy hiện tại
+    showGameOver(winnerId, reason);
+
+}
+// ===== HIỂN THỊ KẾT QUẢ GAMEOVER =====
+function showGameOver(winnerId, reason = "money") {
+
+
+    if(audioGame.bgm){
+
+        audioGame.bgm.pause();
+
+        audioGame.bgm.currentTime = 0;
+
+    }
+
+
     const rollBtn = document.getElementById('roll-btn');
-    if (rollBtn) rollBtn.disabled = true;
-    
-    if (typeof hideNotification === 'function') hideNotification();
-    
+
+    if(rollBtn)
+        rollBtn.disabled = true;
+
+
+
+    if(typeof hideNotification === 'function')
+        hideNotification();
+
+
+
     const turnTxt = document.getElementById('turn-txt');
-    if(turnTxt) { turnTxt.innerText = "TRẬN ĐẤU KẾT THÚC"; turnTxt.style.background = "#ef4444"; }
+
+
+    if(turnTxt){
+
+        turnTxt.innerText = "TRẬN ĐẤU KẾT THÚC";
+
+        turnTxt.style.background = "#ef4444";
+
+    }
+
+
 
     const overlay = document.getElementById('game-over-overlay');
+
     const winText = document.getElementById('winner-text');
-    if (overlay) overlay.style.display = 'flex';
-    
-    if (winText) {
+
+
+    if(overlay)
+        overlay.style.display = 'flex';
+
+
+
+    if(winText){
+
 
         let winner = players[winnerId];
+
+
         let loserId = winnerId === 1 ? 2 : 1;
+
+
         let loser = players[loserId];
 
 
-        let winnerLand = calculateTotalLandValue(winnerId);
-        let loserLand = calculateTotalLandValue(loserId);
+
+        let winnerLand =
+            calculateTotalLandValue(winnerId);
 
 
-        let winnerTotal = winner.money + winnerLand;
-        let loserTotal = loser.money + loserLand;
+
+        let loserLand =
+            calculateTotalLandValue(loserId);
+
+
+
+        let winnerTotal =
+            winner.money + winnerLand;
+
+
+
+        let loserTotal =
+            loser.money + loserLand;
+
 
 
         winText.innerHTML = `
 
+
         <div class="victory-box">
+
 
             <div style="
                 font-size:60px;
-                animation: trophy 1s infinite alternate;
+                animation:trophy 1s infinite alternate;
             ">
-            🏆
+                🏆
             </div>
+
 
 
             <h1 style="
@@ -795,8 +1036,9 @@ function gameOver(winnerId, reason = "money") {
                 font-size:32px;
                 margin:10px;
             ">
-            CHIẾN THẮNG!
+                CHIẾN THẮNG!
             </h1>
+
 
 
             <div style="
@@ -804,11 +1046,13 @@ function gameOver(winnerId, reason = "money") {
                 font-weight:900;
                 color:#10b981;
             ">
-            ${winner.name.toUpperCase()}
+                ${winner.name.toUpperCase()}
             </div>
 
 
+
             <hr>
+
 
 
             <div class="stat-line">
@@ -817,10 +1061,12 @@ function gameOver(winnerId, reason = "money") {
             </div>
 
 
+
             <div class="stat-line">
                 🏠 Giá trị đất:
                 <b>${winnerLand}$</b>
             </div>
+
 
 
             <div class="stat-line total">
@@ -829,38 +1075,64 @@ function gameOver(winnerId, reason = "money") {
             </div>
 
 
+
             <br>
+
 
 
             <div style="
                 color:#94a3b8;
                 font-size:14px;
             ">
+
                 Đối thủ ${loser.name}
+
                 <br>
+
                 💰 ${loser.money}$
+
                 |
+
                 🏠 ${loserLand}$
+
+
                 <br>
-                Tổng: ${loserTotal}$
+
+                Tổng:
+                ${loserTotal}$
+
             </div>
+
 
 
             <div style="
                 margin-top:15px;
                 color:#38bdf8;
             ">
-            🎮 Trận đấu kết thúc sau ${Math.max(
+
+            🎮 Trận đấu kết thúc sau 
+
+            ${Math.max(
                 players[1].rounds,
                 players[2].rounds
-            )} vòng
+            )}
+
+            vòng
+
             </div>
 
 
         </div>
 
+
         `;
 
     }
-    addLog(`👑 <strong>NHÀ VÔ ĐỊCH: ${players[winnerId].name}</strong> thâu tóm toàn bộ sàn đấu!`);
+
+
+
+    addLog(
+        `👑 <strong>NHÀ VÔ ĐỊCH: ${players[winnerId].name}</strong> thâu tóm toàn bộ sàn đấu!`
+    );
+
 }
