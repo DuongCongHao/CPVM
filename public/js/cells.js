@@ -18,11 +18,10 @@ function evaluateTargetCell() {
         if (typeof syncGameToRemote === 'function')
             syncGameToRemote();
         
-        // 🔥 FIX: Chuyển lượt ngay lập tức
+        // 🔥 FIX: Chuyển lượt ngay lập tức (KHÔNG thêm lượt cho đối thủ)
         endTurn();
         return;
     }
-        // KHÔNG emit ở đây
 
     // 🔥 KIỂM TRA DÙNG SKILL - NẾU CÓ THÌ BỎ QUA MUA ĐẤT VÀ CHUYỂN LƯỢT
     if (skillUsedThisTurn) {
@@ -232,28 +231,34 @@ function triggerGiftAction() {
 
         let opponentId = giftPlayer === 1 ? 2 : 1;
 
-
         showSingleNotification(
             "💤 HỘP QUÀ CHÓNG MẶT",
             `Đối thủ được thêm <strong>2 lượt liên tiếp</strong>.`,
             '#eab308',
             () => {
 
-                addLog(
-                    `🎁 💤 ${p.name} bị khóa chân! ${players[opponentId].name} được thêm 2 lượt.`
-                );
+                const logMsg =
+                    `🎁 💤 ${p.name} bị khóa chân! ${players[opponentId].name} được thêm 2 lượt.`;
 
+                addLog(logMsg);
 
-                window.extraTurns = 2;
+                if (socket && socket.connected) {
 
+                    socket.emit("syncGiftExtraTurn", {
+                        nextTurn: opponentId,
+                        extraTurns: 2,
+                        logMsg: logMsg
+                    });
 
-                currentTurn = opponentId;
+                } else {
 
+                    window.extraTurns = 2;
+                    currentTurn = opponentId;
 
-                updateUI();
+                    updateUI();
+                    checkMyTurnControl();
 
-
-                checkMyTurnControl();
+                }
 
             }
         );

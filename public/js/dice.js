@@ -1,11 +1,9 @@
-
-let lastDiceResult = 0;
-// ===== QUAY XÚX XẮC 3D ONLINE =====
+// ===== QUAY XÚC XẮC 3D ONLINE =====
 function rollDice3D() {
     // Nếu game chưa bắt đầu hoặc đang trong hiệu ứng di chuyển thì chặn bấm
     if(!gameStarted || isMoving) return;
     
-    // KHÓA CỨNG: Nếu không phải lượt của thiết bị này thì tuyệt đối không cho gửi lệnh
+    // KHÓA CỨNG: Chỉ có người chơi có lượt mới được gửi lệnh tung xúc xắc
     if (typeof myPlayerNumber !== 'undefined' && myPlayerNumber !== currentTurn) {
         return; 
     }
@@ -19,16 +17,14 @@ function rollDice3D() {
 }
 
 // LẮNG NGHE KẾT QUẢ TỪ SERVER TRẢ VỀ (Dùng chung cho cả 2 máy người chơi)
-if (typeof socket !== 'undefined' && socket) {
-    socket.off('diceRolledResult').on('diceRolledResult', (data) => {
-        // Cả 2 tab cùng khóa nút chặn bấm bậy bạ trong lúc đổ xúc xắc
-        isMoving = true;
-        document.getElementById('roll-btn').disabled = true;
-        playSFX(audioGame.dice);
-        // Chạy hiệu ứng xoay 3D
-        executeDiceAnimation(data.d1, data.d2);
-    });
-}
+socket.off('diceRolledResult').on('diceRolledResult', (data) => {
+    // Cả 2 tab cùng khóa nút chặn bấm bậy bạ trong lúc đổ xúc xắc
+    isMoving = true;
+    document.getElementById('roll-btn').disabled = true;
+    playSFX(audioGame.dice);
+    // Chạy hiệu ứng xoay 3D
+    executeDiceAnimation(data.d1, data.d2);
+});
 
 // HÀM XỬ LÝ HIỆU ỨNG QUAY 3D
 function executeDiceAnimation(d1, d2) {
@@ -67,14 +63,11 @@ function executeDiceAnimation(d1, d2) {
             
             // Chỉ có tab đang tới lượt của mình mới được chạy hàm di chuyển
             // Tab đối thủ chỉ ngồi đợi dữ liệu vị trí chốt được bắn qua từ hàm syncActionData
-            // Chỉ có tab đang tới lượt của mình mới được chạy hàm di chuyển
             if (currentTurn === myPlayerNumber) {
-
                 // Lưu vị trí trước khi tung xúc xắc
                 lastPositionBeforeRoll = players[currentTurn].pos;
 
                 moveStepByStep(d1 + d2, d1, d2);
-
             } else {
                 addLog(`🎲 <strong>${players[currentTurn].name}</strong> di chuyển <strong>${d1 + d2} ô</strong>...`);
             }

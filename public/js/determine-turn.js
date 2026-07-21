@@ -3,7 +3,7 @@ function determineTurn() {
     const turnTxt = document.getElementById('turn-txt');
     const rollBtn = document.getElementById('roll-btn');
     
-    // Kiểm tra xem thiêt bị này là P1 hay P2 (nếu chơi online)
+    // Luôn là chế độ Online - myPlayerNumber sẽ được server gán
     const isOnline = (typeof myPlayerNumber !== 'undefined' && myPlayerNumber !== null);
 
     if (determineTurnData.p1Roll === null) {
@@ -17,8 +17,8 @@ function determineTurn() {
             rollBtn.innerText = "Đang chờ Người chơi 1 tung...";
             rollBtn.disabled = true;
             rollBtn.onclick = null;
-        } else {
-            // Nếu mình là P1 hoặc đang chơi Offline -> MỞ NÚT
+        } else if (isOnline && myPlayerNumber === 1) {
+            // Nếu mình là P1 -> MỞ NÚT
             rollBtn.innerText = "Người chơi 1 hãy xúc đi nào";
             rollBtn.disabled = false;
             rollBtn.onclick = () => requestDetermineTurn(1);
@@ -35,8 +35,8 @@ function determineTurn() {
             rollBtn.innerText = "Đang chờ Người chơi 2 tung...";
             rollBtn.disabled = true;
             rollBtn.onclick = null;
-        } else {
-            // Nếu mình là P2 hoặc đang chơi Offline -> MỞ NÚT
+        } else if (isOnline && myPlayerNumber === 2) {
+            // Nếu mình là P2 -> MỞ NÚT
             rollBtn.innerText = "Người chơi 2 tới lượt bạn";
             rollBtn.disabled = false;
             rollBtn.onclick = () => requestDetermineTurn(2);
@@ -52,12 +52,10 @@ function requestDetermineTurn(playerNum) {
 }
 
 // LẮNG NGHE KẾT QUẢ PHÂN CHIA LƯỢT TỪ SERVER
-if (typeof socket !== 'undefined' && socket !== null) {
-    socket.on('determineRollResult', (data) => {
-        // data nhận về bao gồm: { player, d1, d2, sum }
-        executeDetermineAnimation(data.player, data.d1, data.d2, data.sum);
-    });
-}
+socket.on('determineRollResult', (data) => {
+    // data nhận về bao gồm: { player, d1, d2, sum }
+    executeDetermineAnimation(data.player, data.d1, data.d2, data.sum);
+});
 
 // HÀM XỬ LÝ HIỆU ỨNG XOAY VÀ CẬP NHẬT KẾT QUẢ ĐỒNG BỘ
 function executeDetermineAnimation(player, d1, d2, sum) {
@@ -112,10 +110,6 @@ function executeDetermineAnimation(player, d1, d2, sum) {
                 // Kiểm tra lượt xem ai được quyền đổ xúc xắc chính thức đầu tiên
                 if (typeof checkMyTurnControl === 'function') {
                     checkMyTurnControl();
-                } else {
-                    document.getElementById('roll-btn').onclick = () => rollDice3D();
-                    document.getElementById('roll-btn').innerText = "ĐỔ XÚC XẮC";
-                    document.getElementById('roll-btn').disabled = false;
                 }
                 updateUI();
                 addLog(`🎮 <strong>TRẬN ĐẤU CHÍNH THỨC BẮT ĐẦU!</strong>`);
@@ -123,4 +117,3 @@ function executeDetermineAnimation(player, d1, d2, sum) {
         }, 500);
     }, 600);
 }
-

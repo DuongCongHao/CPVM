@@ -17,7 +17,7 @@ if (typeof socket !== 'undefined' && socket) {
         }
     });
 
-    // SERVER TRẢ VỀ: Khi kết nối vào phòng thành công (cho cả Quick Match và vào bằng ID)
+    // SERVER TRẢ VỀ: Khi kết nối vào phòng thành công (Quick Match hoặc Join by ID)
     socket.off('room-joined').on('room-joined', (data) => {
         const roomId = data.roomId;
         if (typeof displayRoomId === 'function') displayRoomId(roomId);
@@ -37,7 +37,7 @@ if (typeof socket !== 'undefined' && socket) {
         if (lobbyStatus) {
             lobbyStatus.innerText = `Thất bại: ${data.message}`;
         }
-        // Mở khóa lại các nút ở màn hình sảnh để người chơi có thể thao tác lại
+        // Mở khóa lại các nút ở màn hình sảnh
         if (typeof enableLobbyButtons === 'function') enableLobbyButtons();
     });
 
@@ -64,7 +64,6 @@ if (typeof socket !== 'undefined' && socket) {
     });
 
     socket.off('startGame').on('startGame', (data) => {
-
         document.getElementById('lobby-screen').style.display = 'none';
         document.getElementById('game-screen').style.display = 'block';
 
@@ -77,26 +76,21 @@ if (typeof socket !== 'undefined' && socket) {
         // ===== ĐỒNG BỘ KỸ NĂNG =====
         gameStarted = true;
         if(data.skills){
-
             players[1].skill = skillCards[data.skills[1]];
             players[2].skill = skillCards[data.skills[2]];
 
-
             console.log("P1 SKILL:", players[1].skill);
             console.log("P2 SKILL:", players[2].skill);
-
 
             document.getElementById("p1-skill").innerHTML =
                 players[1].skill 
                 ? "🎴 " + players[1].skill.name
                 : "🎴 Chưa có thẻ";
 
-
             document.getElementById("p2-skill").innerHTML =
                 players[2].skill
                 ? "🎴 " + players[2].skill.name
                 : "🎴 Chưa có thẻ";
-
         }
         
         initializeBoard();
@@ -104,7 +98,7 @@ if (typeof socket !== 'undefined' && socket) {
             determineTurn();
     });
 
-    // SỬA LỖI: Ép vẽ lại toàn diện UI bàn cờ khi Thiên Tai được Triệu Hồi nhằm tránh lỗi mất hiển thị text/màu sắc
+    // ===== THIÊN TAI XUẤT HIỆN =====
     socket.off('lightningSummoned').on('lightningSummoned', (data) => {
         lightningIndex = data.lightningIndex;
         
@@ -116,7 +110,7 @@ if (typeof socket !== 'undefined' && socket) {
             playSFX(audioGame.lightning);
         }
 
-        // Tái tạo lại bàn cờ gốc để nạp thuộc tính ô Thiên Tai đồng bộ từ hàm vẽ chính
+        // Tái tạo lại bàn cờ để nạp thuộc tính ô Thiên Tai đồng bộ từ server
         if (typeof initializeBoard === 'function') initializeBoard();
         if (typeof updateUI === 'function') updateUI();
     });
@@ -137,7 +131,7 @@ if (typeof socket !== 'undefined' && socket) {
             setTimeout(() => { playSFX(audioGame.loseMoney); }, 500);
         }
         
-        // Vẽ lại bàn cờ sạch để xóa bỏ hoàn toàn trạng thái thiên tai cũ
+        // Vẽ lại bàn cờ sạch
         if (typeof initializeBoard === 'function') initializeBoard();
         if (typeof updateUI === 'function') updateUI();
         
@@ -145,7 +139,7 @@ if (typeof socket !== 'undefined' && socket) {
         if (typeof checkMyTurnControl === 'function') checkMyTurnControl();
     });
 
-
+    // ===== TIMER CẬP NHẬT =====
     socket.off('timerUpdate').on('timerUpdate', (data) => {
         const turnTxt = document.getElementById('turn-txt');
         if (turnTxt) {
@@ -158,6 +152,7 @@ if (typeof socket !== 'undefined' && socket) {
         }
     });
 
+    // ===== CẬP NHẬT DỮ LIỆU HÀNH ĐỘNG =====
     socket.off('updateActionDataResult').on('updateActionDataResult', (data) => {
         if (data.players) {
             for (let pId in data.players) {
@@ -170,6 +165,7 @@ if (typeof socket !== 'undefined' && socket) {
                 players[pId].skillUsed = data.players[pId].skillUsed;
             }
         }
+        
         if (data.cellsData) {
             data.cellsData.forEach((remoteCell, idx) => {
                 if (!cellsData[idx]) return;
@@ -197,7 +193,7 @@ if (typeof socket !== 'undefined' && socket) {
                         }
                     }
 
-                    // SỬA LỖI LOGIC: Bảo vệ giao diện của ô Thiên Tai và Mạng nhện không bị ghi đè màu nền đất thường
+                    // Bảo vệ giao diện của ô Thiên Tai và Mạng nhện không bị ghi đè
                     if (idx !== 0 && idx !== spiderWebIndex && idx !== lightningIndex) {
                         cellEl.style.background = ""; 
                         if (remoteCell.isUpgraded) cellEl.classList.add('upgraded-cyber');
@@ -233,66 +229,77 @@ if (typeof socket !== 'undefined' && socket) {
         if (document.getElementById("notify-panel").style.display !== "flex") {
             isMoving = false;
         }
-        if (typeof updateUI === 'function') updateUI(); // Đảm bảo quân cờ di chuyển đúng vị trí sau khi nhận gói tin từ đối thủ
+        if (typeof updateUI === 'function') updateUI();
         if (typeof checkMyTurnControl === 'function') checkMyTurnControl();
     });
 
+    // ===== ĐỒNG BỘ KẾT THÚC LƯỢT =====
     socket.off('syncEndTurnResult').on('syncEndTurnResult', (data) => {
         currentTurn = data.nextTurn;
         isMoving = false;
         
-        // 🔥 FIX: Reset skillUsed cho player mới khi chuyển lượt
-        // Player mới chưa dùng skill trong lượt này
+        // Reset skillUsed cho player mới khi chuyển lượt
         if (currentTurn && players[currentTurn]) {
             players[currentTurn].skillUsed = false;
         }
         
         if (typeof checkMyTurnControl === 'function') checkMyTurnControl();
     });
+    // ===== HỘP QUÀ: ĐỒNG BỘ ĐỐI THỦ ĐƯỢC THÊM 2 LƯỢT =====
+    socket.off("giftExtraTurnResult").on("giftExtraTurnResult", (data) => {
+
+        currentTurn = data.nextTurn;
+        window.extraTurns = data.extraTurns;
+
+        if (data.logMsg) {
+            addLog(data.logMsg);
+        }
+
+        isMoving = false;
+
+        if (typeof updateUI === "function")
+            updateUI();
+
+        if (typeof checkMyTurnControl === "function")
+            checkMyTurnControl();
+
+    });
+    
+
     // ===============================
     // NHẬN KẾT QUẢ DÙNG KỸ NĂNG
     // ===============================
     socket.off("useSkillResult").on("useSkillResult", (data) => {
-
         players = data.players;
         cellsData = data.cellsData;
+        
         if (data.player === myPlayerNumber) {
             players[myPlayerNumber].skill = null;
             players[myPlayerNumber].skillUsed = true;
         }
         
-        // 🔥 FIX: Không set currentTurn ở đây!
-        // Để cho syncEndTurnResult xử lý currentTurn
-        
-        // 🔥 FIX: Chỉ call updateSkillUI() 1 lần
         document.getElementById("use-skill-btn").disabled = true;
         updateUI();
         updateSkillUI();
-
     });
-    socket.off("thorEffect").on("thorEffect",(data)=>{
 
+    // ===== HIỆU ỨNG THẦN THOR =====
+    socket.off("thorEffect").on("thorEffect",(data)=>{
         players = data.players;
         cellsData = data.cellsData;
 
         updateUI();
 
-        data.cells.forEach((cell,index)=>{
-
+        data.cells.forEach((cell, index)=>{
             setTimeout(()=>{
-
                 showThorStrike(cell);
-
                 playSFX(audioGame.lightning);
-
-            },index*250);
-
+            }, index*250);
         });
-
     });
+
+    // ===== KẾT QUẢ KẾT THÚC TRÒ CHƠI =====
     socket.off("gameOverResult").on("gameOverResult", (data) => {
-
         gameOver(data.winnerId, data.reason);
-
     });
 }

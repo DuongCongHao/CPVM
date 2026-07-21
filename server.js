@@ -409,17 +409,24 @@ io.on('connection', (socket) => {
         });
 
     });
-    socket.on('syncExtraTurn',(data)=>{
+    socket.on('syncExtraTurn', (data) => {
 
         const roomId = socket.roomId;
 
-        if(!roomId || !rooms[roomId]) return;
+        if (!roomId || !rooms[roomId]) return;
 
+        // Cập nhật lượt của phòng
+        rooms[roomId].currentTurn = data.currentTurn;
 
-        io.to(roomId).emit(
-            'extraTurnResult',
-            data
-        );
+        // Gửi cho cả 2 máy
+        io.to(roomId).emit('extraTurnResult', {
+            currentTurn: data.currentTurn,
+            extraTurns: data.extraTurns,
+            logMsg: data.logMsg
+        });
+
+        // Reset timer cho người vừa được thêm lượt
+        startTurnCountdown(roomId, data.currentTurn);
 
     });
     // Người chơi chủ động bấm "Kết thúc lượt" thông thường

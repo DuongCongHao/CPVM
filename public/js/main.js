@@ -781,15 +781,7 @@ function handleLandOnCell(cellIndex) {
         const log1 = `⚡ THIÊN TAI GIÁNG XUỐNG! ${activePlayer.name} bị phạt ${penalty}$.`;
         const log2 = `💸 San phẳng đất tại: ${wipedNames.join(', ')}.`;
 
-        if (socket && socket.connected) {
-            socket.emit('playerHitLightningSync', { logs: [log1, log2], playersUpdate: players, cellsDataUpdate: cellsData });
-        } else {
-            addLog(log1); addLog(log2);
-            window.lightningIndex = null;
-            initializeBoard();
-            window.isMoving = false;
-            endTurn();
-        }
+        socket.emit('playerHitLightningSync', { logs: [log1, log2], playersUpdate: players, cellsDataUpdate: cellsData });
         return; 
     }
 
@@ -924,8 +916,6 @@ function endTurn() {
 
         // Chuyển lượt đi
         socket.emit('syncEndTurn', { nextTurn: currentTurn });
-    } else {
-        checkMyTurnControl();
     }
 }
 
@@ -952,11 +942,10 @@ function checkMyTurnControl() {
             rollBtn.disabled = true;
             rollBtn.innerText = `ĐỢI ĐỐI THỦ (${players[currentTurn].name})...`;
         }
-    } else {
-        if (typeof determineTurn === 'function' && determineTurnData.p1Roll === null && determineTurnData.p2Roll === null) {
-            determineTurn();
-        }
+    } else if (typeof determineTurn === 'function' && determineTurnData.p1Roll === null && determineTurnData.p2Roll === null) {
+        determineTurn();
     }
+    
     if (typeof updateUI === 'function') {
         updateUI();
     }
@@ -978,24 +967,14 @@ let matchResultSent = false;
 
 // ===== GỬI GAMEOVER LÊN SERVER =====
 function gameOver(winnerId, reason = "money") {
+    // GỬI SERVER: Trận đấu kết thúc
+    socket.emit("gameOver", {
+        winnerId: winnerId,
+        reason: reason
+    });
 
-    // báo server trận đấu kết thúc
-    if(socket){
-
-        socket.emit("gameOver", {
-
-            winnerId: winnerId,
-
-            reason: reason
-
-        });
-
-    }
-
-
-    // hiển thị kết quả trên máy hiện tại
+    // Hiển thị kết quả trên máy hiện tại
     showGameOver(winnerId, reason);
-
 }
 // ===== HIỂN THỊ KẾT QUẢ GAMEOVER =====
 function showGameOver(winnerId, reason = "money") {

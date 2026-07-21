@@ -9,7 +9,7 @@ const audioGame = {
     lightning: new Audio('audio/thunder.mp3')  
 };
 
-// Cấu hình âm lượng
+// ===== CẤU HÌNH ÂM LƯỢNG =====
 audioGame.bgm.loop = true;
 audioGame.bgm.volume = 0.35;
 audioGame.danger.volume = 0.9;
@@ -19,19 +19,21 @@ audioGame.buyLand.volume = 0.9;
 audioGame.loseMoney.volume = 0.8;
 audioGame.lightning.volume = 1.0; 
 
-// Ép tải trước dữ liệu âm thanh
-Object.values(audioGame).forEach(track => { if (track) track.preload = 'auto'; });
+// ===== PRE-LOAD ÂM THANH =====
+Object.values(audioGame).forEach(track => { 
+    if (track) track.preload = 'auto'; 
+});
 
-// Hàm phụ trợ phát âm thanh chuẩn tốc độ cao
+// ===== HÀM PHỤ TRỢ PHÁT ÂM THANH CẢN NHANH =====
 function playSFX(audioTrack) {
     if (audioTrack) {
         audioTrack.pause();
-        audioTrack.currentTime = 0.001; // Mẹo nhỏ: Ép trình duyệt decode ngay sửa lỗi delay
+        audioTrack.currentTime = 0.001;
         audioTrack.play().catch(e => console.log("Chờ tương tác người dùng:", e));
     }
 }
 
-// 🔥 BẪY THEO DÕI BIẾN BIẾN ĐỘNG TIỀN (MONEY WATCHER) 🔥
+// ===== BẪY THEO DÕI BIẾN ĐỘNG TIỀN (MONEY WATCHER) =====
 let lastCheckedMoney = { 1: null, 2: null };
 
 function startMoneyWatcher() {
@@ -81,5 +83,5 @@ function startMoneyWatcher() {
     }, 100); 
 }
 
-// Kích hoạt watcher công khai
+// ===== KÍCH HOẠT WATCHER =====
 startMoneyWatcher();

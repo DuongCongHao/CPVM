@@ -13,33 +13,25 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
         addLog(`🎲 <strong>${p.name}</strong> di chuyển <strong>${totalSteps} ô</strong>...`);
     }
 
+    let audioStarted = false;
+
     function step() {
         if (stepsLeft > 0) {
             let currentSlot = document.getElementById(`slot-p${movePlayer}-${p.pos}`);
             if (currentSlot) currentSlot.classList.remove('moving');
 
-            /// 🔥 FIX DELAY: Ép nhạc chạy phát ngay lập tức không độ trễ
-            // Bật tiếng chạy khi bắt đầu di chuyển
-            if (stepsLeft === Math.abs(totalSteps)) {
-
-                if(audioGame && audioGame.run){
-
-                    audioGame.run.loop = true;
-                    audioGame.run.currentTime = 0;
-
-                    audioGame.run.play()
-                    .catch(()=>{});
-
-                }
-
-}
+            // 🔥 FIX: Bật tiếng chạy khi bắt đầu di chuyển (chỉ 1 lần)
+            if (!audioStarted && audioGame && audioGame.run) {
+                audioGame.run.loop = true;
+                audioGame.run.currentTime = 0;
+                audioGame.run.play().catch(() => {});
+                audioStarted = true;
+            }
 
             if (direction === 1) {
-
                 p.pos = (p.pos + 1) % TOTAL_CELLS;
 
                 if (p.pos === 0) {
-
                     p.money += 300;
                     p.rounds += 1;
 
@@ -59,13 +51,9 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
 
                     // kiểm tra Boss
                     checkHaoBossEvent(movePlayer);
-
                 }
-
             } else {
-
                 p.pos = (p.pos - 1 + TOTAL_CELLS) % TOTAL_CELLS;
-
             }
             
             let nextSlot = document.getElementById(`slot-p${movePlayer}-${p.pos}`);
@@ -81,13 +69,15 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
 
             setTimeout(step, 240);
         } else {
-            // Tắt tiếng chạy khi tới đích
-            if(audioGame && audioGame.run){
+            // Tắt tiếng chạy khi tới đích (chỉ 1 lần)
+            if (audioGame && audioGame.run) {
                 audioGame.run.pause();
                 audioGame.run.currentTime = 0;
             }
+
             let finalSlot = document.getElementById(`slot-p${movePlayer}-${p.pos}`);
             if (finalSlot) finalSlot.classList.remove('moving');
+            
             isMoving = false;
             
             // ĐỒNG BỘ: Phát vị trí chốt chặn cuối cùng
@@ -98,27 +88,14 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
             if (callback) {
                 callback();
             } else {
-
-                if(audioGame && audioGame.run){
-                    audioGame.run.pause();
-                    audioGame.run.currentTime = 0;
-                }
-
-                let finalSlot = document.getElementById(`slot-p${movePlayer}-${p.pos}`);
-                if (finalSlot) finalSlot.classList.remove('moving');
-
-                isMoving = false;
-
-
-                if(typeof syncGameToRemote === 'function'){
-                    syncGameToRemote();
-                }
-                evaluateTargetCell();
-                if(window.isLuckyMove){
+                if (window.isLuckyMove) {
                     window.isLuckyMove = false;
                 }
-                if(p.pos === 0){
+                
+                if (p.pos === 0) {
                     endTurn();
+                } else {
+                    evaluateTargetCell();
                 }
             }
         }

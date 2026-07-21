@@ -29,7 +29,7 @@ function updateUI() {
         if (i > 0) { // Bỏ qua ô START (ô số 0)
             const priceEl = document.getElementById(`price-${i}`);
             if (priceEl) {
-                // SỬA TẠI ĐÂY: Nếu là ô đặc biệt thì XÓA TRỐNG số tiền, không cho hiện 100$
+                // Nếu là ô đặc biệt thì hiển thị tên, không hiện tiền
                 if (i === spiderWebIndex) {
                     priceEl.innerText = "KHOÁ LƯỢT";
                 } else if (typeof lightningIndex !== 'undefined' && i === lightningIndex) {
@@ -43,11 +43,11 @@ function updateUI() {
             el.style.borderTop = "none"; 
 
             if (cellsData[i].owner === 1) {
-                // Đất thuộc về P1 (Đỏ) -> Nhuộm đỏ hẳn miếng đất
+                // Đất thuộc về P1 (Đỏ) -> Nhuộm đỏ
                 el.style.background = "linear-gradient(135deg, #7f1d1d, #ef4444)"; 
                 el.style.color = "#ffffff";
             } else if (cellsData[i].owner === 2) {
-                // Đất thuộc về P2 (Xanh) -> Nhuộm xanh hẳn miếng đất
+                // Đất thuộc về P2 (Xanh) -> Nhuộm xanh
                 el.style.background = "linear-gradient(135deg, #1e3a8a, #3b82f6)"; 
                 el.style.color = "#ffffff";
             } else {
@@ -57,13 +57,11 @@ function updateUI() {
             }
         }
     }
-    // =========================
-    // Cập nhật nút dùng kỹ năng
-    // =========================
+
+    // ===== CẬP NHẬT NÚT DÙNG KỸ NĂNG =====
     const skillBtn = document.getElementById("use-skill-btn");
 
     if (skillBtn) {
-
         const mySkill = players[myPlayerNumber]?.skill;
 
         if (
@@ -92,34 +90,9 @@ function addLog(text) {
     logBox.innerHTML += `<div class="log-entry">${text}</div>`;
     logBox.scrollTop = logBox.scrollHeight;
 }
-function animateThor(cells){
 
-    cells.forEach((id,index)=>{
-
-        setTimeout(()=>{
-
-            let cell=document.getElementById("cell-"+id);
-
-            if(!cell) return;
-
-            cell.classList.add("thor-hit");
-
-            setTimeout(()=>{
-
-                cell.classList.remove("thor-hit");
-
-            },800);
-
-        },index*250);
-
-    });
-
-}
-// ===============================
-// HIỆU ỨNG SÉT THẦN THOR
-// ===============================
+// ===== HIỆU ỨNG SÉT THẦN THOR =====
 function showThorStrike(cellIndex) {
-
     const cell = document.getElementById("cell-" + cellIndex);
 
     if (!cell) return;
@@ -127,57 +100,40 @@ function showThorStrike(cellIndex) {
     cell.style.position = "relative";
 
     const bolt = document.createElement("div");
-
     bolt.className = "thor-lightning";
-
     cell.appendChild(bolt);
 
     cell.classList.add("thor-flash");
 
     bolt.onanimationend = () => {
-
         bolt.remove();
-
         cell.classList.remove("thor-flash");
-
     };
 }
-// Biến toàn cục để quản lý trạng thái nút bấm bất đồng bộ
+
+// ===== BIẾN & HẰNG SỐ QUẢN LÝ THÔNG BÁO =====
 let pendingCancelAction = null;
-// ===== TIMER QUYẾT ĐỊNH MUA ĐẤT =====
 let buyDecisionTimer = null;
 let buyDecisionSeconds = 10;
+
 // ===== HIỂN THỊ THÔNG BÁO =====
 function showNotification(title, desc, color, confirmCallback, showTwoButtons = true, cancelCallback = null) {
-    // 🛠️ SỬA TẠI ĐÂY: Xử lý giải thoát mạch game khi dẫm vào ô đặc biệt
+    // 🛠️ CHECK: Xử lý giải thoát mạch game khi dẫm vào ô đặc biệt
     if (typeof currentTurn !== 'undefined' && players[currentTurn]) {
         let currentPos = players[currentTurn].pos;
         if (currentPos === 0 || currentPos === spiderWebIndex || (typeof lightningIndex !== 'undefined' && currentPos === lightningIndex)) {
             console.log("Phát hiện dẫm vào ô đặc biệt. Tự động ẩn thông báo và kích hoạt chuyển lượt.");
             
-            // 1. Ẩn panel thông báo nếu có lỡ hiện
+            // Ẩn panel thông báo
             hideNotification();
             
-            // 2. Chuyển lượt cho đối thủ để tránh đứng game (Áp dụng cho cả Offline lẫn Online qua Socket)
-            if (socket) {
-                // Nếu dẫm vào Mạng Nhện thì gọi skipturn của server, nếu là Thiên tai/ô khác thì endTurn thông thường
-                if (currentPos === spiderWebIndex) {
-                    socket.emit('skipTurnRequest', { currentTurn: currentTurn });
-                } else {
-                    if (typeof endTurn === 'function') endTurn();
-                }
+            // Chuyển lượt cho đối thủ
+            if (currentPos === spiderWebIndex) {
+                socket.emit('skipTurnRequest', { currentTurn: currentTurn });
             } else {
-                // Chế độ Offline cục bộ
-                if (typeof endTurn === 'function') {
-                    endTurn();
-                } else {
-                    // Dự phòng nếu main.js chưa load kịp hàm endTurn
-                    currentTurn = currentTurn === 1 ? 2 : 1;
-                    isMoving = false;
-                    if (typeof checkMyTurnControl === 'function') checkMyTurnControl();
-                }
+                if (typeof endTurn === 'function') endTurn();
             }
-            return; // Thoát hàm hoàn toàn
+            return;
         }
     }
 
@@ -192,18 +148,16 @@ function showNotification(title, desc, color, confirmCallback, showTwoButtons = 
     panel.style.boxShadow = `0 0 15px ${color}33`;
     descEl.innerHTML = desc;
     
-    // KIỂM TRA QUYỀN RA QUYẾT ĐỊNH ONLINE
-    const isOnlineMode = (typeof myPlayerNumber !== 'undefined' && myPlayerNumber !== null);
+    // Luôn là Online - chỉ mình được quyết định khi tới lượt
     const isMyTurn = (typeof currentTurn !== 'undefined' && myPlayerNumber === currentTurn);
 
-    // Lưu lại hành động hủy nếu người chơi chọn bấm Bỏ Qua
     pendingCancelAction = cancelCallback;
 
-    if (isOnlineMode && !isMyTurn) {
-        // Nếu là chế độ Online và KHÔNG phải lượt của mình -> Ẩn nút, hiển thị dòng chờ
+    if (!isMyTurn) {
+        // Nếu KHÔNG phải lượt của mình -> Ẩn nút, hiển thị dòng chờ
         btnBox.innerHTML = `<span style="color: #94a3b8; font-style: italic; font-size: 13px;">⌛ Đang chờ đối thủ đưa ra quyết định...</span>`;
     } else {
-        // Nếu là lượt của mình hoặc đang chơi Offline -> Hiện nút bấm như bình thường
+        // Nếu là lượt của mình -> Hiện nút bấm
         if(showTwoButtons) {
             btnBox.innerHTML = `
                 <button class="btn-confirm" onclick="handleDecision(true)">Đồng Ý</button>
@@ -216,13 +170,13 @@ function showNotification(title, desc, color, confirmCallback, showTwoButtons = 
     
     panel.style.display = 'flex';
     pendingAction = confirmCallback;
+    
     // Nếu có 2 nút lựa chọn thì bắt đầu đếm
-    if(showTwoButtons){
-
+    if(showTwoButtons) {
         startBuyDecisionTimer();
-
     }
 }
+
 function showSingleNotification(title, desc, color, closeCallback) {
     showNotification(title, desc, color, closeCallback, false);
 }
@@ -231,37 +185,27 @@ function hideNotification() {
     const panel = document.getElementById('notify-panel');
     if (panel) panel.style.display = 'none';
 }
+
 function startBuyDecisionTimer(){
-
     clearInterval(buyDecisionTimer);
-
     buyDecisionSeconds = 10;
 
-
     buyDecisionTimer = setInterval(()=>{
-
-
         buyDecisionSeconds--;
 
-
         const titleEl = document.getElementById('notify-title');
-
-
-        if(titleEl){
-
-            titleEl.innerText =
-            `Yêu cầu đầu tư (${buyDecisionSeconds}s)`;
-
+        if(titleEl) {
+            titleEl.innerText = `Yêu cầu đầu tư (${buyDecisionSeconds}s)`;
         }
+        
         if(buyDecisionSeconds <= 0){
             clearInterval(buyDecisionTimer);
-            addLog(
-                "⏰ Hết 10 giây không phản hồi. Tự động bỏ qua."
-            );
+            addLog("⏰ Hết 10 giây không phản hồi. Tự động bỏ qua.");
             handleDecision(false);
         }
     },1000);
 }
+
 function handleDecision(isYes) {
     if(buyDecisionTimer){
         clearInterval(buyDecisionTimer);
@@ -270,14 +214,12 @@ function handleDecision(isYes) {
     hideNotification();
     
     if (isYes && pendingAction) {
-        
-        pendingAction(); // Thực hiện hành động chính (Mua đất/Nâng cấp/Mua đứt) từ cells.js
+        pendingAction(); // Thực hiện hành động chính
     } else {
         addLog(`⏭️ Chọn bỏ qua cơ hội hành động tại ô đất này.`);
         if (pendingCancelAction) {
-            pendingCancelAction(); // Thực hiện gọi hàm hủy của cells.js (nếu có)
+            pendingCancelAction(); // Thực hiện gọi hàm hủy
         } else {
-            // Trường hợp dự phòng nếu cells.js không truyền callback hủy, tự động gọi kết thúc lượt để cứu mạch game
             if (typeof endTurn === 'function') endTurn();
         }
     }
@@ -285,9 +227,8 @@ function handleDecision(isYes) {
     pendingAction = null;
     pendingCancelAction = null;
     
-    // 1. Đồng bộ dữ liệu mới nhất sang máy đối thủ ngay lập tức qua cổng socket
+    // Đồng bộ dữ liệu sang máy đối thủ
     if (typeof syncGameToRemote === 'function') syncGameToRemote();
 
-    // 2. Vẽ lại giao diện để cập nhật ngay lập tức màu đất và điểm số vừa thay đổi trên máy chủ thể
     updateUI();
 }
