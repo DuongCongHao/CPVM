@@ -232,3 +232,16 @@ function handleDecision(isYes) {
 
     updateUI();
 }
+// --- HIỂN THỊ BẢNG TỔNG KẾT ---
+function showMatchSummary(exp, rankInfo, coins) {
+    document.getElementById('exp-gain').innerText = `+${exp} EXP`;
+    document.getElementById('rank-gain').innerText = rankInfo;
+    document.getElementById('coin-gain').innerText = `+${coins}$`;
+    document.getElementById('match-summary-modal').style.display = 'flex';
+}
+
+// Xử lý khi bấm nút "VỀ PHÒNG CHỜ"
+document.getElementById('btn-back-lobby').addEventListener('click', () => {
+    document.getElementById('match-summary-modal').style.display = 'none';
+    // Nếu bạn có hàm quay lại lobby (ví dụ: showLobby()), hãy gọi nó ở đây
+});

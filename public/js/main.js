@@ -1170,10 +1170,286 @@ function showGameOver(winnerId, reason = "money") {
 
     }
 
-
-
     addLog(
         `👑 <strong>NHÀ VÔ ĐỊCH: ${players[winnerId].name}</strong> thâu tóm toàn bộ sàn đấu!`
     );
+    const isWin = (myPlayerNumber === winnerId); // Kiểm tra mình thắng hay thua
+    showMatchResultAnimation(isWin, myStats);
 
+}
+// --- LOGIC TÍNH TOÁN KINH NGHIỆM, RANK VÀ COIN ---
+
+const RANKS = [
+    { name: "Bùn", minPoints: 0 },
+    { name: "Sắt", minPoints: 100 },
+    { name: "Đồng", minPoints: 200 },
+    { name: "Bạc", minPoints: 300 },
+    { name: "Vàng", minPoints: 400 },
+    { name: "Kim Cương", minPoints: 500 },
+    { name: "Hali (Thách Đấu)", minPoints: 600 }
+];
+
+// --- LOGIC TÍNH TOÁN KINH NGHIỆM, RANK VÀ COIN ---
+
+function handleMatchEnd(isWin, currentExp, currentPoints, currentCoins) {
+    // 1. Gán phần thưởng theo Thắng/Thua
+    const reward = isWin ? { exp: 150, coins: 50, points: 25 } : { exp: 75, coins: 25, points: -20 };
+
+    // 2. Tính EXP (1000 exp = 1 cấp)
+    let totalExp = currentExp + reward.exp;
+    let level = Math.floor(totalExp / 1000) + 1; 
+
+    // 3. Tính Điểm Rank (Không cho phép điểm âm)
+    let newPoints = Math.max(0, currentPoints + reward.points);
+    let currentRank = RANKS[0].name;
+
+    for (let i = RANKS.length - 1; i >= 0; i--) {
+        if (newPoints >= RANKS[i].minPoints) {
+            currentRank = RANKS[i].name;
+            break;
+        }
+    }
+
+    // 4. Cộng tiền xu
+    let totalCoins = currentCoins + reward.coins;
+
+    // 5. Hiển thị bảng tổng kết 
+    let rankDisplayText = `${currentRank} [${reward.points >= 0 ? '+' + reward.points : reward.points}đ]`;
+    showMatchSummary(reward.exp, rankDisplayText, reward.coins);
+
+    // 6. Đóng gói dữ liệu mới
+    const updatedData = { 
+        level: level, 
+        exp: totalExp, 
+        points: newPoints, 
+        rank: currentRank, 
+        coins: totalCoins 
+    };
+
+    // 7. GỬI DỮ LIỆU LÊN SERVER ĐỂ LƯU VÀO DATABASE
+    if (typeof socket !== 'undefined') {
+        socket.emit('updatePlayerStats', updatedData);
+        console.log("Đã gửi dữ liệu lên server:", updatedData);
+    } else {
+        console.warn("Lỗi: Socket chưa kết nối, không thể lưu vào database!");
+    }
+
+    return updatedData;
+}
+// =========================================================================
+// 🏆 HỆ THỐNG RANK, KINH NGHIỆM VÀ ANIMATION KẾT THÚC TRẬN ĐẤU
+// =========================================================================
+
+// 1. HÀM XÁC ĐỊNH RANK THEO ĐIỂM SỐ
+function getRankInfo(points) {
+    if (points >= 600) return { name: "Hali", icon: "assets/ranks/hali.jpg" };
+    if (points >= 500)  return { name: "Kim Cương", icon: "assets/ranks/kimcuong.jpg" };
+    if (points >= 400)  return { name: "Vàng", icon: "assets/ranks/vang.jpg" };
+    if (points >= 300)  return { name: "Bạc", icon: "assets/ranks/bac.jpg" };
+    if (points >= 200)  return { name: "Đồng", icon: "assets/ranks/dong.jpg" };
+    if (points >= 100)   return { name: "Sắt", icon: "assets/ranks/sat.jpg" };
+    
+    return { name: "Bùn", icon: "assets/ranks/bun.jpg" }; // Dưới 100 RP
+}
+
+// 2. Hàm chạy animation
+async function showMatchResultAnimation(isWin, currentUserData) {
+    // 🔥 0. BẬT POPUP KẾT THÚC TRẬN ĐẤU LÊN NGAY LẬP TỨC
+    const gameOverOverlay = document.getElementById("game-over-overlay");
+    if (gameOverOverlay) gameOverOverlay.style.display = "flex";
+
+    const expGained = isWin ? 150 : 75;
+    const coinsGained = isWin ? 50 : 25;
+    const pointsGained = isWin ? 25 : -20;
+
+    const titleEl = document.getElementById("match-status-title");
+    const winnerTextEl = document.getElementById("winner-text");
+    const rankIconEl = document.getElementById("rank-icon");
+    const rankPtsEl = document.getElementById("current-rank-pts");
+    const rankDeltaEl = document.getElementById("rank-delta");
+    const levelBadgeEl = document.getElementById("summary-level-num");
+    const expTextEl = document.getElementById("exp-text");
+    const expBarEl = document.getElementById("exp-bar-fill");
+    const coinRewardEl = document.getElementById("coin-reward");
+
+    let currentPts = currentUserData?.points || 0;
+    let totalExp = currentUserData?.exp || 0;
+    let currentCoins = currentUserData?.coins || currentUserData?.coin || 0;
+    let playerName = currentUserData?.name || currentUserData?.display_name || "Bạn";
+
+    // A. Tiêu đề Victory/Defeat + Tên người chiến thắng/thua
+    if (titleEl) {
+        titleEl.innerText = isWin ? "VICTORY!" : "DEFEAT!";
+        titleEl.style.color = isWin ? "#4efe80" : "#ff4757";
+    }
+    if (winnerTextEl) {
+        winnerTextEl.innerText = isWin ? `🎉 ${playerName} đã chiến thắng!` : `💀 ${playerName} đã thất bại!`;
+    }
+
+    // B. Set Ảnh Rank Ban Đầu
+    let initialRank = getRankInfo(currentPts);
+    if (rankIconEl) rankIconEl.src = initialRank.icon;
+    if (rankPtsEl) rankPtsEl.innerText = currentPts;
+    if (coinRewardEl) coinRewardEl.innerText = `+${coinsGained} Coin`;
+
+    // C. Animation Điểm Rank + Tự động BÙM Hiệu Ứng Lên Rank
+    if (rankDeltaEl) {
+        rankDeltaEl.className = pointsGained >= 0 ? "delta-text delta-plus" : "delta-text delta-minus";
+        rankDeltaEl.innerText = pointsGained >= 0 ? `+${pointsGained}` : `${pointsGained}`;
+    }
+
+    let targetPts = Math.max(0, currentPts + pointsGained);
+    let ptsStep = pointsGained > 0 ? 1 : -1;
+    let lastRankName = initialRank.name;
+
+    let ptsInterval = setInterval(() => {
+        if (currentPts === targetPts) {
+            clearInterval(ptsInterval);
+        } else {
+            currentPts += ptsStep;
+            if (rankPtsEl) rankPtsEl.innerText = currentPts;
+            
+            let updatedRank = getRankInfo(currentPts);
+
+            // ⚡ KIỂM TRA NẾU THĂNG RANK THÌ ĐỔI ẢNH VÀ NỔ ANIMATION
+            if (updatedRank.name !== lastRankName) {
+                lastRankName = updatedRank.name;
+                
+                if (rankIconEl) {
+                    rankIconEl.src = updatedRank.icon; // Đổi ảnh Rank mới
+                    
+                    // Kích hoạt hiệu ứng nổ hào quang
+                    rankIconEl.classList.remove("rank-up-anim");
+                    void rankIconEl.offsetWidth; // Trigger reflow
+                    rankIconEl.classList.add("rank-up-anim");
+                }
+            }
+        }
+    }, 40);
+
+    // D. Animation EXP & Level Up
+    let level = Math.floor(totalExp / 1000) + 1;
+    let currentLevelExp = totalExp % 1000; 
+    let remainingExpToAdd = expGained;
+
+    if (levelBadgeEl) levelBadgeEl.innerText = level;
+    if (expBarEl) expBarEl.style.width = `${(currentLevelExp / 1000) * 100}%`;
+    if (expTextEl) expTextEl.innerText = `${currentLevelExp} / 1000 EXP`;
+
+    await new Promise(r => setTimeout(r, 400)); 
+
+    let expInterval = setInterval(() => {
+        if (remainingExpToAdd <= 0) {
+            clearInterval(expInterval);
+            return;
+        }
+
+        currentLevelExp += 2;
+        remainingExpToAdd -= 2;
+
+        if (currentLevelExp >= 1000) {
+            currentLevelExp -= 1000;
+            level++;
+            if (levelBadgeEl) {
+                levelBadgeEl.innerText = level;
+                // ✨ Thêm hiệu ứng lóe sáng cho badge level khi lên cấp
+                if (levelBadgeEl.parentElement) {
+                    levelBadgeEl.parentElement.classList.add("level-up-flash");
+                    setTimeout(() => levelBadgeEl.parentElement.classList.remove("level-up-flash"), 1000);
+                }
+            }
+        }
+
+        if (expBarEl) expBarEl.style.width = `${(currentLevelExp / 1000) * 100}%`;
+        if (expTextEl) expTextEl.innerText = `${currentLevelExp} / 1000 EXP`;
+    }, 20);
+
+    // E. Gửi Update Database & Cập nhật UI Sảnh (Lobby)
+    const finalTotalExp = totalExp + expGained;
+    const finalPoints = targetPts;
+    const finalRank = getRankInfo(finalPoints).name;
+    const finalCoins = currentCoins + coinsGained;
+    const finalLevel = Math.floor(finalTotalExp / 1000) + 1;
+
+    const localUser = JSON.parse(localStorage.getItem("user")) || {};
+    const userId = currentUserData?.id || localUser.id;
+
+    // 🔥 GHI ĐÈ BẢN MỚI NHẤT VÀO LOCALSTORAGE ĐỂ LOBBY LUÔN DÙNG DỮ LIỆU ĐÚNG
+    const updatedUserData = {
+        ...localUser,
+        id: userId,
+        level: finalLevel,
+        exp: finalTotalExp,
+        points: finalPoints,
+        rank: finalRank,
+        coin: finalCoins,
+        coins: finalCoins
+    };
+    localStorage.setItem("user", JSON.stringify(updatedUserData));
+
+    // Cập nhật ngay giao diện Sảnh ngoài
+    if (typeof updateLobbyUI === "function") {
+        updateLobbyUI(updatedUserData);
+    }
+
+    // Gửi cập nhật về Server Supabase
+    if (userId) {
+        console.log("🚀 Đang gửi dữ liệu chuẩn lên Database:", updatedUserData);
+
+        fetch("/api/update-result", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                id: userId,
+                level: finalLevel, 
+                exp: finalTotalExp, 
+                points: finalPoints, 
+                rank: finalRank, 
+                coins: finalCoins 
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            console.log("✅ Đã cập nhật Supabase thành công:", data);
+        })
+        .catch(err => console.error("❌ Lỗi Fetch Update:", err));
+    } else {
+        console.error("❌ Không tìm thấy User ID! Cần đăng nhập để lưu kết quả vào Supabase.");
+    }
+}
+// Hàm hiển thị chỉ số mới nhất lên Màn hình Sảnh
+function updateLobbyUI(userData) {
+    // Lấy dữ liệu người dùng từ tham số truyền vào hoặc localStorage
+    const user = userData || JSON.parse(localStorage.getItem("user"));
+    if (!user) return;
+
+    // 1. Cập nhật Tên hiển thị
+    const nameEl = document.getElementById("user-display");
+    if (nameEl) {
+        nameEl.innerText = user.display_name || user.username || "Người chơi";
+    }
+
+    // 2. Cập nhật Level
+    const levelEl = document.getElementById("user-level");
+    if (levelEl) {
+        levelEl.innerText = user.level || 1;
+    }
+
+    // 3. Cập nhật Coin (Xu)
+    const coinEl = document.getElementById("user-coin");
+    if (coinEl) {
+        coinEl.innerText = (user.coins !== undefined ? user.coins : user.coin) || 0;
+    }
+
+    // 4. Cập nhật HÌNH ẢNH RANK hiện tại
+    const rankImgEl = document.getElementById("user-rank-icon");
+    if (rankImgEl && typeof getRankInfo === "function") {
+        // Dùng hàm getRankInfo truyền vào số điểm (points hoặc rank_points) để lấy đường dẫn ảnh
+        const userPoints = user.points || user.rank_points || 0;
+        const rankInfo = getRankInfo(userPoints);
+        
+        // Gắn đường dẫn ảnh Rank vào thẻ <img>
+        rankImgEl.src = rankInfo.icon;
+        rankImgEl.alt = rankInfo.name;
+    }
 }

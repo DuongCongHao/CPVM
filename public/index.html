@@ -321,51 +321,43 @@
     <div id="lobby-screen" style="display:none" class="lobby-container">
         <div class="lobby-card">
             <h2>ĐẠI CHIẾN HALI</h2>
-            <p>Nhập tên của bạn và chọn phương thức tham gia đấu trường</p>
+            <p style="text-align: center; color: #94a3b8; font-size: 13px;">
+                Nhập tên của bạn và chọn phương thức tham gia đấu trường
+            </p>
+
+            <!-- Khung thông tin profile nằm gọn bên trong card -->
             <div id="user-panel">
+                <!-- Khối bên trái: Ảnh + Chữ -->
+                <div class="user-profile-header">
+                    <div class="lobby-rank-img-wrapper">
+                        <img id="user-rank-icon" src="assets/ranks/bun.jpg" alt="Rank" class="lobby-rank-badge">
+                    </div>
 
-                <div id="user-info">
-
-                    <div id="user-display"></div>
-
-                    <div>🏅 Level: <span id="user-level">1</span></div>
-
-                    <div>⭐ EXP: <span id="user-exp">0</span></div>
-
-                    <div>👑 Rank: <span id="user-rank">Đồng</span></div>
-
-                    <div>🪙 Coin: <span id="user-coin">1000</span></div>
-
+                    <div class="user-stats-details">
+                        <div id="user-display">Người chơi</div>
+                        <div class="stat-item">🏅 Level: <strong id="user-level" style="color: #facc15;">1</strong></div>
+                        <div class="stat-item">🪙 Coin: <strong id="user-coin" style="color: #34d399;">0</strong></div>
+                    </div>
                 </div>
 
-                <button id="logout-btn">
-                    Đăng xuất
-                </button>
-
-            </div>
-            <!-- Nhập tên nhân vật -->
-            <div class="input-group" style="margin-bottom: 15px;">
-                <input type="text" id="username-input" placeholder="Nhập tên của bạn..." maxlength="14">
+                <!-- Nút Đăng xuất bên phải -->
+                <button id="logout-btn">Đăng xuất</button>
             </div>
 
+            <!-- Input Tên -->
+            <div class="input-group" style="margin-top: 10px;">
+                <input type="text" id="username-input" placeholder="Nhập tên..." value="Đỡ nè" style="width: 100%; padding: 10px; border-radius: 8px; background: #0f172a; color: white; border: 1px solid #334155;">
+            </div>
+
+            <!-- Group nút bấm -->
             <div class="lobby-buttons-group">
-                <!-- Lựa chọn 1: Ghép ngẫu nhiên (Đã bật lại hàm gọi trực tiếp) -->
-                <button id="btn-quick-match" class="btn-lobby btn-quick" onclick="startQuickMatch()">GHÉP NGẪU NHIÊN</button>
-                
-                <div class="lobby-divider"></div>
-                
-                <!-- Lựa chọn 2: Tự tạo phòng riêng tư (Đã bật lại hàm gọi trực tiếp) -->
-                <button id="btn-create-room" class="btn-lobby btn-create" onclick="createNewRoom()">TẠO PHÒNG RIÊNG TƯ</button>
-                
-                <!-- Lựa chọn 3: Nhập ID phòng có sẵn -->
+                <button id="btn-quick-match" class="btn-lobby btn-quick">GHÉP NGẪU NHIÊN</button>
+                <button id="btn-create-room" class="btn-lobby btn-create">TẠO PHÒNG RIÊNG TƯ</button>
                 <div class="room-input-box">
-                    <input type="text" id="room-id-input" placeholder="Nhập ID phòng bạn gửi..." maxlength="10">
-                    <button id="btn-join-room" class="btn-lobby btn-join" onclick="joinRoomWithId()">VÀO PHÒNG</button>
+                    <input type="text" id="room-id-input" placeholder="Nhập ID phòng...">
+                    <button id="btn-join-room" class="btn-lobby btn-join">VÀO PHÒNG</button>
                 </div>
             </div>
-            
-            <!-- Trạng thái thông báo xử lý kết nối phòng -->
-            <div id="lobby-status" style="margin-top: 20px; font-size: 14px; color: #38bdf8; font-weight: bold; line-height: 1.6;"></div>
         </div>
     </div>
 
@@ -482,15 +474,52 @@
     💀🔥 BỐ HẢO SẮP XUẤT HIỆN 🔥💀
 
     </div>
-    <!-- ================= POPUP THÔNG BÁO KẾT THÚC TRẬN ĐẤU ================= -->
-    <div id="game-over-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(8px);">
-        <div style="background: linear-gradient(135deg, #1e1b4b, #311042); padding: 40px; border-radius: 24px; border: 3px solid #f43f5e; text-align: center; box-shadow: 0 0 40px rgba(244, 63, 94, 0.5); max-width: 450px; width: 90%; font-family: sans-serif;">
-            <h2 style="color: #f43f5e; font-size: 32px; font-weight: 900; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 2px;">Trận Đấu Kết Thúc</h2>
-            <div id="winner-text" style="font-size: 22px; color: #ffffff; margin: 25px 0; font-weight: bold; background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 12px; line-height: 1.5;">
+  <!-- ================= POPUP KẾT THÚC TRẬN ĐẤU ================= -->
+    <div id="game-over-overlay" style="display: none;" class="summary-overlay">
+        <div class="result-modal" style="width: 380px; max-width: 95vw;">
+            
+            <!-- Tiêu đề VICTORY / DEFEAT -->
+            <h1 id="match-status-title" style="font-size: 26px; margin-bottom: 8px; text-align: center; text-transform: uppercase;">VICTORY!</h1>
+            
+            <!-- 1. HIỂN THỊ TÊN NGƯỜI THẮNG / THUA -->
+            <div id="winner-text" style="font-size: 15px; color: #ffffff; margin-bottom: 12px; background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 8px; text-align: center;">
                 Đang xác định người chiến thắng...
             </div>
-            <button onclick="location.reload()" style="background: linear-gradient(90deg, #10b981, #059669); color: white; border: none; padding: 14px 40px; font-size: 18px; font-weight: bold; border-radius: 12px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
-                CHƠI LẠI
+
+            <!-- 2. KHUNG HÌNH ẢNH RANK (CÓ HIỆU ỨNG THĂNG RANK) -->
+            <div class="stat-box" style="text-align: center; padding: 15px 10px; position: relative;">
+                
+                <!-- 🖼️ ẢNH RANK SẼ HIỆN Ở ĐÂY (Thay thế hoàn toàn chữ Rank) -->
+                <div class="rank-img-container">
+                    <img id="rank-icon" src="assets/ranks/bun.jpg" alt="Rank Badge" class="rank-badge-card">
+                </div>
+                
+                <div class="points-display" style="font-size: 15px; color: #cbd5e1; margin-top: 8px;">
+                    <span id="current-rank-pts" style="font-weight: bold; color: #fff;">0</span> RP 
+                    <span id="rank-delta" class="delta-text delta-plus">+0</span>
+                </div>
+            </div>
+
+            <!-- 3. THANH EXP & LEVEL -->
+            <div class="stat-box">
+                <div class="exp-info">
+                    <span id="level-badge">LV. <span id="summary-level-num">1</span></span>
+                    <span id="exp-text" style="color: #38bdf8; font-weight: bold;">0 / 1000 EXP</span>
+                </div>
+                <div class="bar-bg">
+                    <div id="exp-bar-fill" class="bar-fill" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <!-- 4. THƯỞNG COIN -->
+            <div class="stat-box" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; margin-bottom: 15px;">
+                <span style="font-size: 13px; color: #94a3b8;">Tiền xu nhận được:</span>
+                <strong id="coin-reward" style="color: #facc15; font-size: 16px;">+0 Coin</strong>
+            </div>
+
+            <!-- NÚT QUAY VỀ -->
+            <button id="btn-back-lobby" class="btn-lobby btn-quick" onclick="location.reload()" style="width: 100%; padding: 12px; font-weight: bold; cursor: pointer;">
+                QUAY VỀ PHÒNG CHỜ
             </button>
         </div>
     </div>
@@ -545,6 +574,7 @@
     </div>
 
 </div>
+
     <!-- ================= THỨ TỰ NẠP JAVASCRIPT CHUẨN KIẾN TRÚC GAME ONLINE ================= -->
     
     <!-- 1. Thư viện Socket.IO cốt lõi từ CDN tải nhanh -->

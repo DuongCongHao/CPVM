@@ -227,40 +227,4 @@ function triggerGiftAction() {
             });
         });
     } 
-    else if (chosenAction === "skip_turn") {
-
-        let opponentId = giftPlayer === 1 ? 2 : 1;
-
-        showSingleNotification(
-            "💤 HỘP QUÀ CHÓNG MẶT",
-            `Đối thủ được thêm <strong>2 lượt liên tiếp</strong>.`,
-            '#eab308',
-            () => {
-
-                const logMsg =
-                    `🎁 💤 ${p.name} bị khóa chân! ${players[opponentId].name} được thêm 2 lượt.`;
-
-                addLog(logMsg);
-
-                if (socket && socket.connected) {
-
-                    socket.emit("syncGiftExtraTurn", {
-                        nextTurn: opponentId,
-                        extraTurns: 2,
-                        logMsg: logMsg
-                    });
-
-                } else {
-
-                    window.extraTurns = 2;
-                    currentTurn = opponentId;
-
-                    updateUI();
-                    checkMyTurnControl();
-
-                }
-
-            }
-        );
-    }
 }
