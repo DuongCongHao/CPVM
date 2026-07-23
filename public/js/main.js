@@ -1453,3 +1453,25 @@ function updateLobbyUI(userData) {
         rankImgEl.alt = rankInfo.name;
     }
 }
+window.addEventListener("DOMContentLoaded", () => {
+
+    const btnQuick = document.getElementById("btn-quick-match");
+    const btnCreate = document.getElementById("btn-create-room");
+    const btnJoin = document.getElementById("btn-join-room");
+
+    if (btnQuick) {
+        btnQuick.onclick = startQuickMatch;
+        console.log("Đã gắn nút ghép ngẫu nhiên");
+    }
+
+    if (btnCreate) {
+        btnCreate.onclick = createNewRoom;
+        console.log("Đã gắn nút tạo phòng");
+    }
+
+    if (btnJoin) {
+        btnJoin.onclick = joinRoomWithId;
+        console.log("Đã gắn nút vào phòng");
+    }
+
+});

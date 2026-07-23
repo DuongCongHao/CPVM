@@ -147,9 +147,24 @@
                     skills: skills
                 };
 
-                // Báo thông tin phòng về cho client
-                opponentSocket.emit('room-joined', { roomId: roomId });
-                socket.emit('room-joined', { roomId: roomId });
+                // ✅ THÊM MỚI: Tạo mảng players để gửi cho client
+                const playersData = rooms[roomId].players.map(p => ({
+                    id: p.userId || p.id,
+                    name: p.name,
+                    socketId: p.id,
+                    playerNumber: p.playerNumber
+                }));
+
+                // ✅ SỬA: Báo thông tin phòng về cho client (THÊM players)
+                opponentSocket.emit('room-joined', { 
+                    roomId: roomId,
+                    players: playersData  // ✅ THÊM DÒNG NÀY
+                });
+                
+                socket.emit('room-joined', { 
+                    roomId: roomId,
+                    players: playersData  // ✅ THÊM DÒNG NÀY
+                });
 
                 opponentSocket.emit('playerAssigned', { playerNumber: 1 });
                 socket.emit('playerAssigned', { playerNumber: 2 });
@@ -254,7 +269,20 @@
             });
             rooms[roomId].status = 'playing';
 
-            socket.emit('room-joined', { roomId: roomId });
+            // ✅ THÊM MỚI: Tạo mảng players để gửi cho client
+            const playersData = rooms[roomId].players.map(p => ({
+                id: p.userId || p.id,
+                name: p.name,
+                socketId: p.id,
+                playerNumber: p.playerNumber
+            }));
+
+            // ✅ SỬA: Thêm players vào room-joined
+            socket.emit('room-joined', { 
+                roomId: roomId,
+                players: playersData  // ✅ THÊM DÒNG NÀY
+            });
+            
             socket.emit('playerAssigned', { playerNumber: 2 });
 
             io.to(roomId).emit('update-lobby-players', rooms[roomId].players);

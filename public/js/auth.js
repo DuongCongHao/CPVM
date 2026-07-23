@@ -167,10 +167,21 @@ function initLobby(user){
     }
     document.getElementById("user-level").innerText = user.level;
 
-    document.getElementById("user-exp").innerText = user.exp;
+        const rankMap = {
+        "Bùn": "bun.jpg",
+        "Sắt": "sat.jpg",
+        "Đồng": "dong.jpg",
+        "Bạc": "bac.jpg",
+        "Vàng": "vang.jpg",
+        "Kim Cương": "kimcuong.jpg",
+        "Hali": "hali.jpg"
+    };
 
-    document.getElementById("user-rank").innerText = user.rank;
+    const rankIcon = document.getElementById("user-rank-icon");
 
+    if (rankIcon) {
+        rankIcon.src = "assets/ranks/" + (rankMap[user.rank] || "bun.jpg");
+    }
     document.getElementById("user-coin").innerText = user.coin;
     document.getElementById("user-panel").style.display="block";
 
