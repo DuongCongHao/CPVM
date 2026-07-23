@@ -1,1477 +1,1646 @@
-window.haoBossTriggered = false;
-window.haoWarningPlayed=false;
-// ===== KHỞI TẠO KẾT NỐI SOCKET.IO THÔNG MINH (TỰ ĐỘNG ĐỔI URL) =====
-const NODE_JS_PORT = 3000; 
-window.lightningIndex = null;
-window.spiderWebIndex = null;
-// Kiểm tra xem trình duyệt có đang chạy ở môi trường localhost hay không
-const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-const SOCKET_SERVER_URL = isLocalhost ? `http://localhost:${NODE_JS_PORT}` : window.location.origin;
-
-// Không dùng lại từ khóa "let" nếu config.js đã khai báo trước. Thay bằng gán đè an toàn.
-if (typeof socket === 'undefined' || socket === null) {
-    if (typeof io !== 'undefined') {
-        socket = io(SOCKET_SERVER_URL);
-        console.log("🔌 Đang kết nối tới Socket Server tại: " + SOCKET_SERVER_URL);
-    }
-}
-
-// Kiểm tra an toàn trước khi khởi tạo biến trạng thái game để tránh lỗi "already been declared"
-if (typeof myPlayerNumber === 'undefined') window.myPlayerNumber = null;
-if (typeof spiderWebIndex === 'undefined') window.spiderWebIndex = null;
-if (typeof lightningIndex === 'undefined') window.lightningIndex = null;
-if (typeof gameStarted === 'undefined') window.gameStarted = false;
-if (typeof currentTurn === 'undefined') window.currentTurn = null;
-if (typeof isMoving === 'undefined') window.isMoving = false;
-
-// Biến cờ đánh dấu Thiên tai của trận này đã từng xuất hiện hay chưa
-if (typeof disasterSpawnedThisGame === 'undefined') window.disasterSpawnedThisGame = false;
-
-// Chỉ để xử lý giao diện hiển thị cảnh báo lỗi thư viện ban đầu
-window.addEventListener('DOMContentLoaded', () => {
-    if (!socket && typeof io === 'undefined') {
-        console.error("❌ Không tìm thấy thư viện Socket.IO!");
-        const lobbyStatus = document.getElementById('lobby-status');
-        if (lobbyStatus) {
-            lobbyStatus.innerHTML = `<span style="color:#ef4444;">❌ Lỗi: Chưa nạp được thư viện Socket.IO từ Server.</span>`;
+    window.haoBossTriggered = false;
+    window.haoWarningPlayed=false;
+    
+    // ===== KHỞI TẠO KẾT NỐI SOCKET.IO THÔNG MINH (TỰ ĐỘNG ĐỔI URL) =====
+    const NODE_JS_PORT = 3000; 
+    window.lightningIndex = null;
+    window.spiderWebIndex = null;
+    // Kiểm tra xem trình duyệt có đang chạy ở môi trường localhost hay không
+    const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const SOCKET_SERVER_URL = isLocalhost ? `http://localhost:${NODE_JS_PORT}` : window.location.origin;
+    
+    // Không dùng lại từ khóa "let" nếu config.js đã khai báo trước. Thay bằng gán đè an toàn.
+    if (typeof socket === 'undefined' || socket === null) {
+        if (typeof io !== 'undefined') {
+            socket = io(SOCKET_SERVER_URL);
+            console.log("🔌 Đang kết nối tới Socket Server tại: " + SOCKET_SERVER_URL);
         }
     }
-});
+    // Thêm vào đầu file
+    if (typeof gameEnding === 'undefined') window.gameEnding = false;
+    // Kiểm tra an toàn trước khi khởi tạo biến trạng thái game để tránh lỗi "already been declared"
+    if (typeof myPlayerNumber === 'undefined') window.myPlayerNumber = null;
+    if (typeof spiderWebIndex === 'undefined') window.spiderWebIndex = null;
+    if (typeof lightningIndex === 'undefined') window.lightningIndex = null;
+    if (typeof gameStarted === 'undefined') window.gameStarted = false;
+    if (typeof currentTurn === 'undefined') window.currentTurn = null;
+    if (typeof isMoving === 'undefined') window.isMoving = false;
 
-// =========================================================================
-// 🌐 HỆ THỐNG LẮNG NGHE & ĐỒNG BỘ SOCKET TRẬN ĐẤU (BẬY PHÒNG)
-// =========================================================================
-if (socket) {
-    // 🕸️ Lắng nghe vị trí Mạng Nhện ngẫu nhiên do server khởi tạo đầu trận
-    socket.on('init-traps', (data) => {
-        window.spiderWebIndex = data.spiderWebIndex;
-        lightningIndex = data.lightningIndex;
-        window.lightningIndex = lightningIndex;
-        window.disasterSpawnedThisGame = false;
-        console.log(`[SOCKET] Mạng nhện trận này được đặt tại ô: ${window.spiderWebIndex}`);
-        initializeBoard();
+    // Biến cờ đánh dấu Thiên tai của trận này đã từng xuất hiện hay chưa
+    if (typeof disasterSpawnedThisGame === 'undefined') window.disasterSpawnedThisGame = false;
+
+    // Chỉ để xử lý giao diện hiển thị cảnh báo lỗi thư viện ban đầu
+    window.addEventListener('DOMContentLoaded', () => {
+        if (!socket && typeof io === 'undefined') {
+            console.error("❌ Không tìm thấy thư viện Socket.IO!");
+            const lobbyStatus = document.getElementById('lobby-status');
+            if (lobbyStatus) {
+                lobbyStatus.innerHTML = `<span style="color:#ef4444;">❌ Lỗi: Chưa nạp được thư viện Socket.IO từ Server.</span>`;
+            }
+        }
     });
-    socket.on('extraTurnResult',(data)=>{
 
-        currentTurn = data.currentTurn;
-
-        window.extraTurns = data.extraTurns;
-
-        isMoving = false;
-
-        updateUI();
-
-        checkMyTurnControl();
-
-    });
-    // 🕸️ Lắng nghe khi có người đạp trúng Mạng Nhện (Cả 2 bên nhận cùng lúc)
-    socket.on('sync-spider-web-effect', (data) => {
-        addLog(data.logMsg);
-        window.players = data.players;
-        window.currentTurn = data.nextTurn; // Ép đối thủ xúc xắc luôn
-
-        // Chỉ người được đi mới có lượt thưởng
-        window.extraTurns = data.extraTurns || 0;
-
-        window.isMoving = false;
-
-        updateUI();
-        checkMyTurnControl();
+    // =========================================================================
+    // 🌐 HỆ THỐNG LẮNG NGHE & ĐỒNG BỘ SOCKET TRẬN ĐẤU (BẬY PHÒNG)
+    // =========================================================================
+    if (socket) {
+        // 🕸️ Lắng nghe vị trí Mạng Nhện ngẫu nhiên do server khởi tạo đầu trận
+        socket.on('init-traps', (data) => {
+            window.spiderWebIndex = data.spiderWebIndex;
+            lightningIndex = data.lightningIndex;
+            window.lightningIndex = lightningIndex;
+            window.disasterSpawnedThisGame = false;
+            console.log(`[SOCKET] Mạng nhện trận này được đặt tại ô: ${window.spiderWebIndex}`);
+            initializeBoard();
         });
-    // 🎁 Đồng bộ hiệu ứng hộp quà mất lượt / thêm lượt
-    socket.on('sync-gift-effect', (data) => {
+        socket.on('extraTurnResult',(data)=>{
 
-        addLog(data.logMsg);
+            currentTurn = data.currentTurn;
 
-        window.players = data.playersUpdate || data.players;
+            window.extraTurns = data.extraTurns;
 
-        window.currentTurn = data.nextTurn;
+            isMoving = false;
 
-        window.extraTurns = data.extraTurns || 0;
-
-        window.isMoving = false;
-
-
-        updateUI();
-
-        checkMyTurnControl();
-
-    });
-    // 🚨 Lắng nghe thông báo Server kích hoạt Thiên tai ngẫu nhiên sau vòng 1
-    socket.on('disaster-spawned', (data) => {
-
-        console.log("⚡ ĐÃ NHẬN disaster-spawned");
-        console.log(data);
-
-        console.log("📌 Server gửi lightningIndex =", data.lightningIndex);
-
-        window.lightningIndex = Number(data.lightningIndex);
-        window.disasterSpawnedThisGame = true;
-
-        console.log("📌 Client lưu lightningIndex =", window.lightningIndex);
-
-        addLog(data.logMsg);
-
-        console.log("🔄 Gọi initializeBoard()");
-
-        initializeBoard();
-
-        if (typeof updateUI === "function") {
             updateUI();
-        }
-    });
-    socket.on("gameOver", (data)=>{
 
-        showGameOver(
-            data.winnerId,
-            data.reason
+            checkMyTurnControl();
+
+        });
+        // 🕸️ Lắng nghe khi có người đạp trúng Mạng Nhện (Cả 2 bên nhận cùng lúc)
+        socket.on('sync-spider-web-effect', (data) => {
+            addLog(data.logMsg);
+            window.players = data.players;
+            window.currentTurn = data.nextTurn; // Ép đối thủ xúc xắc luôn
+
+            // Chỉ người được đi mới có lượt thưởng
+            window.extraTurns = data.extraTurns || 0;
+
+            window.isMoving = false;
+
+            updateUI();
+            checkMyTurnControl();
+            });
+        // 🎁 Đồng bộ hiệu ứng hộp quà mất lượt / thêm lượt
+        socket.on('sync-gift-effect', (data) => {
+
+            addLog(data.logMsg);
+
+            window.players = data.playersUpdate || data.players;
+
+            window.currentTurn = data.nextTurn;
+
+            window.extraTurns = data.extraTurns || 0;
+
+            window.isMoving = false;
+
+
+            updateUI();
+
+            checkMyTurnControl();
+
+        });
+        // 🚨 Lắng nghe thông báo Server kích hoạt Thiên tai ngẫu nhiên sau vòng 1
+        socket.on('disaster-spawned', (data) => {
+
+            console.log("⚡ ĐÃ NHẬN disaster-spawned");
+            console.log(data);
+
+            console.log("📌 Server gửi lightningIndex =", data.lightningIndex);
+
+            window.lightningIndex = Number(data.lightningIndex);
+            window.disasterSpawnedThisGame = true;
+
+            console.log("📌 Client lưu lightningIndex =", window.lightningIndex);
+
+            addLog(data.logMsg);
+
+            console.log("🔄 Gọi initializeBoard()");
+
+            initializeBoard();
+
+            if (typeof updateUI === "function") {
+                updateUI();
+            }
+        });
+        socket.on("gameOver", (data) => {
+            console.log("🏆 NHẬN GAME OVER TỪ SERVER:", data);
+            console.log("📊 data.reason:", data.reason);
+            console.log("📊 data.message:", data.message);
+            console.log("📊 data.winnerId:", data.winnerId);
+            console.log("📊 myPlayerNumber:", window.myPlayerNumber);
+            
+            // Ẩn nút rời trận
+            if (typeof hideLeaveButton === 'function') {
+                hideLeaveButton();
+            }
+            
+            // 🔥 KIỂM TRA: Bạn có phải người thắng không?
+            const isWin = (window.myPlayerNumber === data.winnerId);
+            console.log(`🏆 Bạn có thắng không? ${isWin}`);
+            
+            // 🔥 NẾU LÀ NGƯỜI RỜI (THUA) - KHÔNG HIỂN THỊ POPUP THẮNG
+            if ((data.reason === 'leave' || data.reason === 'disconnect') && !isWin) {
+                console.log("🚪 Bạn đã rời trận (thua), quay về lobby...");
+                
+                // Hiển thị thông báo đẹp
+                if (typeof showNotification === 'function') {
+                    showNotification(`💀 ${data.message || 'Bạn đã rời trận đấu.'}`, 'warning', 3000);
+                } else {
+                    alert(data.message || 'Bạn đã rời trận đấu.');
+                }
+                
+                if (typeof addLog === 'function') {
+                    addLog(`🚪 ${data.message || 'Bạn đã rời trận đấu.'}`);
+                }
+                
+                // Quay về lobby sau 2.5 giây
+                setTimeout(() => {
+                    document.getElementById('game-screen').style.display = 'none';
+                    document.getElementById('lobby-screen').style.display = 'flex';
+                    if (typeof enableLobbyButtons === 'function') {
+                        enableLobbyButtons();
+                    }
+                    window.gameStarted = false;
+                    window.gameEnding = false;
+                }, 2500);
+                return; // 🔥 THOÁT KHÔNG GỌI gameOver
+            }
+            
+            // 🔥 NẾU LÀ NGƯỜI THẮNG (bao gồm cả khi đối thủ rời)
+            if (isWin) {
+                // Hiển thị thông báo đẹp
+                if (data.message && typeof showNotification === 'function') {
+                    showNotification(`🎉 ${data.message}`, 'success', 4000);
+                }
+                
+                if (typeof addLog === 'function' && data.message) {
+                    addLog(`🏆 ${data.message}`);
+                }
+                
+                // Gọi gameOver để hiển thị popup kết quả và cộng điểm
+                if (typeof gameOver === 'function') {
+                    console.log("🎬 Gọi gameOver với isWin = true");
+                    gameOver(data.winnerId, data.reason);
+                } else if (typeof showGameOver === 'function') {
+                    console.log("🎬 Gọi showGameOver");
+                    showGameOver(data.winnerId, data.reason);
+                }
+                return;
+            }
+            
+            // 🔥 TRƯỜNG HỢP CÒN LẠI: THUA BÌNH THƯỜNG (không phải do rời)
+            if (typeof gameOver === 'function') {
+                gameOver(data.winnerId, data.reason);
+            } else if (typeof showGameOver === 'function') {
+                showGameOver(data.winnerId, data.reason);
+            }
+        });
+        // ⚡ Lắng nghe khi có người dẫm trúng Thiên tai (Trừ tiền, xóa đất, ghi log 2 bên)
+        socket.on('sync-lightning-effect', (data) => {
+            data.logs.forEach(msg => addLog(msg));
+            window.players = data.players;
+            window.cellsData = data.cellsData;
+            window.lightningIndex = null; // Thiên tai biến mất sau khi nổ
+            
+            initializeBoard(); // Vẽ lại bản đồ xóa hiệu ứng sét và đất đã mất
+            if (typeof updateUI === 'function') updateUI();
+            
+            window.isMoving = false;
+            // Tiến hành chuyển lượt bình thường sau tai nạn
+            endTurn();
+        });
+    }
+
+    // =========================================================================
+    // 🔥 HỆ THỐNG QUẢN LÝ ĐA PHÒNG PHỤC VỤ CHƠI TỰ DO
+    // =========================================================================
+
+    function getValidUsername() {
+        const nameInput = document.getElementById('username-input');
+        const username = nameInput ? nameInput.value.trim() : "";
+        if (!username) {
+            alert("Vui lòng nhập một cái tên trước khi tham gia đấu trường!");
+            return null;
+        }
+        return username;
+    }
+
+    function disableLobbyButtons() {
+        const btnQuick = document.getElementById('btn-quick-match');
+        const btnCreate = document.getElementById('btn-create-room');
+        const btnJoin = document.getElementById('btn-join-room');
+        if (btnQuick) btnQuick.disabled = true;
+        if (btnCreate) btnCreate.disabled = true;
+        if (btnJoin) btnJoin.disabled = true;
+    }
+
+    function enableLobbyButtons() {
+        const btnQuick = document.getElementById('btn-quick-match');
+        const btnCreate = document.getElementById('btn-create-room');
+        const btnJoin = document.getElementById('btn-join-room');
+        if (btnQuick) btnQuick.disabled = false;
+        if (btnCreate) btnCreate.disabled = false;
+        if (btnJoin) btnJoin.disabled = false;
+    }
+
+    function startQuickMatch() {
+
+        const username = getValidUsername();
+
+        if (!username) return;
+
+
+        const user = JSON.parse(
+            localStorage.getItem("currentUser")
         );
 
-    });
-    // ⚡ Lắng nghe khi có người dẫm trúng Thiên tai (Trừ tiền, xóa đất, ghi log 2 bên)
-    socket.on('sync-lightning-effect', (data) => {
-        data.logs.forEach(msg => addLog(msg));
-        window.players = data.players;
-        window.cellsData = data.cellsData;
-        window.lightningIndex = null; // Thiên tai biến mất sau khi nổ
-        
-        initializeBoard(); // Vẽ lại bản đồ xóa hiệu ứng sét và đất đã mất
-        if (typeof updateUI === 'function') updateUI();
-        
-        window.isMoving = false;
-        // Tiến hành chuyển lượt bình thường sau tai nạn
-        endTurn();
-    });
-}
 
-// =========================================================================
-// 🔥 HỆ THỐNG QUẢN LÝ ĐA PHÒNG PHỤC VỤ CHƠI TỰ DO
-// =========================================================================
+        if (!user) {
 
-function getValidUsername() {
-    const nameInput = document.getElementById('username-input');
-    const username = nameInput ? nameInput.value.trim() : "";
-    if (!username) {
-        alert("Vui lòng nhập một cái tên trước khi tham gia đấu trường!");
-        return null;
-    }
-    return username;
-}
+            alert("Bạn chưa đăng nhập!");
 
-function disableLobbyButtons() {
-    const btnQuick = document.getElementById('btn-quick-match');
-    const btnCreate = document.getElementById('btn-create-room');
-    const btnJoin = document.getElementById('btn-join-room');
-    if (btnQuick) btnQuick.disabled = true;
-    if (btnCreate) btnCreate.disabled = true;
-    if (btnJoin) btnJoin.disabled = true;
-}
+            return;
 
-function enableLobbyButtons() {
-    const btnQuick = document.getElementById('btn-quick-match');
-    const btnCreate = document.getElementById('btn-create-room');
-    const btnJoin = document.getElementById('btn-join-room');
-    if (btnQuick) btnQuick.disabled = false;
-    if (btnCreate) btnCreate.disabled = false;
-    if (btnJoin) btnJoin.disabled = false;
-}
-
-function startQuickMatch() {
-
-    const username = getValidUsername();
-
-    if (!username) return;
+        }
 
 
-    const user = JSON.parse(
-        localStorage.getItem("currentUser")
-    );
+
+        if (socket && socket.connected) {
 
 
-    if (!user) {
+            disableLobbyButtons();
 
-        alert("Bạn chưa đăng nhập!");
 
-        return;
+            const lobbyStatus =
+                document.getElementById('lobby-status');
+
+
+            if (lobbyStatus) {
+
+                lobbyStatus.innerHTML =
+                "⏳ Đang tìm kiếm đối thủ phù hợp trên hệ thống...<br>Vui lòng đợi người chơi khác vào trận.";
+
+            }
+
+
+
+            socket.emit(
+                'request-quick-match',
+                {
+
+                    name: username,
+
+                    userId: user.id
+
+                }
+            );
+
+
+        } else {
+
+
+            alert(
+                "❌ Thất bại: Hiện tại mất kết nối tới máy chủ, không thể ghép trận!"
+            );
+
+
+            enableLobbyButtons();
+
+        }
 
     }
 
+    function createNewRoom() {
+
+        const username = getValidUsername();
+
+        if (!username) return;
 
 
-    if (socket && socket.connected) {
+        const user = JSON.parse(
+            localStorage.getItem("currentUser")
+        );
 
 
-        disableLobbyButtons();
+        if(!user){
+
+            alert("Bạn chưa đăng nhập!");
+
+            return;
+
+        }
 
 
-        const lobbyStatus =
+        if (socket && socket.connected) {
+
+
+            disableLobbyButtons();
+
+
+            const lobbyStatus =
             document.getElementById('lobby-status');
 
 
-        if (lobbyStatus) {
+            if (lobbyStatus) {
 
-            lobbyStatus.innerHTML =
-            "⏳ Đang tìm kiếm đối thủ phù hợp trên hệ thống...<br>Vui lòng đợi người chơi khác vào trận.";
+                lobbyStatus.innerHTML =
+                "⚙️ Đang gửi yêu cầu khởi tạo phòng riêng tư lên Server...";
+
+            }
+
+
+            socket.emit(
+                'request-create-room',
+                {
+
+                    name: username,
+
+                    userId:user.id
+
+                }
+            );
+
+
+        } else {
+
+
+            alert(
+            "❌ Thất bại: Mất kết nối máy chủ, không thể tạo phòng riêng tư!"
+            );
+
+
+            enableLobbyButtons();
+
+        }
+
+    }
+
+    function joinRoomWithId() {
+
+        const username = getValidUsername();
+
+        if (!username) return;
+
+
+        const user = JSON.parse(
+            localStorage.getItem("currentUser")
+        );
+
+
+        if(!user){
+
+            alert("Bạn chưa đăng nhập!");
+
+            return;
 
         }
 
 
-
-        socket.emit(
-            'request-quick-match',
-            {
-
-                name: username,
-
-                userId: user.id
-
-            }
-        );
+        const roomIdInput =
+        document.getElementById('room-id-input');
 
 
-    } else {
+        const roomId =
+        roomIdInput ? roomIdInput.value.trim() : "";
 
 
-        alert(
-            "❌ Thất bại: Hiện tại mất kết nối tới máy chủ, không thể ghép trận!"
-        );
+        if (!roomId) {
 
+            alert(
+            "Vui lòng nhập ID phòng (Mã phòng) do bạn của bạn gửi!"
+            );
 
-        enableLobbyButtons();
-
-    }
-
-}
-
-function createNewRoom() {
-
-    const username = getValidUsername();
-
-    if (!username) return;
-
-
-    const user = JSON.parse(
-        localStorage.getItem("currentUser")
-    );
-
-
-    if(!user){
-
-        alert("Bạn chưa đăng nhập!");
-
-        return;
-
-    }
-
-
-    if (socket && socket.connected) {
-
-
-        disableLobbyButtons();
-
-
-        const lobbyStatus =
-        document.getElementById('lobby-status');
-
-
-        if (lobbyStatus) {
-
-            lobbyStatus.innerHTML =
-            "⚙️ Đang gửi yêu cầu khởi tạo phòng riêng tư lên Server...";
+            return;
 
         }
 
 
-        socket.emit(
-            'request-create-room',
-            {
+        if (socket && socket.connected) {
 
-                name: username,
 
-                userId:user.id
+            disableLobbyButtons();
+
+
+            const lobbyStatus =
+            document.getElementById('lobby-status');
+
+
+            if (lobbyStatus) {
+
+                lobbyStatus.innerHTML =
+                `🏃‍♂️ Đang kết nối vào phòng [${roomId}]...`;
 
             }
-        );
 
 
-    } else {
+            socket.emit(
+                'request-join-room',
+                {
+
+                    name: username,
+
+                    userId:user.id,
+
+                    roomId:roomId
+
+                }
+            );
 
 
-        alert(
-        "❌ Thất bại: Mất kết nối máy chủ, không thể tạo phòng riêng tư!"
-        );
+        } else {
 
 
-        enableLobbyButtons();
-
-    }
-
-}
-
-function joinRoomWithId() {
-
-    const username = getValidUsername();
-
-    if (!username) return;
+            alert(
+            "❌ Thất bại: Không thể kết nối đến máy chủ để vào phòng!"
+            );
 
 
-    const user = JSON.parse(
-        localStorage.getItem("currentUser")
-    );
-
-
-    if(!user){
-
-        alert("Bạn chưa đăng nhập!");
-
-        return;
-
-    }
-
-
-    const roomIdInput =
-    document.getElementById('room-id-input');
-
-
-    const roomId =
-    roomIdInput ? roomIdInput.value.trim() : "";
-
-
-    if (!roomId) {
-
-        alert(
-        "Vui lòng nhập ID phòng (Mã phòng) do bạn của bạn gửi!"
-        );
-
-        return;
-
-    }
-
-
-    if (socket && socket.connected) {
-
-
-        disableLobbyButtons();
-
-
-        const lobbyStatus =
-        document.getElementById('lobby-status');
-
-
-        if (lobbyStatus) {
-
-            lobbyStatus.innerHTML =
-            `🏃‍♂️ Đang kết nối vào phòng [${roomId}]...`;
+            enableLobbyButtons();
 
         }
 
+    }
+    function displayRoomId(roomId) {
+        const roomDisplayEl = document.getElementById('room-id-display');
+        if (roomDisplayEl) {
+            roomDisplayEl.innerHTML = `Mã Phòng: <strong style="color: #f59e0b;">${roomId}</strong>`;
+        }
+    }
+    // ===============================
+    // BỐ HẢO EVENT
+    // ===============================
+    // Kiểm tra mỗi khi người chơi hoàn thành 1 vòng
+    function checkHaoBossEvent(playerId){
 
-        socket.emit(
-            'request-join-room',
-            {
+        const p = players[playerId];
 
-                name: username,
+        // ===== VÒNG 4 : CHỈ CẢNH BÁO =====
+        if(
+            p.rounds >= 4 &&
+            !window.haoWarningPlayed
+        ){
 
-                userId:user.id,
+            window.haoWarningPlayed = true;
 
-                roomId:roomId
+            addLog("🚨 BỐ HẢO SẮP XUẤT HIỆN!");
+
+            showHaoBossWarning();
+
+        }
+
+        // ===== VÒNG 5 : BOSS XUẤT HIỆN =====
+        if(
+            p.rounds >= 5 &&
+            !window.haoBossTriggered
+        ){
+
+            window.haoBossTriggered = true;
+
+            addLog("🔥 BỐ HẢO ĐÃ XUẤT HIỆN!");
+
+            spawnHaoBoss();
+
+            setTimeout(()=>{
+
+                haoBossSweep();
+
+            },3000);
+
+        }
+
+    }
+
+
+    // ===============================
+    // BỐ HẢO QUÉT
+    // ===============================
+    function haoBossSweep(){
+
+        addLog("🔥 BỐ HẢO BẮT ĐẦU CÀN QUÉT!");
+
+        for(let i=1;i<=2;i++){
+
+            const p = players[i];
+
+            const currentCell = cellsData[p.pos];
+
+            const safe =
+                p.pos===0 ||
+                (
+                    currentCell &&
+                    currentCell.owner===i
+                );
+
+            if(!safe){
+
+                p.money-=500;
+
+                addLog(
+                    `🔥 <strong>${p.name}</strong> không đứng trên đất của mình.<br>-500$`
+                );
+
+                if(p.money<0){
+
+                    const enemy=i===1?2:1;
+
+                    removeHaoBoss();
+
+                    gameOver(enemy,"money");
+
+                    return;
+
+                }
 
             }
-        );
+            else{
 
+                addLog(
+                    `🏠 <strong>${p.name}</strong> đang ở nhà nên được an toàn.`
+                );
 
-    } else {
+            }
 
+        }
 
-        alert(
-        "❌ Thất bại: Không thể kết nối đến máy chủ để vào phòng!"
-        );
+        removeHaoBoss();
 
+        updateUI();
 
-        enableLobbyButtons();
-
-    }
-
-}
-function displayRoomId(roomId) {
-    const roomDisplayEl = document.getElementById('room-id-display');
-    if (roomDisplayEl) {
-        roomDisplayEl.innerHTML = `Mã Phòng: <strong style="color: #f59e0b;">${roomId}</strong>`;
-    }
-}
-// ===============================
-// BỐ HẢO EVENT
-// ===============================
-// Kiểm tra mỗi khi người chơi hoàn thành 1 vòng
-function checkHaoBossEvent(playerId){
-
-    const p = players[playerId];
-
-    // ===== VÒNG 4 : CHỈ CẢNH BÁO =====
-    if(
-        p.rounds >= 4 &&
-        !window.haoWarningPlayed
-    ){
-
-        window.haoWarningPlayed = true;
-
-        addLog("🚨 BỐ HẢO SẮP XUẤT HIỆN!");
-
-        showHaoBossWarning();
+        if(typeof syncGameToRemote==="function"){
+            syncGameToRemote();
+        }
 
     }
 
-    // ===== VÒNG 5 : BOSS XUẤT HIỆN =====
-    if(
-        p.rounds >= 5 &&
-        !window.haoBossTriggered
-    ){
 
-        window.haoBossTriggered = true;
 
-        addLog("🔥 BỐ HẢO ĐÃ XUẤT HIỆN!");
+    // ===============================
+    // HIỆN CẢNH BÁO
+    // ===============================
+    function showHaoBossWarning(){
 
-        spawnHaoBoss();
+        const warning=document.getElementById("hao-warning");
+
+        if(!warning) return;
+
+        // phát âm thanh danger
+        if(audioGame && audioGame.danger){
+
+            audioGame.danger.currentTime=0;
+
+            audioGame.danger.play().catch(()=>{});
+
+        }
+
+        // rung màn hình
+        document.body.classList.add("hao-shake");
+
+        // reset animation
+        warning.classList.remove("show");
+
+        void warning.offsetWidth;
+
+        warning.classList.add("show");
 
         setTimeout(()=>{
 
-            haoBossSweep();
+            warning.classList.remove("show");
+
+            document.body.classList.remove("hao-shake");
 
         },3000);
 
     }
 
-}
 
 
-// ===============================
-// BỐ HẢO QUÉT
-// ===============================
-function haoBossSweep(){
+    // ===============================
+    // SINH BỐ HẢO
+    // ===============================
+    function spawnHaoBoss(){
 
-    addLog("🔥 BỐ HẢO BẮT ĐẦU CÀN QUÉT!");
+        const startCell=document.getElementById("cell-0");
 
-    for(let i=1;i<=2;i++){
+        if(!startCell) return;
 
-        const p = players[i];
+        if(document.getElementById("hao-boss")) return;
 
-        const currentCell = cellsData[p.pos];
+        const boss=document.createElement("div");
 
-        const safe =
-            p.pos===0 ||
-            (
-                currentCell &&
-                currentCell.owner===i
-            );
+        boss.id="hao-boss";
 
-        if(!safe){
+        boss.innerHTML="💀";
 
-            p.money-=500;
+        startCell.appendChild(boss);
 
-            addLog(
-                `🔥 <strong>${p.name}</strong> không đứng trên đất của mình.<br>-500$`
-            );
+    }
 
-            if(p.money<0){
 
-                const enemy=i===1?2:1;
 
-                removeHaoBoss();
+    // ===============================
+    // XÓA BỐ HẢO
+    // ===============================
+    function removeHaoBoss(){
 
-                gameOver(enemy,"money");
+        const boss=document.getElementById("hao-boss");
 
-                return;
+        if(boss){
 
+            boss.remove();
+
+        }
+
+    }
+    // ===== KHỞI TẠO BÀN CỜ VẼ LƯỚI MA TRẬN =====
+    function initializeBoard() {
+        console.log("========== DRAW BOARD ==========");
+        console.log("window.lightningIndex =", window.lightningIndex);
+        const boardEl = document.getElementById('board');
+        if (!boardEl) return;
+        
+        const oldCells = boardEl.querySelectorAll('.cell');
+        oldCells.forEach(cell => cell.remove());
+
+        cellsData.forEach((cell, index) => {
+            const cellEl = document.createElement('div');
+            const isWeb = (index === Number(spiderWebIndex));
+            const isLightning = (index === Number(window.lightningIndex));
+            
+            cellEl.className = `cell ${index === 0 ? 'start-cell' : ''} ${isWeb ? 'has-spider-web' : ''} ${isLightning ? 'has-lightning' : ''}`;
+            cellEl.id = `cell-${index}`;
+            cellEl.style.gridRow = mapCoords[index].r;
+            cellEl.style.gridColumn = mapCoords[index].c;
+            
+            // Cập nhật lại màu sắc background viền hoặc tag của chủ đất nếu đã bị mua (Không ghi đè tên)
+            if (cell.owner) {
+                cellEl.classList.add(`owner-p${cell.owner}`); 
             }
 
-        }
-        else{
-
-            addLog(
-                `🏠 <strong>${p.name}</strong> đang ở nhà nên được an toàn.`
-            );
-
-        }
-
-    }
-
-    removeHaoBoss();
-
-    updateUI();
-
-    if(typeof syncGameToRemote==="function"){
-        syncGameToRemote();
-    }
-
-}
-
-
-
-// ===============================
-// HIỆN CẢNH BÁO
-// ===============================
-function showHaoBossWarning(){
-
-    const warning=document.getElementById("hao-warning");
-
-    if(!warning) return;
-
-    // phát âm thanh danger
-    if(audioGame && audioGame.danger){
-
-        audioGame.danger.currentTime=0;
-
-        audioGame.danger.play().catch(()=>{});
-
-    }
-
-    // rung màn hình
-    document.body.classList.add("hao-shake");
-
-    // reset animation
-    warning.classList.remove("show");
-
-    void warning.offsetWidth;
-
-    warning.classList.add("show");
-
-    setTimeout(()=>{
-
-        warning.classList.remove("show");
-
-        document.body.classList.remove("hao-shake");
-
-    },3000);
-
-}
-
-
-
-// ===============================
-// SINH BỐ HẢO
-// ===============================
-function spawnHaoBoss(){
-
-    const startCell=document.getElementById("cell-0");
-
-    if(!startCell) return;
-
-    if(document.getElementById("hao-boss")) return;
-
-    const boss=document.createElement("div");
-
-    boss.id="hao-boss";
-
-    boss.innerHTML="💀";
-
-    startCell.appendChild(boss);
-
-}
-
-
-
-// ===============================
-// XÓA BỐ HẢO
-// ===============================
-function removeHaoBoss(){
-
-    const boss=document.getElementById("hao-boss");
-
-    if(boss){
-
-        boss.remove();
-
-    }
-
-}
-// ===== KHỞI TẠO BÀN CỜ VẼ LƯỚI MA TRẬN =====
-function initializeBoard() {
-    console.log("========== DRAW BOARD ==========");
-    console.log("window.lightningIndex =", window.lightningIndex);
-    const boardEl = document.getElementById('board');
-    if (!boardEl) return;
-    
-    const oldCells = boardEl.querySelectorAll('.cell');
-    oldCells.forEach(cell => cell.remove());
-
-    cellsData.forEach((cell, index) => {
-        const cellEl = document.createElement('div');
-        const isWeb = (index === Number(spiderWebIndex));
-        const isLightning = (index === Number(window.lightningIndex));
-        
-        cellEl.className = `cell ${index === 0 ? 'start-cell' : ''} ${isWeb ? 'has-spider-web' : ''} ${isLightning ? 'has-lightning' : ''}`;
-        cellEl.id = `cell-${index}`;
-        cellEl.style.gridRow = mapCoords[index].r;
-        cellEl.style.gridColumn = mapCoords[index].c;
-        
-        // Cập nhật lại màu sắc background viền hoặc tag của chủ đất nếu đã bị mua (Không ghi đè tên)
-        if (cell.owner) {
-            cellEl.classList.add(`owner-p${cell.owner}`); 
-        }
-
-        if(index === 0) {
-            cellEl.innerHTML = '<span class="cell-title" style="font-weight:900;">START</span><br><span style="font-size:9px;color:#0f172a;position:relative;z-index:1;">+300$</span>';
-        } else if (isWeb) {
-            cellEl.innerHTML = `<span class="cell-title" style="color:#a855f7; font-weight:900;">MẠNG NHỆN</span><span class="cell-price" id="price-${index}">MẤT LƯỢT</span>`;
-            const webIcon = document.createElement('div');
-            webIcon.className = 'spider-icon'; webIcon.innerText = '🕸️';
-            webIcon.style.position = 'absolute'; webIcon.style.fontSize = '24px';
-            cellEl.appendChild(webIcon);
-        } else if (isLightning) {
-            cellEl.innerHTML = `<span class="cell-title" style="color:#eab308; font-weight:900;">🚨 THIÊN TAI</span><span class="cell-price" id="price-${index}">⚡ SẤM SÉT</span>`;
-            const lightningIcon = document.createElement('div');
-            lightningIcon.className = 'lightning-icon'; lightningIcon.innerText = '⚡';
-            lightningIcon.style.position = 'absolute'; lightningIcon.style.fontSize = '26px'; lightningIcon.style.top = '5px';
-            cellEl.appendChild(lightningIcon);
-        } else {
-            // Giữ nguyên tiêu đề "Khu Đất {index}" bất kể đất đã thuộc về ai hay vừa được mua lại
-            cellEl.innerHTML = `<span class="cell-title">Khu Đất ${index}</span><span class="cell-price" id="price-${index}">${cell.price}$</span>`;
-        }
-        
-        const giftEl = document.createElement('div');
-        giftEl.className = 'gift-box'; giftEl.innerText = '🎁';
-        if (index === 0 || isWeb || isLightning) {
-            giftEl.style.display = 'none'; cellsData[index].hasGift = false;
-        }
-        cellEl.appendChild(giftEl);
-        
-        const slotP1 = document.createElement('div');
-        slotP1.className = 'token-slot slot-p1'; slotP1.id = `slot-p1-${index}`;
-        slotP1.innerHTML = '<span class="p-tag" id="p1-tag-board">P1</span><span class="p-avatar">🏃‍♂️</span>';
-        cellEl.appendChild(slotP1);
-
-        const slotP2 = document.createElement('div');
-        slotP2.className = 'token-slot slot-p2'; slotP2.id = `slot-p2-${index}`;
-        slotP2.innerHTML = '<span class="p-tag" id="p2-tag-board">P2</span><span class="p-avatar">🏃‍♂️</span>';
-        cellEl.appendChild(slotP2);
-        
-        boardEl.appendChild(cellEl);
-    });
-}
-
-function syncGameToRemote() {
-
-    if(socket && myPlayerNumber === currentTurn){
-
-        socket.emit('syncActionData',{
-            players: players,
-            cellsData: cellsData,
-            currentTurn: currentTurn
-        });
-
-    }
-
-}
-
-function checkAndUpgradeCombo(playerNum) {
-    const TOTAL_CELLS = cellsData.length; 
-    let baseComboUpgraded = false;
-
-    for (let i = 0; i < TOTAL_CELLS; i++) {
-        let idx1 = i;
-        let idx2 = (i + 1) % TOTAL_CELLS;
-        let idx3 = (i + 2) % TOTAL_CELLS;
-
-        if (idx1 === 0 || idx2 === 0 || idx3 === 0) continue;
-        if (idx1 === Number(spiderWebIndex) || idx2 === Number(spiderWebIndex) || idx3 === Number(spiderWebIndex)) continue;
-        if (idx1 === Number(lightningIndex) || idx2 === Number(lightningIndex) || idx3 === Number(lightningIndex)) continue;
-
-        if (cellsData[idx1].owner === playerNum && 
-            cellsData[idx2].owner === playerNum && 
-            cellsData[idx3].owner === playerNum) {
+            if(index === 0) {
+                cellEl.innerHTML = '<span class="cell-title" style="font-weight:900;">START</span><br><span style="font-size:9px;color:#0f172a;position:relative;z-index:1;">+300$</span>';
+            } else if (isWeb) {
+                cellEl.innerHTML = `<span class="cell-title" style="color:#a855f7; font-weight:900;">MẠNG NHỆN</span><span class="cell-price" id="price-${index}">MẤT LƯỢT</span>`;
+                const webIcon = document.createElement('div');
+                webIcon.className = 'spider-icon'; webIcon.innerText = '🕸️';
+                webIcon.style.position = 'absolute'; webIcon.style.fontSize = '24px';
+                cellEl.appendChild(webIcon);
+            } else if (isLightning) {
+                cellEl.innerHTML = `<span class="cell-title" style="color:#eab308; font-weight:900;">🚨 THIÊN TAI</span><span class="cell-price" id="price-${index}">⚡ SẤM SÉT</span>`;
+                const lightningIcon = document.createElement('div');
+                lightningIcon.className = 'lightning-icon'; lightningIcon.innerText = '⚡';
+                lightningIcon.style.position = 'absolute'; lightningIcon.style.fontSize = '26px'; lightningIcon.style.top = '5px';
+                cellEl.appendChild(lightningIcon);
+            } else {
+                // Giữ nguyên tiêu đề "Khu Đất {index}" bất kể đất đã thuộc về ai hay vừa được mua lại
+                cellEl.innerHTML = `<span class="cell-title">Khu Đất ${index}</span><span class="cell-price" id="price-${index}">${cell.price}$</span>`;
+            }
             
-            let comboFound = false;
-            [idx1, idx2, idx3].forEach(idx => {
-                if (!cellsData[idx].isUpgraded) {
-                    cellsData[idx].isUpgraded = true;
-                    cellsData[idx].price = cellsData[idx].price * 2; 
-                    comboFound = true;
-                    baseComboUpgraded = true;
-                    
-                    const cellEl = document.getElementById(`cell-${idx}`);
-                    if (cellEl) {
-                        cellEl.classList.add('upgraded-cyber');
-                        const priceTag = cellEl.querySelector('.cell-price');
-                        if (priceTag) priceTag.innerText = `${cellsData[idx].price}$`;
+            const giftEl = document.createElement('div');
+            giftEl.className = 'gift-box'; giftEl.innerText = '🎁';
+            if (index === 0 || isWeb || isLightning) {
+                giftEl.style.display = 'none'; cellsData[index].hasGift = false;
+            }
+            cellEl.appendChild(giftEl);
+            
+            const slotP1 = document.createElement('div');
+            slotP1.className = 'token-slot slot-p1'; slotP1.id = `slot-p1-${index}`;
+            slotP1.innerHTML = '<span class="p-tag" id="p1-tag-board">P1</span><span class="p-avatar">🏃‍♂️</span>';
+            cellEl.appendChild(slotP1);
+
+            const slotP2 = document.createElement('div');
+            slotP2.className = 'token-slot slot-p2'; slotP2.id = `slot-p2-${index}`;
+            slotP2.innerHTML = '<span class="p-tag" id="p2-tag-board">P2</span><span class="p-avatar">🏃‍♂️</span>';
+            cellEl.appendChild(slotP2);
+            
+            boardEl.appendChild(cellEl);
+        });
+    }
+
+    function syncGameToRemote() {
+
+        if(socket && myPlayerNumber === currentTurn){
+
+            socket.emit('syncActionData',{
+                players: players,
+                cellsData: cellsData,
+                currentTurn: currentTurn
+            });
+
+        }
+
+    }
+
+    function checkAndUpgradeCombo(playerNum) {
+        const TOTAL_CELLS = cellsData.length; 
+        let baseComboUpgraded = false;
+
+        for (let i = 0; i < TOTAL_CELLS; i++) {
+            let idx1 = i;
+            let idx2 = (i + 1) % TOTAL_CELLS;
+            let idx3 = (i + 2) % TOTAL_CELLS;
+
+            if (idx1 === 0 || idx2 === 0 || idx3 === 0) continue;
+            if (idx1 === Number(spiderWebIndex) || idx2 === Number(spiderWebIndex) || idx3 === Number(spiderWebIndex)) continue;
+            if (idx1 === Number(lightningIndex) || idx2 === Number(lightningIndex) || idx3 === Number(lightningIndex)) continue;
+
+            if (cellsData[idx1].owner === playerNum && 
+                cellsData[idx2].owner === playerNum && 
+                cellsData[idx3].owner === playerNum) {
+                
+                let comboFound = false;
+                [idx1, idx2, idx3].forEach(idx => {
+                    if (!cellsData[idx].isUpgraded) {
+                        cellsData[idx].isUpgraded = true;
+                        cellsData[idx].price = cellsData[idx].price * 2; 
+                        comboFound = true;
+                        baseComboUpgraded = true;
+                        
+                        const cellEl = document.getElementById(`cell-${idx}`);
+                        if (cellEl) {
+                            cellEl.classList.add('upgraded-cyber');
+                            const priceTag = cellEl.querySelector('.cell-price');
+                            if (priceTag) priceTag.innerText = `${cellsData[idx].price}$`;
+                        }
                     }
+                });
+                
+                if (comboFound) {
+                    addLog(`⚡ <strong>COMBO THẦN TỐC!</strong> ${players[playerNum].name} thâu tóm 3 ô liền kề [${idx1}, ${idx2}, ${idx3}], x2 giá trị đất!`);
+                    playSFX(audioGame.buyLand);
+                }
+            }
+        }
+        if (baseComboUpgraded && socket) syncGameToRemote();
+    }
+
+    // =========================================================================
+    // 🎯 HÀM CẬP NHẬT: LOGIC HẠ CÁNH VÀO Ô ĐẶC BIỆT BẪY ĐỒNG BỘ 100%
+    // =========================================================================
+    function handleLandOnCell(cellIndex) {
+        if (window.gameEnding) {
+            console.log("⛔ Game đang kết thúc, bỏ qua handleLandOnCell!");
+            return;
+        }
+        console.log("===== HANDLE LAND ON CELL =====");
+        console.log("cellIndex =", cellIndex);
+        console.log("window.lightningIndex =", window.lightningIndex);
+        console.log("lightningIndex =", lightningIndex);
+        console.log("targetIndex =", Number(cellIndex));
+        console.log("target == lightning ?", Number(cellIndex) === Number(lightningIndex));
+        console.log("target == window.lightning ?", Number(cellIndex) === Number(window.lightningIndex));
+        const targetIndex = Number(cellIndex);
+        console.log(`🎯 Quân cờ hạ cánh tại ô số: ${targetIndex}`);
+
+        if (targetIndex === Number(window.spiderWebIndex) || targetIndex === Number(window.lightningIndex) || targetIndex === 0) {
+            if (typeof hideBuyModal === 'function') hideBuyModal(); 
+            if (typeof closeBuyModal === 'function') closeBuyModal();
+        }
+
+        // 🕸️ TRƯỜNG HỢP 1: SA VÀO MẠNG NHỆN
+        if (targetIndex === Number(spiderWebIndex)) {
+            playSFX(audioGame.loseMoney);
+            const opponentTurn = currentTurn === 1 ? 2 : 1;
+            console.log("currentTurn =", currentTurn);
+            console.log("myPlayerNumber =", myPlayerNumber);
+            console.log("opponentTurn =", opponentTurn);
+            // Cấp 2 lượt cho đối thủ
+            window.isMoving = false; // Giải phóng nút ngay lập tức
+
+            const logMsg = `🕸️ BẪY MẠNG NHỆN! ${players[currentTurn].name} bị khóa chân. Đối thủ ${players[opponentTurn].name} được đi 2 lượt!`;
+
+            if (socket && socket.connected) {
+                window.extraTurns = 2;
+                socket.emit('playerHitSpiderWebSync', {
+                logMsg: logMsg,
+                nextTurn: opponentTurn,
+                extraTurns: 2,
+                playersUpdate: players
+            });
+            } else {
+                addLog(logMsg);
+                window.currentTurn = opponentTurn;
+                checkMyTurnControl();
+            }
+            return; 
+        }
+
+        // ⚡ TRƯỜNG HỢP 2: SA VÀO THIÊN TAI (Giữ nguyên logic của bạn)
+        if (
+            window.lightningIndex !== null &&
+            targetIndex === Number(window.lightningIndex)
+        ) { 
+            console.log("🔥 ĐÃ VÀO NHÁNH THIÊN TAI");
+            window.isMoving = true;
+            playSFX(audioGame.lightning); 
+            const activePlayer = players[currentTurn];
+            let penalty = Math.floor(activePlayer.money * 0.5);
+            activePlayer.money -= penalty;
+            const TOTAL_CELLS = cellsData.length;
+            let leftCell = (targetIndex - 1 + TOTAL_CELLS) % TOTAL_CELLS;
+            let rightCell = (targetIndex + 1) % TOTAL_CELLS;
+            let wipedNames = [];
+
+            [leftCell, rightCell].forEach(idx => {
+                if (idx !== 0 && idx !== Number(spiderWebIndex)) {
+                    cellsData[idx].owner = null; cellsData[idx].level = 1;
+                    cellsData[idx].price = 100; cellsData[idx].isUpgraded = false;
+                    wipedNames.push(`Ô số ${idx}`);
                 }
             });
+
+            const log1 = `⚡ THIÊN TAI GIÁNG XUỐNG! ${activePlayer.name} bị phạt ${penalty}$.`;
+            const log2 = `💸 San phẳng đất tại: ${wipedNames.join(', ')}.`;
+
+            socket.emit('playerHitLightningSync', { logs: [log1, log2], playersUpdate: players, cellsDataUpdate: cellsData });
+            return; 
+        }
+
+        // 🟢 TRƯỜNG HỢP 3: Ô ĐẤT THƯỜNG
+        if (targetIndex !== 0 && myPlayerNumber === currentTurn) {
+            if (typeof showBuyModal === 'function') showBuyModal(targetIndex);
+        }
+    }
+
+    function calculateTotalLandValue(playerNum) {
+        let totalValue = 0;
+        cellsData.forEach(cell => { if (cell.owner === playerNum) totalValue += cell.price; });
+        return totalValue;
+    }
+
+    // ===== KẾT THÚC LƯỢT ĐI =====
+    function endTurn() {
+        console.log("===== END TURN =====");
+        console.log("players[1].rounds =", players[1]?.rounds);
+        console.log("players[2].rounds =", players[2]?.rounds);
+        
+        // 🔥 NẾU GAME ĐANG KẾT THÚC, THOÁT NGAY
+        if (window.gameEnding) {
+            console.log("⛔ Game đang kết thúc, bỏ qua endTurn!");
+            return;
+        }
+        
+        // 🔥 KIỂM TRA VÒNG 7 - ƯU TIÊN CAO NHẤT
+        if (players[1].rounds >= 7 || players[2].rounds >= 7) {
+            console.log("🏁 PHÁT HIỆN VÒNG 7! KẾT THÚC NGAY LẬP TỨC!");
             
-            if (comboFound) {
-                addLog(`⚡ <strong>COMBO THẦN TỐC!</strong> ${players[playerNum].name} thâu tóm 3 ô liền kề [${idx1}, ${idx2}, ${idx3}], x2 giá trị đất!`);
-                playSFX(audioGame.buyLand);
+            // Đánh dấu game đang kết thúc
+            window.gameEnding = true;
+            
+            // Vô hiệu hóa nút roll ngay lập tức
+            const rollBtn = document.getElementById('roll-btn');
+            if (rollBtn) {
+                rollBtn.disabled = true;
+                rollBtn.innerText = "⏳ ĐANG KẾT THÚC...";
             }
-        }
-    }
-    if (baseComboUpgraded && socket) syncGameToRemote();
-}
-
-// =========================================================================
-// 🎯 HÀM CẬP NHẬT: LOGIC HẠ CÁNH VÀO Ô ĐẶC BIỆT BẪY ĐỒNG BỘ 100%
-// =========================================================================
-function handleLandOnCell(cellIndex) {
-    
-    console.log("===== HANDLE LAND ON CELL =====");
-    console.log("cellIndex =", cellIndex);
-    console.log("window.lightningIndex =", window.lightningIndex);
-    console.log("lightningIndex =", lightningIndex);
-    console.log("targetIndex =", Number(cellIndex));
-    console.log("target == lightning ?", Number(cellIndex) === Number(lightningIndex));
-    console.log("target == window.lightning ?", Number(cellIndex) === Number(window.lightningIndex));
-    const targetIndex = Number(cellIndex);
-    console.log(`🎯 Quân cờ hạ cánh tại ô số: ${targetIndex}`);
-
-    if (targetIndex === Number(window.spiderWebIndex) || targetIndex === Number(window.lightningIndex) || targetIndex === 0) {
-        if (typeof hideBuyModal === 'function') hideBuyModal(); 
-        if (typeof closeBuyModal === 'function') closeBuyModal();
-    }
-
-    // 🕸️ TRƯỜNG HỢP 1: SA VÀO MẠNG NHỆN
-    if (targetIndex === Number(spiderWebIndex)) {
-        playSFX(audioGame.loseMoney);
-        const opponentTurn = currentTurn === 1 ? 2 : 1;
-        console.log("currentTurn =", currentTurn);
-        console.log("myPlayerNumber =", myPlayerNumber);
-        console.log("opponentTurn =", opponentTurn);
-        // Cấp 2 lượt cho đối thủ
-        window.isMoving = false; // Giải phóng nút ngay lập tức
-
-        const logMsg = `🕸️ BẪY MẠNG NHỆN! ${players[currentTurn].name} bị khóa chân. Đối thủ ${players[opponentTurn].name} được đi 2 lượt!`;
-
-        if (socket && socket.connected) {
-            window.extraTurns = 2;
-            socket.emit('playerHitSpiderWebSync', {
-            logMsg: logMsg,
-            nextTurn: opponentTurn,
-            extraTurns: 2,
-            playersUpdate: players
-        });
-        } else {
-            addLog(logMsg);
-            window.currentTurn = opponentTurn;
-            checkMyTurnControl();
-        }
-        return; 
-    }
-
-    // ⚡ TRƯỜNG HỢP 2: SA VÀO THIÊN TAI (Giữ nguyên logic của bạn)
-    if (
-        window.lightningIndex !== null &&
-        targetIndex === Number(window.lightningIndex)
-    ) { 
-        console.log("🔥 ĐÃ VÀO NHÁNH THIÊN TAI");
-        window.isMoving = true;
-        playSFX(audioGame.lightning); 
-        const activePlayer = players[currentTurn];
-        let penalty = Math.floor(activePlayer.money * 0.5);
-        activePlayer.money -= penalty;
-        const TOTAL_CELLS = cellsData.length;
-        let leftCell = (targetIndex - 1 + TOTAL_CELLS) % TOTAL_CELLS;
-        let rightCell = (targetIndex + 1) % TOTAL_CELLS;
-        let wipedNames = [];
-
-        [leftCell, rightCell].forEach(idx => {
-            if (idx !== 0 && idx !== Number(spiderWebIndex)) {
-                cellsData[idx].owner = null; cellsData[idx].level = 1;
-                cellsData[idx].price = 100; cellsData[idx].isUpgraded = false;
-                wipedNames.push(`Ô số ${idx}`);
+            
+            let p1Value = calculateTotalAsset(1);
+            let p2Value = calculateTotalAsset(2);
+            
+            addLog(`🏁 Kết thúc trận!`);
+            addLog(`📊 P1 (${players[1].name}): ${p1Value}$`);
+            addLog(`📊 P2 (${players[2].name}): ${p2Value}$`);
+            
+            let winnerId;
+            if (p1Value > p2Value) {
+                winnerId = 1;
+            } else if (p2Value > p1Value) {
+                winnerId = 2;
+            } else {
+                winnerId = players[1].money >= players[2].money ? 1 : 2;
             }
-        });
-
-        const log1 = `⚡ THIÊN TAI GIÁNG XUỐNG! ${activePlayer.name} bị phạt ${penalty}$.`;
-        const log2 = `💸 San phẳng đất tại: ${wipedNames.join(', ')}.`;
-
-        socket.emit('playerHitLightningSync', { logs: [log1, log2], playersUpdate: players, cellsDataUpdate: cellsData });
-        return; 
-    }
-
-    // 🟢 TRƯỜNG HỢP 3: Ô ĐẤT THƯỜNG
-    if (targetIndex !== 0 && myPlayerNumber === currentTurn) {
-        if (typeof showBuyModal === 'function') showBuyModal(targetIndex);
-    }
-}
-
-function calculateTotalLandValue(playerNum) {
-    let totalValue = 0;
-    cellsData.forEach(cell => { if (cell.owner === playerNum) totalValue += cell.price; });
-    return totalValue;
-}
-
-// ===== KẾT THÚC LƯỢT ĐI =====
-function endTurn() {
-    console.log("===== END TURN =====");
-    console.log(players[1].rounds);
-    console.log(players[2].rounds);
-    if (players[1].rounds >= 7 || players[2].rounds >= 7) {
-        let p1Value = calculateTotalAsset(1);
-        let p2Value = calculateTotalAsset(2);
-        addLog(
-        `🏁 Kết thúc trận!
-        P1: ${p1Value}$
-        P2: ${p2Value}$`
-        );
-        if (p1Value > p2Value) return gameOver(1, "value_compare");
-        else if (p2Value > p1Value) return gameOver(2, "value_compare");
-        else return gameOver(players[1].money >= players[2].money ? 1 : 2, "value_compare");
-    }
-
-    if (players[1].money < 0) return gameOver(2, "money");
-    if (players[2].money < 0) return gameOver(1, "money");
-    
-    // XỬ LÝ LƯỢT ƯU TIÊN (NẾU CÓ)
-    if (typeof window.extraTurns !== 'undefined' && window.extraTurns > 0) {
-
-        window.extraTurns--;
-
-        if(window.extraTurns > 0){
-
-            addLog(
-            `🔄 ${players[currentTurn].name} còn ${window.extraTurns} lượt thưởng`
-            );
-
-            isMoving = false;
-
-            socket.emit('syncExtraTurn',{
-                currentTurn: currentTurn,
-                extraTurns: window.extraTurns
-            });
-
-            checkMyTurnControl();
-
+            
+            // Gọi gameOver và THOÁT NGAY
+            gameOver(winnerId, "value_compare");
             return;
         }
 
-        window.extraTurns = 0;
+        // 🔥 KIỂM TRA HẾT TIỀN
+        if (players[1].money < 0) {
+            window.gameEnding = true;
+            gameOver(2, "money");
+            return;
+        }
+        if (players[2].money < 0) {
+            window.gameEnding = true;
+            gameOver(1, "money");
+            return;
+        }
+        
+        // XỬ LÝ LƯỢT ƯU TIÊN (NẾU CÓ)
+        if (typeof window.extraTurns !== 'undefined' && window.extraTurns > 0) {
+            window.extraTurns--;
+            if(window.extraTurns > 0){
+                addLog(`🔄 ${players[currentTurn].name} còn ${window.extraTurns} lượt thưởng`);
+                isMoving = false;
+                if (socket && socket.connected) {
+                    socket.emit('syncExtraTurn',{
+                        currentTurn: currentTurn,
+                        extraTurns: window.extraTurns
+                    });
+                }
+                checkMyTurnControl();
+                return;
+            }
+            window.extraTurns = 0;
+        }
+        else if (typeof extraTurnGranted !== 'undefined' && extraTurnGranted) {
+            extraTurnGranted = false;
+            addLog(`🔄 <strong>${players[currentTurn].name}</strong> nhận thêm lượt bổ sung!`);
+        }
+        else {
+            currentTurn = currentTurn === 1 ? 2 : 1;
+        }
+        
+        isMoving = false; 
 
+        if (socket && socket.connected) {
+            // Đồng bộ dữ liệu tiền vàng, đất đai hiện tại
+            socket.emit('syncActionData', { players: players, cellsData: cellsData });
+            
+            // 🔥 CHỈ KIỂM TRA THIÊN TAI NẾU GAME CHƯA KẾT THÚC
+            if (!window.gameEnding) {
+                console.log("========== KIỂM TRA THIÊN TAI ==========");
+                console.log("disasterSpawnedThisGame =", window.disasterSpawnedThisGame);
+                console.log("P1 rounds =", players[1].rounds);
+                console.log("P2 rounds =", players[2].rounds);
+
+                if (
+                    !window.disasterSpawnedThisGame &&
+                    players[1].rounds >= 1 &&
+                    players[2].rounds >= 1
+                ) {
+                    console.log("✅ Điều kiện xuất hiện thiên tai đạt.");
+
+                    const TOTAL_CELLS = cellsData.length;
+                    let randomDisasterIdx;
+
+                    do {
+                        randomDisasterIdx = Math.floor(Math.random() * (TOTAL_CELLS - 1)) + 1;
+                    } while (randomDisasterIdx === Number(spiderWebIndex));
+
+                    console.log("⚡ Random thiên tai =", randomDisasterIdx);
+
+                    const alertDisasterMsg = `🚨 THIÊN TAI XUẤT HIỆN tại ô ${randomDisasterIdx}`;
+
+                    if (socket && socket.connected) {
+                        console.log("📡 Gửi triggerDisasterSpawn lên Server");
+                        try {
+                            socket.emit("triggerDisasterSpawn", {
+                                lightningIndex: randomDisasterIdx,
+                                logMsg: alertDisasterMsg
+                            });
+                            console.log("✅ Đã gửi triggerDisasterSpawn");
+                        } catch(err) {
+                            console.error("❌ triggerDisasterSpawn lỗi:", err);
+                        }
+                    } else {
+                        console.error("❌ Socket chưa kết nối.");
+                    }
+                }
+            }
+
+            // Chuyển lượt đi
+            socket.emit('syncEndTurn', { nextTurn: currentTurn });
+        }
     }
-    else if (typeof extraTurnGranted !== 'undefined' && extraTurnGranted) {
-
-        extraTurnGranted = false;
-
-        addLog(`🔄 <strong>${players[currentTurn].name}</strong> nhận thêm lượt bổ sung!`);
-
-    }
-    else {
-
-        currentTurn = currentTurn === 1 ? 2 : 1;
-
-    }
-    
-    isMoving = false; 
-
-    if (socket && socket.connected) {
-        // Đồng bộ dữ liệu tiền vàng, đất đai hiện tại
-        socket.emit('syncActionData', { players: players, cellsData: cellsData });
+    // ===== KIỂM TRA VÀ SINH THIÊN TAI =====
+    function checkAndSpawnDisaster() {
+        // Nếu game đang kết thúc, KHÔNG sinh thiên tai
+        if (window.gameEnding) {
+            console.log("⛔ Game đang kết thúc, bỏ qua sinh thiên tai!");
+            return;
+        }
+        
         console.log("========== KIỂM TRA THIÊN TAI ==========");
         console.log("disasterSpawnedThisGame =", window.disasterSpawnedThisGame);
-        console.log("P1 rounds =", players[1].rounds);
-        console.log("P2 rounds =", players[2].rounds);
+        console.log("P1 rounds =", players[1]?.rounds);
+        console.log("P2 rounds =", players[2]?.rounds);
 
         if (
             !window.disasterSpawnedThisGame &&
-            players[1].rounds >= 1 &&
-            players[2].rounds >= 1
+            players[1]?.rounds >= 1 &&
+            players[2]?.rounds >= 1
         ) {
-
             console.log("✅ Điều kiện xuất hiện thiên tai đạt.");
 
             const TOTAL_CELLS = cellsData.length;
-
             let randomDisasterIdx;
-
             do {
-                randomDisasterIdx =
-                    Math.floor(Math.random() * (TOTAL_CELLS - 1)) + 1;
+                randomDisasterIdx = Math.floor(Math.random() * (TOTAL_CELLS - 1)) + 1;
             } while (randomDisasterIdx === Number(spiderWebIndex));
 
             console.log("⚡ Random thiên tai =", randomDisasterIdx);
 
-            const alertDisasterMsg =
-                `🚨 THIÊN TAI XUẤT HIỆN tại ô ${randomDisasterIdx}`;
+            const alertDisasterMsg = `🚨 THIÊN TAI XUẤT HIỆN tại ô ${randomDisasterIdx}`;
 
             if (socket && socket.connected) {
-
                 console.log("📡 Gửi triggerDisasterSpawn lên Server");
-
                 try {
-
                     socket.emit("triggerDisasterSpawn", {
-
                         lightningIndex: randomDisasterIdx,
                         logMsg: alertDisasterMsg
-
                     });
-
                     console.log("✅ Đã gửi triggerDisasterSpawn");
+                } catch(err) {
+                    console.error("❌ triggerDisasterSpawn lỗi:", err);
                 }
-                catch(err){
-                    console.error("❌ triggerDisasterSpawn lỗi");
-                    console.error(err);
+            }
+        }
+    }
+    // ===== KIỂM TRA QUYỀN ĐIỀU KHIỂN & ĐỒNG BỘ NÚT =====
+    function checkMyTurnControl() {
+        const rollBtn = document.getElementById('roll-btn');
+        if(!rollBtn) return;
+
+        if (typeof gameStarted !== 'undefined' && gameStarted && currentTurn !== null) {
+            rollBtn.onclick = () => {
+                playSFX(audioGame.dice);
+                if (typeof rollDice3D === 'function') rollDice3D();
+            };
+
+            if (myPlayerNumber === currentTurn) {
+                rollBtn.disabled = isMoving; 
+                // CẬP NHẬT TEXT NẾU ĐANG TRONG LƯỢT ƯU TIÊN
+                if (typeof window.extraTurns !== 'undefined' && window.extraTurns > 0) {
+                    rollBtn.innerText = `ĐỔ XÚC XẮC (LƯỢT THÊM: ${window.extraTurns})`;
+                } else {
+                    rollBtn.innerText = "ĐỔ XÚC XẮC";
                 }
             } else {
-                console.error("❌ Socket chưa kết nối.");
+                rollBtn.disabled = true;
+                rollBtn.innerText = `ĐỢI ĐỐI THỦ (${players[currentTurn].name})...`;
             }
-
+        } else if (typeof determineTurn === 'function' && determineTurnData.p1Roll === null && determineTurnData.p2Roll === null) {
+            determineTurn();
+        }
+        
+        if (typeof updateUI === 'function') {
+            updateUI();
         }
 
-        // Chuyển lượt đi
-        socket.emit('syncEndTurn', { nextTurn: currentTurn });
+        if (typeof updateSkillUI === 'function') {
+            updateSkillUI();
+        }
     }
-}
+    function calculateTotalAsset(playerId){
 
-// ===== KIỂM TRA QUYỀN ĐIỀU KHIỂN & ĐỒNG BỘ NÚT =====
-function checkMyTurnControl() {
-    const rollBtn = document.getElementById('roll-btn');
-    if(!rollBtn) return;
+        let money = players[playerId].money;
 
-    if (typeof gameStarted !== 'undefined' && gameStarted && currentTurn !== null) {
-        rollBtn.onclick = () => {
-            playSFX(audioGame.dice);
-            if (typeof rollDice3D === 'function') rollDice3D();
+        let landValue = calculateTotalLandValue(playerId);
+
+        return money + landValue;
+    }
+    // ===== KẾT THÚC TRÒ CHƠI HOÀN TOÀN =====
+    let matchResultSent = false;
+
+    // ===== GỬI GAMEOVER LÊN SERVER =====
+    function gameOver(winnerId, reason = "money") {
+        console.log("🏆 GAME OVER - Người thắng:", winnerId);
+        console.log("📊 Lý do:", reason);
+        console.log("👤 myPlayerNumber:", myPlayerNumber);
+        
+        // 🔥 NẾU LÀ NGƯỜI RỜI (THUA) - KHÔNG LÀM GÌ CẢ
+        if ((reason === 'leave' || reason === 'disconnect') && myPlayerNumber !== winnerId) {
+            console.log("🚪 Bạn đã rời trận (thua), bỏ qua gameOver!");
+            return;
+        }
+        
+        // Ẩn nút rời trận
+        if (typeof hideLeaveButton === 'function') {
+            hideLeaveButton();
+        }
+        
+        // Đánh dấu game đang kết thúc
+        window.gameEnding = true;
+        
+        // Vô hiệu hóa nút roll
+        const rollBtn = document.getElementById('roll-btn');
+        if (rollBtn) {
+            rollBtn.disabled = true;
+            rollBtn.innerText = "⏳ ĐANG KẾT THÚC...";
+        }
+        
+        // GỬI SERVER: Trận đấu kết thúc
+        if (socket && socket.connected) {
+            socket.emit("gameOver", {
+                winnerId: winnerId,
+                reason: reason
+            });
+            console.log("📤 Đã gửi gameOver lên server");
+        }
+
+        // Lấy user từ localStorage
+        const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+        console.log("👤 User từ localStorage:", currentUser);
+        
+        if (!currentUser) {
+            console.error("❌ Không tìm thấy user!");
+            const fallbackUser = JSON.parse(localStorage.getItem("user"));
+            if (fallbackUser) {
+                const isWin = (myPlayerNumber === winnerId);
+                if (typeof showMatchResultAnimation === 'function') {
+                    showMatchResultAnimation(isWin, fallbackUser);
+                } else {
+                    showSimpleGameOver(winnerId);
+                }
+                return;
+            }
+            showSimpleGameOver(winnerId);
+            return;
+        }
+        
+        const isWin = (myPlayerNumber === winnerId);
+        console.log("🏆 Bạn có thắng không?", isWin);
+        
+        // Hiển thị thông báo đặc biệt nếu đối thủ rời
+        if (reason === 'disconnect' || reason === 'leave') {
+            console.log(`📢 Đối thủ đã ${reason === 'disconnect' ? 'mất kết nối' : 'rời trận'}`);
+            if (typeof addLog === 'function') {
+                addLog(`🏆 ${isWin ? 'Bạn được xử thắng!' : 'Đối thủ đã rời trận.'}`);
+            }
+        }
+        
+        // Gọi animation
+        if (typeof showMatchResultAnimation === 'function') {
+            console.log("🎬 Gọi showMatchResultAnimation với user:", currentUser);
+            showMatchResultAnimation(isWin, currentUser);
+        } else {
+            console.error("❌ Không tìm thấy hàm showMatchResultAnimation!");
+            showSimpleGameOver(winnerId);
+        }
+    }
+    // ===== HIỂN THỊ GAME OVER ĐƠN GIẢN (FALLBACK) =====
+    function showSimpleGameOver(winnerId) {
+        console.log("📊 HIỂN THỊ GAME OVER FALLBACK");
+        
+        if(audioGame.bgm){
+            audioGame.bgm.pause();
+            audioGame.bgm.currentTime = 0;
+        }
+
+        const rollBtn = document.getElementById('roll-btn');
+        if(rollBtn) rollBtn.disabled = true;
+
+        const turnTxt = document.getElementById('turn-txt');
+        if(turnTxt){
+            turnTxt.innerText = "TRẬN ĐẤU KẾT THÚC";
+            turnTxt.style.background = "#ef4444";
+        }
+
+        const overlay = document.getElementById('game-over-overlay');
+        if(overlay) overlay.style.display = 'flex';
+
+        const winText = document.getElementById('winner-text');
+        if(winText && players[winnerId]) {
+            winText.innerHTML = `
+                <div style="font-size:60px;">🏆</div>
+                <h1 style="color:#facc15;font-size:32px;">CHIẾN THẮNG!</h1>
+                <div style="font-size:28px;font-weight:900;color:#10b981;">
+                    ${players[winnerId].name.toUpperCase()}
+                </div>
+            `;
+        }
+
+        addLog(`👑 <strong>NHÀ VÔ ĐỊCH: ${players[winnerId]?.name || 'Unknown'}</strong>`);
+    }
+    // --- LOGIC TÍNH TOÁN KINH NGHIỆM, RANK VÀ COIN ---
+
+    const RANKS = [
+        { name: "Bùn", minPoints: 0 },
+        { name: "Sắt", minPoints: 100 },
+        { name: "Đồng", minPoints: 200 },
+        { name: "Bạc", minPoints: 300 },
+        { name: "Vàng", minPoints: 400 },
+        { name: "Kim Cương", minPoints: 500 },
+        { name: "Hali (Thách Đấu)", minPoints: 600 }
+    ];
+
+    // --- LOGIC TÍNH TOÁN KINH NGHIỆM, RANK VÀ COIN ---
+
+    function handleMatchEnd(isWin, currentExp, currentPoints, currentCoins) {
+        // 1. Gán phần thưởng theo Thắng/Thua
+        const reward = isWin ? { exp: 150, coins: 50, points: 25 } : { exp: 75, coins: 25, points: -20 };
+
+        // 2. Tính EXP (1000 exp = 1 cấp)
+        let totalExp = currentExp + reward.exp;
+        let level = Math.floor(totalExp / 1000) + 1; 
+
+        // 3. Tính Điểm Rank (Không cho phép điểm âm)
+        let newPoints = Math.max(0, currentPoints + reward.points);
+        let currentRank = RANKS[0].name;
+
+        for (let i = RANKS.length - 1; i >= 0; i--) {
+            if (newPoints >= RANKS[i].minPoints) {
+                currentRank = RANKS[i].name;
+                break;
+            }
+        }
+
+        // 4. Cộng tiền xu
+        let totalCoins = currentCoins + reward.coins;
+
+        // 5. Hiển thị bảng tổng kết 
+        let rankDisplayText = `${currentRank} [${reward.points >= 0 ? '+' + reward.points : reward.points}đ]`;
+        showMatchSummary(reward.exp, rankDisplayText, reward.coins);
+
+        // 6. Đóng gói dữ liệu mới
+        const updatedData = { 
+            level: level, 
+            exp: totalExp, 
+            points: newPoints, 
+            rank: currentRank, 
+            coins: totalCoins 
         };
 
-        if (myPlayerNumber === currentTurn) {
-            rollBtn.disabled = isMoving; 
-            // CẬP NHẬT TEXT NẾU ĐANG TRONG LƯỢT ƯU TIÊN
-            if (typeof window.extraTurns !== 'undefined' && window.extraTurns > 0) {
-                rollBtn.innerText = `ĐỔ XÚC XẮC (LƯỢT THÊM: ${window.extraTurns})`;
-            } else {
-                rollBtn.innerText = "ĐỔ XÚC XẮC";
-            }
+        // 7. GỬI DỮ LIỆU LÊN SERVER ĐỂ LƯU VÀO DATABASE
+        if (typeof socket !== 'undefined') {
+            socket.emit('updatePlayerStats', updatedData);
+            console.log("Đã gửi dữ liệu lên server:", updatedData);
         } else {
-            rollBtn.disabled = true;
-            rollBtn.innerText = `ĐỢI ĐỐI THỦ (${players[currentTurn].name})...`;
+            console.warn("Lỗi: Socket chưa kết nối, không thể lưu vào database!");
         }
-    } else if (typeof determineTurn === 'function' && determineTurnData.p1Roll === null && determineTurnData.p2Roll === null) {
-        determineTurn();
+
+        return updatedData;
     }
-    
-    if (typeof updateUI === 'function') {
-        updateUI();
-    }
+    // =========================================================================
+    // 🏆 HỆ THỐNG RANK, KINH NGHIỆM VÀ ANIMATION KẾT THÚC TRẬN ĐẤU
+    // =========================================================================
 
-    if (typeof updateSkillUI === 'function') {
-        updateSkillUI();
-    }
-}
-function calculateTotalAsset(playerId){
-
-    let money = players[playerId].money;
-
-    let landValue = calculateTotalLandValue(playerId);
-
-    return money + landValue;
-}
-// ===== KẾT THÚC TRÒ CHƠI HOÀN TOÀN =====
-let matchResultSent = false;
-
-// ===== GỬI GAMEOVER LÊN SERVER =====
-function gameOver(winnerId, reason = "money") {
-    // GỬI SERVER: Trận đấu kết thúc
-    socket.emit("gameOver", {
-        winnerId: winnerId,
-        reason: reason
-    });
-
-    // Hiển thị kết quả trên máy hiện tại
-    showGameOver(winnerId, reason);
-}
-// ===== HIỂN THỊ KẾT QUẢ GAMEOVER =====
-function showGameOver(winnerId, reason = "money") {
-
-
-    if(audioGame.bgm){
-
-        audioGame.bgm.pause();
-
-        audioGame.bgm.currentTime = 0;
-
+    // 1. HÀM XÁC ĐỊNH RANK THEO ĐIỂM SỐ
+    function getRankInfo(points) {
+        if (points >= 600) return { name: "Hali", icon: "assets/ranks/hali.jpg" };
+        if (points >= 500)  return { name: "Kim Cương", icon: "assets/ranks/kimcuong.jpg" };
+        if (points >= 400)  return { name: "Vàng", icon: "assets/ranks/vang.jpg" };
+        if (points >= 300)  return { name: "Bạc", icon: "assets/ranks/bac.jpg" };
+        if (points >= 200)  return { name: "Đồng", icon: "assets/ranks/dong.jpg" };
+        if (points >= 100)   return { name: "Sắt", icon: "assets/ranks/sat.jpg" };
+        
+        return { name: "Bùn", icon: "assets/ranks/bun.jpg" }; // Dưới 100 RP
     }
 
-
-    const rollBtn = document.getElementById('roll-btn');
-
-    if(rollBtn)
-        rollBtn.disabled = true;
-
-
-
-    if(typeof hideNotification === 'function')
-        hideNotification();
-
-
-
-    const turnTxt = document.getElementById('turn-txt');
-
-
-    if(turnTxt){
-
-        turnTxt.innerText = "TRẬN ĐẤU KẾT THÚC";
-
-        turnTxt.style.background = "#ef4444";
-
-    }
-
-
-
-    const overlay = document.getElementById('game-over-overlay');
-
-    const winText = document.getElementById('winner-text');
-
-
-    if(overlay)
-        overlay.style.display = 'flex';
-
-
-
-    if(winText){
-
-
-        let winner = players[winnerId];
-
-
-        let loserId = winnerId === 1 ? 2 : 1;
-
-
-        let loser = players[loserId];
-
-
-
-        let winnerLand =
-            calculateTotalLandValue(winnerId);
-
-
-
-        let loserLand =
-            calculateTotalLandValue(loserId);
-
-
-
-        let winnerTotal =
-            winner.money + winnerLand;
-
-
-
-        let loserTotal =
-            loser.money + loserLand;
-
-
-
-        winText.innerHTML = `
-
-
-        <div class="victory-box">
-
-
-            <div style="
-                font-size:60px;
-                animation:trophy 1s infinite alternate;
-            ">
-                🏆
-            </div>
-
-
-
-            <h1 style="
-                color:#facc15;
-                font-size:32px;
-                margin:10px;
-            ">
-                CHIẾN THẮNG!
-            </h1>
-
-
-
-            <div style="
-                font-size:28px;
-                font-weight:900;
-                color:#10b981;
-            ">
-                ${winner.name.toUpperCase()}
-            </div>
-
-
-
-            <hr>
-
-
-
-            <div class="stat-line">
-                💰 Tiền mặt:
-                <b>${winner.money}$</b>
-            </div>
-
-
-
-            <div class="stat-line">
-                🏠 Giá trị đất:
-                <b>${winnerLand}$</b>
-            </div>
-
-
-
-            <div class="stat-line total">
-                👑 Tổng tài sản:
-                <b>${winnerTotal}$</b>
-            </div>
-
-
-
-            <br>
-
-
-
-            <div style="
-                color:#94a3b8;
-                font-size:14px;
-            ">
-
-                Đối thủ ${loser.name}
-
-                <br>
-
-                💰 ${loser.money}$
-
-                |
-
-                🏠 ${loserLand}$
-
-
-                <br>
-
-                Tổng:
-                ${loserTotal}$
-
-            </div>
-
-
-
-            <div style="
-                margin-top:15px;
-                color:#38bdf8;
-            ">
-
-            🎮 Trận đấu kết thúc sau 
-
-            ${Math.max(
-                players[1].rounds,
-                players[2].rounds
-            )}
-
-            vòng
-
-            </div>
-
-
-        </div>
-
-
-        `;
-
-    }
-
-    addLog(
-        `👑 <strong>NHÀ VÔ ĐỊCH: ${players[winnerId].name}</strong> thâu tóm toàn bộ sàn đấu!`
-    );
-    const isWin = (myPlayerNumber === winnerId); // Kiểm tra mình thắng hay thua
-    showMatchResultAnimation(isWin, myStats);
-
-}
-// --- LOGIC TÍNH TOÁN KINH NGHIỆM, RANK VÀ COIN ---
-
-const RANKS = [
-    { name: "Bùn", minPoints: 0 },
-    { name: "Sắt", minPoints: 100 },
-    { name: "Đồng", minPoints: 200 },
-    { name: "Bạc", minPoints: 300 },
-    { name: "Vàng", minPoints: 400 },
-    { name: "Kim Cương", minPoints: 500 },
-    { name: "Hali (Thách Đấu)", minPoints: 600 }
-];
-
-// --- LOGIC TÍNH TOÁN KINH NGHIỆM, RANK VÀ COIN ---
-
-function handleMatchEnd(isWin, currentExp, currentPoints, currentCoins) {
-    // 1. Gán phần thưởng theo Thắng/Thua
-    const reward = isWin ? { exp: 150, coins: 50, points: 25 } : { exp: 75, coins: 25, points: -20 };
-
-    // 2. Tính EXP (1000 exp = 1 cấp)
-    let totalExp = currentExp + reward.exp;
-    let level = Math.floor(totalExp / 1000) + 1; 
-
-    // 3. Tính Điểm Rank (Không cho phép điểm âm)
-    let newPoints = Math.max(0, currentPoints + reward.points);
-    let currentRank = RANKS[0].name;
-
-    for (let i = RANKS.length - 1; i >= 0; i--) {
-        if (newPoints >= RANKS[i].minPoints) {
-            currentRank = RANKS[i].name;
-            break;
-        }
-    }
-
-    // 4. Cộng tiền xu
-    let totalCoins = currentCoins + reward.coins;
-
-    // 5. Hiển thị bảng tổng kết 
-    let rankDisplayText = `${currentRank} [${reward.points >= 0 ? '+' + reward.points : reward.points}đ]`;
-    showMatchSummary(reward.exp, rankDisplayText, reward.coins);
-
-    // 6. Đóng gói dữ liệu mới
-    const updatedData = { 
-        level: level, 
-        exp: totalExp, 
-        points: newPoints, 
-        rank: currentRank, 
-        coins: totalCoins 
-    };
-
-    // 7. GỬI DỮ LIỆU LÊN SERVER ĐỂ LƯU VÀO DATABASE
-    if (typeof socket !== 'undefined') {
-        socket.emit('updatePlayerStats', updatedData);
-        console.log("Đã gửi dữ liệu lên server:", updatedData);
-    } else {
-        console.warn("Lỗi: Socket chưa kết nối, không thể lưu vào database!");
-    }
-
-    return updatedData;
-}
-// =========================================================================
-// 🏆 HỆ THỐNG RANK, KINH NGHIỆM VÀ ANIMATION KẾT THÚC TRẬN ĐẤU
-// =========================================================================
-
-// 1. HÀM XÁC ĐỊNH RANK THEO ĐIỂM SỐ
-function getRankInfo(points) {
-    if (points >= 600) return { name: "Hali", icon: "assets/ranks/hali.jpg" };
-    if (points >= 500)  return { name: "Kim Cương", icon: "assets/ranks/kimcuong.jpg" };
-    if (points >= 400)  return { name: "Vàng", icon: "assets/ranks/vang.jpg" };
-    if (points >= 300)  return { name: "Bạc", icon: "assets/ranks/bac.jpg" };
-    if (points >= 200)  return { name: "Đồng", icon: "assets/ranks/dong.jpg" };
-    if (points >= 100)   return { name: "Sắt", icon: "assets/ranks/sat.jpg" };
-    
-    return { name: "Bùn", icon: "assets/ranks/bun.jpg" }; // Dưới 100 RP
-}
-
-// 2. Hàm chạy animation
-async function showMatchResultAnimation(isWin, currentUserData) {
-    // 🔥 0. BẬT POPUP KẾT THÚC TRẬN ĐẤU LÊN NGAY LẬP TỨC
-    const gameOverOverlay = document.getElementById("game-over-overlay");
-    if (gameOverOverlay) gameOverOverlay.style.display = "flex";
-
-    const expGained = isWin ? 150 : 75;
-    const coinsGained = isWin ? 50 : 25;
-    const pointsGained = isWin ? 25 : -20;
-
-    const titleEl = document.getElementById("match-status-title");
-    const winnerTextEl = document.getElementById("winner-text");
-    const rankIconEl = document.getElementById("rank-icon");
-    const rankPtsEl = document.getElementById("current-rank-pts");
-    const rankDeltaEl = document.getElementById("rank-delta");
-    const levelBadgeEl = document.getElementById("summary-level-num");
-    const expTextEl = document.getElementById("exp-text");
-    const expBarEl = document.getElementById("exp-bar-fill");
-    const coinRewardEl = document.getElementById("coin-reward");
-
-    let currentPts = currentUserData?.points || 0;
-    let totalExp = currentUserData?.exp || 0;
-    let currentCoins = currentUserData?.coins || currentUserData?.coin || 0;
-    let playerName = currentUserData?.name || currentUserData?.display_name || "Bạn";
-
-    // A. Tiêu đề Victory/Defeat + Tên người chiến thắng/thua
-    if (titleEl) {
-        titleEl.innerText = isWin ? "VICTORY!" : "DEFEAT!";
-        titleEl.style.color = isWin ? "#4efe80" : "#ff4757";
-    }
-    if (winnerTextEl) {
-        winnerTextEl.innerText = isWin ? `🎉 ${playerName} đã chiến thắng!` : `💀 ${playerName} đã thất bại!`;
-    }
-
-    // B. Set Ảnh Rank Ban Đầu
-    let initialRank = getRankInfo(currentPts);
-    if (rankIconEl) rankIconEl.src = initialRank.icon;
-    if (rankPtsEl) rankPtsEl.innerText = currentPts;
-    if (coinRewardEl) coinRewardEl.innerText = `+${coinsGained} Coin`;
-
-    // C. Animation Điểm Rank + Tự động BÙM Hiệu Ứng Lên Rank
-    if (rankDeltaEl) {
-        rankDeltaEl.className = pointsGained >= 0 ? "delta-text delta-plus" : "delta-text delta-minus";
-        rankDeltaEl.innerText = pointsGained >= 0 ? `+${pointsGained}` : `${pointsGained}`;
-    }
-
-    let targetPts = Math.max(0, currentPts + pointsGained);
-    let ptsStep = pointsGained > 0 ? 1 : -1;
-    let lastRankName = initialRank.name;
-
-    let ptsInterval = setInterval(() => {
-        if (currentPts === targetPts) {
-            clearInterval(ptsInterval);
+    // 2. Hàm chạy animation
+    async function showMatchResultAnimation(isWin, currentUserData) {
+        console.log("🎬 ===== BẮT ĐẦU ANIMATION =====");
+        console.log("📊 isWin:", isWin);
+        console.log("📊 currentUserData:", currentUserData);
+        
+        // 🔥 BẬT POPUP KẾT THÚC TRẬN ĐẤU
+        const gameOverOverlay = document.getElementById("game-over-overlay");
+        if (gameOverOverlay) {
+            gameOverOverlay.style.display = "flex";
+            console.log("✅ Đã hiển thị overlay");
         } else {
-            currentPts += ptsStep;
-            if (rankPtsEl) rankPtsEl.innerText = currentPts;
-            
-            let updatedRank = getRankInfo(currentPts);
-
-            // ⚡ KIỂM TRA NẾU THĂNG RANK THÌ ĐỔI ẢNH VÀ NỔ ANIMATION
-            if (updatedRank.name !== lastRankName) {
-                lastRankName = updatedRank.name;
-                
-                if (rankIconEl) {
-                    rankIconEl.src = updatedRank.icon; // Đổi ảnh Rank mới
-                    
-                    // Kích hoạt hiệu ứng nổ hào quang
-                    rankIconEl.classList.remove("rank-up-anim");
-                    void rankIconEl.offsetWidth; // Trigger reflow
-                    rankIconEl.classList.add("rank-up-anim");
-                }
-            }
-        }
-    }, 40);
-
-    // D. Animation EXP & Level Up
-    let level = Math.floor(totalExp / 1000) + 1;
-    let currentLevelExp = totalExp % 1000; 
-    let remainingExpToAdd = expGained;
-
-    if (levelBadgeEl) levelBadgeEl.innerText = level;
-    if (expBarEl) expBarEl.style.width = `${(currentLevelExp / 1000) * 100}%`;
-    if (expTextEl) expTextEl.innerText = `${currentLevelExp} / 1000 EXP`;
-
-    await new Promise(r => setTimeout(r, 400)); 
-
-    let expInterval = setInterval(() => {
-        if (remainingExpToAdd <= 0) {
-            clearInterval(expInterval);
+            console.error("❌ Không tìm thấy game-over-overlay!");
             return;
         }
 
-        currentLevelExp += 2;
-        remainingExpToAdd -= 2;
+        // 🔥 TÍNH TOÁN PHẦN THƯỞNG
+        const expGained = isWin ? 150 : 75;
+        const coinsGained = isWin ? 50 : 25;
+        const pointsGained = isWin ? 25 : -20;
+        
+        console.log("📊 Phần thưởng:");
+        console.log("  - EXP:", expGained);
+        console.log("  - Coins:", coinsGained);
+        console.log("  - Points:", pointsGained);
 
-        if (currentLevelExp >= 1000) {
-            currentLevelExp -= 1000;
-            level++;
-            if (levelBadgeEl) {
-                levelBadgeEl.innerText = level;
-                // ✨ Thêm hiệu ứng lóe sáng cho badge level khi lên cấp
-                if (levelBadgeEl.parentElement) {
-                    levelBadgeEl.parentElement.classList.add("level-up-flash");
-                    setTimeout(() => levelBadgeEl.parentElement.classList.remove("level-up-flash"), 1000);
+        // 🔥 LẤY DỮ LIỆU USER
+        let currentPts = currentUserData?.points || 0;
+        let totalExp = currentUserData?.exp || 0;
+        let currentCoins = currentUserData?.coin || currentUserData?.coins || 0;
+        let playerName = currentUserData?.display_name || currentUserData?.username || "Bạn";
+        let userId = currentUserData?.id;
+        
+        console.log("📊 Dữ liệu user hiện tại:");
+        console.log("  - Points:", currentPts);
+        console.log("  - EXP:", totalExp);
+        console.log("  - Coins:", currentCoins);
+        console.log("  - Name:", playerName);
+        console.log("  - User ID:", userId);
+
+        // 🔥 LẤY CÁC ELEMENT
+        const titleEl = document.getElementById("match-status-title");
+        const winnerTextEl = document.getElementById("winner-text");
+        const rankIconEl = document.getElementById("rank-icon");
+        const rankPtsEl = document.getElementById("current-rank-pts");
+        const rankDeltaEl = document.getElementById("rank-delta");
+        const levelBadgeEl = document.getElementById("summary-level-num");
+        const expTextEl = document.getElementById("exp-text");
+        const expBarEl = document.getElementById("exp-bar-fill");
+        const coinRewardEl = document.getElementById("coin-reward");
+
+        console.log("📌 Kiểm tra elements:");
+        console.log("  - match-status-title:", !!titleEl);
+        console.log("  - winner-text:", !!winnerTextEl);
+        console.log("  - rank-icon:", !!rankIconEl);
+        console.log("  - rank-pts:", !!rankPtsEl);
+        console.log("  - rank-delta:", !!rankDeltaEl);
+        console.log("  - level-badge:", !!levelBadgeEl);
+        console.log("  - exp-text:", !!expTextEl);
+        console.log("  - exp-bar:", !!expBarEl);
+        console.log("  - coin-reward:", !!coinRewardEl);
+
+        // ===== A. TIÊU ĐỀ =====
+        if (titleEl) {
+            titleEl.innerText = isWin ? "🏆 VICTORY!" : "💀 DEFEAT!";
+            titleEl.style.color = isWin ? "#4efe80" : "#ff4757";
+        }
+        
+        if (winnerTextEl) {
+            winnerTextEl.innerText = isWin ? 
+                `🎉 ${playerName} đã chiến thắng!` : 
+                `💀 ${playerName} đã thất bại!`;
+        }
+
+        // ===== B. RANK ICON =====
+        let initialRank = getRankInfo(currentPts);
+        if (rankIconEl) {
+            rankIconEl.src = initialRank.icon;
+            rankIconEl.alt = initialRank.name;
+            console.log("🖼️ Rank icon:", initialRank.icon);
+        }
+        if (rankPtsEl) rankPtsEl.innerText = currentPts;
+        if (coinRewardEl) coinRewardEl.innerText = `+${coinsGained} Coin`;
+
+        // ===== C. ANIMATION RANK =====
+        if (rankDeltaEl) {
+            rankDeltaEl.className = pointsGained >= 0 ? "delta-text delta-plus" : "delta-text delta-minus";
+            rankDeltaEl.innerText = pointsGained >= 0 ? `+${pointsGained}` : `${pointsGained}`;
+        }
+
+        let targetPts = Math.max(0, currentPts + pointsGained);
+        let ptsStep = pointsGained > 0 ? 1 : -1;
+        let lastRankName = initialRank.name;
+
+        console.log("🎯 Target Points:", targetPts);
+
+        // Chạy animation điểm
+        let ptsInterval = setInterval(() => {
+            if (currentPts === targetPts) {
+                clearInterval(ptsInterval);
+                console.log("✅ Animation Points hoàn thành!");
+            } else {
+                currentPts += ptsStep;
+                if (rankPtsEl) rankPtsEl.innerText = currentPts;
+                
+                let updatedRank = getRankInfo(currentPts);
+                if (updatedRank.name !== lastRankName) {
+                    lastRankName = updatedRank.name;
+                    if (rankIconEl) {
+                        rankIconEl.src = updatedRank.icon;
+                        rankIconEl.classList.remove("rank-up-anim");
+                        void rankIconEl.offsetWidth;
+                        rankIconEl.classList.add("rank-up-anim");
+                        console.log("⭐ Thăng rank lên:", updatedRank.name);
+                    }
                 }
+            }
+        }, 40);
+
+        // ===== D. ANIMATION EXP & LEVEL =====
+        let level = Math.floor(totalExp / 1000) + 1;
+        let currentLevelExp = totalExp % 1000;
+        let remainingExpToAdd = expGained;
+
+        console.log("📊 EXP hiện tại:", totalExp);
+        console.log("📊 Level hiện tại:", level);
+        console.log("📊 EXP trong level:", currentLevelExp);
+        console.log("📊 EXP cần thêm:", remainingExpToAdd);
+
+        if (levelBadgeEl) levelBadgeEl.innerText = level;
+        if (expBarEl) expBarEl.style.width = `${(currentLevelExp / 1000) * 100}%`;
+        if (expTextEl) expTextEl.innerText = `${currentLevelExp} / 1000 EXP`;
+
+        await new Promise(r => setTimeout(r, 400));
+
+        // Chạy animation EXP
+        let expInterval = setInterval(() => {
+            if (remainingExpToAdd <= 0) {
+                clearInterval(expInterval);
+                console.log("✅ Animation EXP hoàn thành!");
+                return;
+            }
+
+            currentLevelExp += 2;
+            remainingExpToAdd -= 2;
+
+            if (currentLevelExp >= 1000) {
+                currentLevelExp -= 1000;
+                level++;
+                if (levelBadgeEl) {
+                    levelBadgeEl.innerText = level;
+                    if (levelBadgeEl.parentElement) {
+                        levelBadgeEl.parentElement.classList.add("level-up-flash");
+                        setTimeout(() => levelBadgeEl.parentElement.classList.remove("level-up-flash"), 1000);
+                    }
+                    console.log("⭐ Lên cấp! Level mới:", level);
+                }
+            }
+
+            if (expBarEl) expBarEl.style.width = `${(currentLevelExp / 1000) * 100}%`;
+            if (expTextEl) expTextEl.innerText = `${currentLevelExp} / 1000 EXP`;
+        }, 20);
+
+        // ===== E. CẬP NHẬT DATABASE =====
+        const finalTotalExp = totalExp + expGained;
+        const finalPoints = targetPts;
+        const finalRank = getRankInfo(finalPoints).name;
+        const finalCoins = currentCoins + coinsGained;
+        const finalLevel = Math.floor(finalTotalExp / 1000) + 1;
+
+        // Lấy user từ localStorage để cập nhật
+        const localUser = JSON.parse(localStorage.getItem("currentUser")) || 
+                        JSON.parse(localStorage.getItem("user")) || {};
+        const finalUserId = userId || localUser.id;
+
+        // Cập nhật dữ liệu
+        const updatedUserData = {
+            ...localUser,
+            id: finalUserId,
+            level: finalLevel,
+            exp: finalTotalExp,
+            points: finalPoints,
+            rank: finalRank,
+            coin: finalCoins,
+            coins: finalCoins
+        };
+
+        console.log("📊 Dữ liệu mới:", updatedUserData);
+
+        // ✅ LƯU CẢ 2 KEY
+        localStorage.setItem("currentUser", JSON.stringify(updatedUserData));
+        localStorage.setItem("user", JSON.stringify(updatedUserData));
+
+        // Gửi lên server
+        if (finalUserId) {
+            console.log("🚀 Đang gửi dữ liệu lên Database...");
+            try {
+                const response = await fetch("/api/update-result", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        id: finalUserId,
+                        level: finalLevel,
+                        exp: finalTotalExp,
+                        points: finalPoints,
+                        rank: finalRank,
+                        coins: finalCoins
+                    })
+                });
+                const data = await response.json();
+                console.log("✅ Đã cập nhật Supabase thành công:", data);
+            } catch (err) {
+                console.error("❌ Lỗi Fetch Update:", err);
             }
         }
 
-        if (expBarEl) expBarEl.style.width = `${(currentLevelExp / 1000) * 100}%`;
-        if (expTextEl) expTextEl.innerText = `${currentLevelExp} / 1000 EXP`;
-    }, 20);
+        // Cập nhật UI lobby
+        if (typeof updateLobbyUI === "function") {
+            updateLobbyUI(updatedUserData);
+        }
 
-    // E. Gửi Update Database & Cập nhật UI Sảnh (Lobby)
-    const finalTotalExp = totalExp + expGained;
-    const finalPoints = targetPts;
-    const finalRank = getRankInfo(finalPoints).name;
-    const finalCoins = currentCoins + coinsGained;
-    const finalLevel = Math.floor(finalTotalExp / 1000) + 1;
-
-    const localUser = JSON.parse(localStorage.getItem("user")) || {};
-    const userId = currentUserData?.id || localUser.id;
-
-    // 🔥 GHI ĐÈ BẢN MỚI NHẤT VÀO LOCALSTORAGE ĐỂ LOBBY LUÔN DÙNG DỮ LIỆU ĐÚNG
-    const updatedUserData = {
-        ...localUser,
-        id: userId,
-        level: finalLevel,
-        exp: finalTotalExp,
-        points: finalPoints,
-        rank: finalRank,
-        coin: finalCoins,
-        coins: finalCoins
-    };
-    localStorage.setItem("user", JSON.stringify(updatedUserData));
-
-    // Cập nhật ngay giao diện Sảnh ngoài
-    if (typeof updateLobbyUI === "function") {
-        updateLobbyUI(updatedUserData);
+        console.log("🎬 ===== ANIMATION HOÀN TẤT =====");
+    }
+    // ===== HIỂN THỊ/ẨN NÚT RỜI TRẬN =====
+    function showLeaveButton() {
+        const btn = document.getElementById('btn-leave-game');
+        if (btn) {
+            btn.style.display = 'block';
+            console.log("✅ Đã hiển thị nút rời trận");
+        }
     }
 
-    // Gửi cập nhật về Server Supabase
-    if (userId) {
-        console.log("🚀 Đang gửi dữ liệu chuẩn lên Database:", updatedUserData);
-
-        fetch("/api/update-result", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                id: userId,
-                level: finalLevel, 
-                exp: finalTotalExp, 
-                points: finalPoints, 
-                rank: finalRank, 
-                coins: finalCoins 
-            })
-        })
-        .then(res => res.json())
-        .then(data => {
-            console.log("✅ Đã cập nhật Supabase thành công:", data);
-        })
-        .catch(err => console.error("❌ Lỗi Fetch Update:", err));
-    } else {
-        console.error("❌ Không tìm thấy User ID! Cần đăng nhập để lưu kết quả vào Supabase.");
-    }
-}
-// Hàm hiển thị chỉ số mới nhất lên Màn hình Sảnh
-function updateLobbyUI(userData) {
-    // Lấy dữ liệu người dùng từ tham số truyền vào hoặc localStorage
-    const user = userData || JSON.parse(localStorage.getItem("user"));
-    if (!user) return;
-
-    // 1. Cập nhật Tên hiển thị
-    const nameEl = document.getElementById("user-display");
-    if (nameEl) {
-        nameEl.innerText = user.display_name || user.username || "Người chơi";
+    function hideLeaveButton() {
+        const btn = document.getElementById('btn-leave-game');
+        if (btn) {
+            btn.style.display = 'none';
+            console.log("✅ Đã ẩn nút rời trận");
+        }
     }
 
-    // 2. Cập nhật Level
-    const levelEl = document.getElementById("user-level");
-    if (levelEl) {
-        levelEl.innerText = user.level || 1;
-    }
-
-    // 3. Cập nhật Coin (Xu)
-    const coinEl = document.getElementById("user-coin");
-    if (coinEl) {
-        coinEl.innerText = (user.coins !== undefined ? user.coins : user.coin) || 0;
-    }
-
-    // 4. Cập nhật HÌNH ẢNH RANK hiện tại
-    const rankImgEl = document.getElementById("user-rank-icon");
-    if (rankImgEl && typeof getRankInfo === "function") {
-        // Dùng hàm getRankInfo truyền vào số điểm (points hoặc rank_points) để lấy đường dẫn ảnh
-        const userPoints = user.points || user.rank_points || 0;
-        const rankInfo = getRankInfo(userPoints);
+    // ===== RỜI TRẬN =====
+    function leaveGame() {
+        if (!confirm('⚠️ Bạn có chắc muốn rời trận đấu?\n\nHành động này sẽ bị tính là THUA CUỘC!')) {
+            return;
+        }
         
-        // Gắn đường dẫn ảnh Rank vào thẻ <img>
-        rankImgEl.src = rankInfo.icon;
-        rankImgEl.alt = rankInfo.name;
+        // Gửi yêu cầu rời phòng lên server
+        if (socket && socket.connected) {
+            socket.emit('leave-room', {
+                reason: 'player_left'
+            });
+            console.log("📤 Đã gửi yêu cầu rời phòng lên server");
+        }
+        
+        // Quay về lobby
+        document.getElementById('game-screen').style.display = 'none';
+        document.getElementById('lobby-screen').style.display = 'flex';
+        enableLobbyButtons();
+        hideLeaveButton();
+        
+        if (typeof addLog === 'function') {
+            addLog('🚪 Bạn đã rời khỏi trận đấu.');
+        }
+        
+        // Reset game state
+        window.gameStarted = false;
+        window.gameEnding = false;
+    }
+    // Hàm hiển thị chỉ số mới nhất lên Màn hình Sảnh
+    function updateLobbyUI(userData) {
+        // Lấy dữ liệu người dùng từ tham số truyền vào hoặc localStorage
+        const user = userData || JSON.parse(localStorage.getItem("user"));
+        if (!user) return;
+
+        // 1. Cập nhật Tên hiển thị
+        const nameEl = document.getElementById("user-display");
+        if (nameEl) {
+            nameEl.innerText = user.display_name || user.username || "Người chơi";
+        }
+
+        // 2. Cập nhật Level
+        const levelEl = document.getElementById("user-level");
+        if (levelEl) {
+            levelEl.innerText = user.level || 1;
+        }
+
+        // 3. Cập nhật Coin (Xu)
+        const coinEl = document.getElementById("user-coin");
+        if (coinEl) {
+            coinEl.innerText = (user.coins !== undefined ? user.coins : user.coin) || 0;
+        }
+
+        // 4. Cập nhật HÌNH ẢNH RANK hiện tại
+        const rankImgEl = document.getElementById("user-rank-icon");
+        if (rankImgEl && typeof getRankInfo === "function") {
+            // Dùng hàm getRankInfo truyền vào số điểm (points hoặc rank_points) để lấy đường dẫn ảnh
+            const userPoints = user.points || user.rank_points || 0;
+            const rankInfo = getRankInfo(userPoints);
+            
+            // Gắn đường dẫn ảnh Rank vào thẻ <img>
+            rankImgEl.src = rankInfo.icon;
+            rankImgEl.alt = rankInfo.name;
+        }
+    }
+    window.addEventListener("DOMContentLoaded", () => {
+
+        const btnQuick = document.getElementById("btn-quick-match");
+        const btnCreate = document.getElementById("btn-create-room");
+        const btnJoin = document.getElementById("btn-join-room");
+
+        if (btnQuick) {
+            btnQuick.onclick = startQuickMatch;
+            console.log("Đã gắn nút ghép ngẫu nhiên");
+        }
+
+        if (btnCreate) {
+            btnCreate.onclick = createNewRoom;
+            console.log("Đã gắn nút tạo phòng");
+        }
+
+        if (btnJoin) {
+            btnJoin.onclick = joinRoomWithId;
+            console.log("Đã gắn nút vào phòng");
+        }
+
+    });
+    // ===== HỆ THỐNG THÔNG BÁO ĐẸP =====
+let notificationTimeout = null;
+
+function showNotification(message, type = 'info', duration = 4000) {
+    const notif = document.getElementById('custom-notification');
+    const msg = document.getElementById('notification-message');
+    
+    if (!notif || !msg) {
+        // Fallback: dùng alert nếu chưa có element
+        alert(message);
+        return;
+    }
+    
+    if (notificationTimeout) {
+        clearTimeout(notificationTimeout);
+        notificationTimeout = null;
+    }
+    
+    msg.textContent = message;
+    notif.className = type;
+    notif.style.display = 'block';
+    notif.style.animation = 'none';
+    void notif.offsetWidth;
+    notif.style.animation = 'slideDown 0.4s ease-out';
+    
+    notificationTimeout = setTimeout(() => {
+        hideNotification();
+    }, duration);
+}
+
+function hideNotification() {
+    const notif = document.getElementById('custom-notification');
+    if (notif) {
+        notif.style.display = 'none';
+    }
+    if (notificationTimeout) {
+        clearTimeout(notificationTimeout);
+        notificationTimeout = null;
     }
 }
-window.addEventListener("DOMContentLoaded", () => {
-
-    const btnQuick = document.getElementById("btn-quick-match");
-    const btnCreate = document.getElementById("btn-create-room");
-    const btnJoin = document.getElementById("btn-join-room");
-
-    if (btnQuick) {
-        btnQuick.onclick = startQuickMatch;
-        console.log("Đã gắn nút ghép ngẫu nhiên");
-    }
-
-    if (btnCreate) {
-        btnCreate.onclick = createNewRoom;
-        console.log("Đã gắn nút tạo phòng");
-    }
-
-    if (btnJoin) {
-        btnJoin.onclick = joinRoomWithId;
-        console.log("Đã gắn nút vào phòng");
-    }
-
-});

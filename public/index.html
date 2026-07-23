@@ -371,7 +371,25 @@
         
         <!-- Khu vực hiển thị mã phòng cho người chơi theo dõi (Sửa lỗi thiếu ID element) -->
         <div class="room-display-tag" id="room-id-display">Mã Phòng: <strong style="color: #f59e0b;">---</strong></div>
-        
+        <!-- Thêm vào trong div id="game-screen" -->
+        <button id="btn-leave-game" onclick="leaveGame()" style="
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 100;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+            display: none;
+        ">
+            🚪 Rời trận
+        </button>
         <div class="container">
             <!-- BÀN CỜ 6x6 -->
             <div class="board" id="board">
@@ -578,7 +596,11 @@
     </div>
 
 </div>
-
+    <!-- Thêm vào cuối body, trước các script -->
+    <div id="custom-notification">
+        <button class="notification-close" onclick="hideNotification()">×</button>
+        <span id="notification-message">Thông báo</span>
+    </div>
     <!-- ================= THỨ TỰ NẠP JAVASCRIPT CHUẨN KIẾN TRÚC GAME ONLINE ================= -->
     
     <!-- 1. Thư viện Socket.IO cốt lõi từ CDN tải nhanh -->

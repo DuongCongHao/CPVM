@@ -19,16 +19,101 @@ if (typeof socket !== 'undefined' && socket) {
 
     // SERVER TRẢ VỀ: Khi kết nối vào phòng thành công (Quick Match hoặc Join by ID)
     socket.off('room-joined').on('room-joined', (data) => {
+        // 🔥 RESET CỜ GAME ENDING KHI VÀO PHÒNG MỚI
+        window.gameEnding = false;
+        console.log("✅ gameEnding đã được reset =", window.gameEnding);
+        
         const roomId = data.roomId;
         if (typeof displayRoomId === 'function') displayRoomId(roomId);
         if (typeof addLog === 'function') addLog(`🚪 Bạn đã tham gia vào phòng [${roomId}].`);
-        
+        // 🔥 HIỂN THỊ NÚT RỜI TRẬN
+        if (typeof showLeaveButton === 'function') {
+            showLeaveButton();
+        }
         const lobbyStatus = document.getElementById('lobby-status');
         if (lobbyStatus) {
             lobbyStatus.innerText = "Đã vào phòng thành công! Đang chờ đối thủ sẵn sàng...";
         }
+        
+        // 🆕 NẾU CÓ DỮ LIỆU PLAYERS, KHỞI TẠO GAME
+        if (data.players && Array.isArray(data.players) && data.players.length === 2) {
+            console.log("📥 Nhận dữ liệu players từ server:", data.players);
+            
+            // Lưu thông tin players
+            window.players = {};
+            data.players.forEach((p, index) => {
+                const playerNum = index + 1;
+                window.players[playerNum] = {
+                    id: p.id || p.userId,
+                    name: p.name || `Player ${playerNum}`,
+                    money: 1000,
+                    pos: 0,
+                    rounds: 0,
+                    socketId: p.socketId || p.id,
+                    skillUsed: false
+                };
+            });
+            
+            // Xác định player number của mình
+            const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+            if (currentUser) {
+                data.players.forEach((p, index) => {
+                    if (p.id === currentUser.id || p.userId === currentUser.id) {
+                        window.myPlayerNumber = index + 1;
+                        console.log(`✅ Bạn là Player ${window.myPlayerNumber}`);
+                    }
+                });
+            }
+            
+            // Đánh dấu game đã bắt đầu
+            window.gameStarted = true;
+            window.currentTurn = 1;
+            window.isMoving = false;
+            window.extraTurns = 0;
+            
+            // Ẩn lobby, hiển thị game
+            const lobbyScreen = document.getElementById('lobby-screen');
+            const gameScreen = document.getElementById('game-screen');
+            if (lobbyScreen) lobbyScreen.style.display = 'none';
+            if (gameScreen) gameScreen.style.display = 'block';
+            
+            // Cập nhật trạng thái lobby
+            if (lobbyStatus) {
+                lobbyStatus.innerText = "🎮 Đang vào trận đấu...";
+            }
+            
+            // Khởi tạo bàn cờ
+            if (typeof initializeBoard === 'function') {
+                initializeBoard();
+            }
+            
+            // Xác định lượt đi
+            if (typeof determineTurn === 'function') {
+                determineTurn();
+            }
+            
+            // Cập nhật UI
+            if (typeof updateUI === 'function') {
+                updateUI();
+            }
+            
+            if (typeof checkMyTurnControl === 'function') {
+                checkMyTurnControl();
+            }
+            
+            // Thêm log
+            if (typeof addLog === 'function') {
+                addLog(`🎮 TRẬN ĐẤU BẮT ĐẦU!`);
+                if (window.players[1]) addLog(`👤 ${window.players[1].name} VS ${window.players[2]?.name || '???'}`);
+                if (window.myPlayerNumber) addLog(`👤 Bạn là Player ${window.myPlayerNumber}`);
+            }
+            
+            console.log("✅ Game đã sẵn sàng!");
+            console.log("👥 Players:", window.players);
+            console.log("🎯 Current turn:", window.currentTurn);
+            console.log("👤 My player number:", window.myPlayerNumber);
+        }
     });
-
     // SERVER TRẢ VỀ: Khi có lỗi xảy ra (Sai ID phòng, phòng đầy, đối thủ out,...)
     socket.off('room-error').on('room-error', (data) => {
         alert(data.message);

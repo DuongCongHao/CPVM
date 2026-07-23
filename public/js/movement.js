@@ -1,5 +1,11 @@
 // ===== DI CHUYỂN TỪNG BƯỚC =====
 function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = null) {
+    // 🔥 THÊM DÒNG NÀY: NẾU GAME ĐANG KẾT THÚC, KHÔNG DI CHUYỂN
+    if (window.gameEnding) {
+        console.log("⛔ Game đang kết thúc, bỏ qua di chuyển!");
+        return;
+    }
+    
     isMoving = true;
     let movePlayer = window.isLuckyMove 
         ? myPlayerNumber 
@@ -16,11 +22,25 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
     let audioStarted = false;
 
     function step() {
+        // 🔥 THÊM KIỂM TRA TRONG VÒNG LẶP: NẾU GAME ĐANG KẾT THÚC, DỪNG NGAY
+        if (window.gameEnding) {
+            console.log("⛔ Game đang kết thúc, dừng di chuyển!");
+            // Tắt tiếng
+            if (audioGame && audioGame.run) {
+                audioGame.run.pause();
+                audioGame.run.currentTime = 0;
+            }
+            // Xóa class moving
+            let currentSlot = document.getElementById(`slot-p${movePlayer}-${p.pos}`);
+            if (currentSlot) currentSlot.classList.remove('moving');
+            isMoving = false;
+            return;
+        }
+        
         if (stepsLeft > 0) {
             let currentSlot = document.getElementById(`slot-p${movePlayer}-${p.pos}`);
             if (currentSlot) currentSlot.classList.remove('moving');
 
-            // 🔥 FIX: Bật tiếng chạy khi bắt đầu di chuyển (chỉ 1 lần)
             if (!audioStarted && audioGame && audioGame.run) {
                 audioGame.run.loop = true;
                 audioGame.run.currentTime = 0;
@@ -32,6 +52,12 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
                 p.pos = (p.pos + 1) % TOTAL_CELLS;
 
                 if (p.pos === 0) {
+                    // 🔥 KIỂM TRA TRƯỚC KHI CỘNG TIỀN
+                    if (window.gameEnding) {
+                        console.log("⛔ Game đang kết thúc, không cộng tiền!");
+                        return;
+                    }
+                    
                     p.money += 300;
                     p.rounds += 1;
 
@@ -41,16 +67,19 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
 
                     addLog(`🎁 <strong>${p.name}</strong> hoàn thành 1 vòng (Ô START), nhận lương <strong>+300$</strong>!`);
 
-                    // phát âm nhận tiền
                     if (typeof playSFX === 'function' && audioGame && audioGame.buyLand) {
                         playSFX(audioGame.buyLand);
                     }
 
-                    // sinh hộp quà
-                    checkSpawnGiftEvent();
+                    // 🔥 KIỂM TRA TRƯỚC KHI SINH QUÀ
+                    if (!window.gameEnding) {
+                        checkSpawnGiftEvent();
+                    }
 
-                    // kiểm tra Boss
-                    checkHaoBossEvent(movePlayer);
+                    // 🔥 KIỂM TRA TRƯỚC KHI SINH BOSS
+                    if (!window.gameEnding) {
+                        checkHaoBossEvent(movePlayer);
+                    }
                 }
             } else {
                 p.pos = (p.pos - 1 + TOTAL_CELLS) % TOTAL_CELLS;
@@ -62,14 +91,13 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
             stepsLeft--;
             updateUI();
 
-            // ĐỒNG BỘ: Phát vị trí đang chạy từng bước sang màn hình đối thủ
             if (typeof syncGameToRemote === 'function') {
                 syncGameToRemote();
             }
 
             setTimeout(step, 240);
         } else {
-            // Tắt tiếng chạy khi tới đích (chỉ 1 lần)
+            // Tắt tiếng chạy khi tới đích
             if (audioGame && audioGame.run) {
                 audioGame.run.pause();
                 audioGame.run.currentTime = 0;
@@ -80,9 +108,14 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
             
             isMoving = false;
             
-            // ĐỒNG BỘ: Phát vị trí chốt chặn cuối cùng
             if (typeof syncGameToRemote === 'function') {
                 syncGameToRemote();
+            }
+
+            // 🔥 KIỂM TRA TRƯỚC KHI GỌI CALLBACK
+            if (window.gameEnding) {
+                console.log("⛔ Game đang kết thúc, bỏ qua callback!");
+                return;
             }
 
             if (callback) {
@@ -105,6 +138,12 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
 
 // ===== SINH HỘP QUÀ =====
 function checkSpawnGiftEvent() {
+    // 🔥 NẾU GAME ĐANG KẾT THÚC, KHÔNG SINH QUÀ
+    if (window.gameEnding) {
+        console.log("⛔ Game đang kết thúc, bỏ qua sinh hộp quà!");
+        return;
+    }
+    
     let currentTotal = players[1].rounds + players[2].rounds;
     if (currentTotal > totalRoundsMilestone) {
         totalRoundsMilestone = currentTotal;
@@ -113,6 +152,12 @@ function checkSpawnGiftEvent() {
 }
 
 function spawnRandomGift() {
+    // 🔥 NẾU GAME ĐANG KẾT THÚC, KHÔNG SINH QUÀ
+    if (window.gameEnding) {
+        console.log("⛔ Game đang kết thúc, bỏ qua spawnRandomGift!");
+        return;
+    }
+    
     let pool = [];
     for (let i = 1; i < TOTAL_CELLS; i++) {
         if (!cellsData[i].hasGift) pool.push(i);
@@ -123,7 +168,6 @@ function spawnRandomGift() {
         addLog(`🎁 ✨ <strong>SỰ KIỆN:</strong> Cả 2 người chơi đã đi hết một vòng! Một <strong>Hộp Quà Bí Ẩn</strong> đã rơi xuống Khu Đất số ${randIdx}!`);
         updateUI();
         
-        // ĐỒNG BỘ: Đồng bộ cả vị trí hộp quà mới sinh ra cho tab đối thủ biết
         if (typeof syncGameToRemote === 'function') {
             syncGameToRemote();
         }
