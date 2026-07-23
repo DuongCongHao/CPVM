@@ -1721,3 +1721,281 @@ function closeConfirm() {
         modal.style.display = 'none';
     }
 }
+// ===== CHUYỂN ĐỔI GIỮA CÁC TAB =====
+function showArena() {
+    // Ẩn 4 nút
+    document.getElementById('lobby-grid').style.display = 'none';
+    
+    // Ẩn tất cả nội dung khác
+    document.getElementById('shop-content').style.display = 'none';
+    document.getElementById('chat-content').style.display = 'none';
+    document.getElementById('userinfo-content').style.display = 'none';
+    
+    // Hiển thị nội dung Đấu trường
+    document.getElementById('arena-content').style.display = 'block';
+}
+
+function showShop() {
+    // Ẩn 4 nút
+    document.getElementById('lobby-grid').style.display = 'none';
+    
+    // Ẩn tất cả nội dung khác
+    document.getElementById('arena-content').style.display = 'none';
+    document.getElementById('chat-content').style.display = 'none';
+    document.getElementById('userinfo-content').style.display = 'none';
+    
+    // Hiển thị Cửa hàng
+    document.getElementById('shop-content').style.display = 'block';
+}
+
+function showChatRooms() {
+    // Ẩn 4 nút
+    document.getElementById('lobby-grid').style.display = 'none';
+    
+    // Ẩn tất cả nội dung khác
+    document.getElementById('arena-content').style.display = 'none';
+    document.getElementById('shop-content').style.display = 'none';
+    document.getElementById('userinfo-content').style.display = 'none';
+    
+    // Hiển thị Phòng chat
+    document.getElementById('chat-content').style.display = 'block';
+    loadChatRooms();
+}
+
+function showUserInfo() {
+    // Ẩn 4 nút
+    document.getElementById('lobby-grid').style.display = 'none';
+    
+    // Ẩn tất cả nội dung khác
+    document.getElementById('arena-content').style.display = 'none';
+    document.getElementById('shop-content').style.display = 'none';
+    document.getElementById('chat-content').style.display = 'none';
+    
+    // Hiển thị Thông tin
+    document.getElementById('userinfo-content').style.display = 'block';
+    loadUserInfo();
+}
+
+function backToLobby() {
+    // Hiển thị lại 4 nút
+    document.getElementById('lobby-grid').style.display = 'grid';
+    
+    // Ẩn tất cả nội dung
+    document.getElementById('arena-content').style.display = 'none';
+    document.getElementById('shop-content').style.display = 'none';
+    document.getElementById('chat-content').style.display = 'none';
+    document.getElementById('userinfo-content').style.display = 'none';
+}
+
+// ===== HIỂN THỊ THÔNG TIN NGƯỜI CHƠI =====
+function loadUserInfo() {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    if (!user) return;
+    
+    const avatar = document.getElementById('userinfo-avatar');
+    const name = document.getElementById('userinfo-name');
+    const level = document.getElementById('userinfo-level');
+    const coin = document.getElementById('userinfo-coin');
+    const rank = document.getElementById('userinfo-rank');
+    const exp = document.getElementById('userinfo-exp');
+    
+    // Cập nhật avatar
+    const rankImages = {
+        "Bùn": "bun.jpg",
+        "Sắt": "sat.jpg",
+        "Đồng": "dong.jpg",
+        "Bạc": "bac.jpg",
+        "Vàng": "vang.jpg",
+        "Kim Cương": "kimcuong.jpg",
+        "Hali": "hali.jpg"
+    };
+    const fileName = rankImages[user.rank] || "bun.jpg";
+    if (avatar) avatar.src = "assets/ranks/" + fileName;
+    
+    if (name) name.textContent = user.display_name || user.username || "Người chơi";
+    if (level) level.textContent = user.level || 1;
+    if (coin) coin.textContent = user.coin || user.coins || 0;
+    if (rank) rank.textContent = user.rank || "Bùn";
+    if (exp) exp.textContent = user.exp || 0;
+}
+
+// ===== CHAT SYSTEM (CÓ KẾT NỐI SERVER) =====
+let currentChatRoom = null;
+let currentChatRoomId = null;
+
+function loadChatRooms() {
+    const container = document.getElementById('chat-room-list');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    container.style.display = 'flex';
+    document.getElementById('chat-room-content').style.display = 'none';
+    document.getElementById('chat-messages').innerHTML = '<div class="empty">Chưa có tin nhắn</div>';
+    
+    const rooms = [
+        { id: 1, icon: '🍵', name: 'Phòng trà' },
+        { id: 2, icon: '🎮', name: 'Game thủ' },
+        { id: 3, icon: '💬', name: 'Tán gẫu' },
+        { id: 4, icon: '🌟', name: 'Hội Hali' },
+        { id: 5, icon: '🔥', name: 'Nhiệt huyết' }
+    ];
+    
+    rooms.forEach((room) => {
+        const div = document.createElement('div');
+        div.className = 'chat-room-item';
+        div.innerHTML = `
+            <div style="font-size: 22px;">${room.icon}</div>
+            <div style="color: #f8fafc; font-weight: bold; font-size: 13px;">${room.name}</div>
+            <div style="color: #94a3b8; font-size: 10px;">${room.id === 1 ? '👥 0 người' : ''}</div>
+        `;
+        div.onclick = () => joinChatRoom(room.id, room.name);
+        container.appendChild(div);
+    });
+}
+
+function joinChatRoom(roomId, roomName) {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    if (!user) {
+        alert('Vui lòng đăng nhập!');
+        return;
+    }
+    
+    currentChatRoomId = roomId;
+    currentChatRoom = roomName;
+    
+    // Hiển thị UI chat
+    document.getElementById('chat-room-list').style.display = 'none';
+    document.getElementById('chat-room-content').style.display = 'block';
+    document.getElementById('chat-messages').innerHTML = `<div style="color: #94a3b8; text-align: center; padding: 10px;">⏳ Đang kết nối đến ${roomName}...</div>`;
+    
+    // Gửi yêu cầu tham gia phòng lên server
+    if (socket && socket.connected) {
+        socket.emit('join-chat-room', {
+            roomId: roomId,
+            roomName: roomName,
+            userName: user.display_name || user.username || 'Người chơi',
+            userId: user.id
+        });
+    } else {
+        document.getElementById('chat-messages').innerHTML = `
+            <div style="color: #ef4444; text-align: center; padding: 10px;">
+                ❌ Không thể kết nối đến server chat!
+            </div>
+        `;
+    }
+}
+
+function leaveChatRoom() {
+    if (socket && socket.connected) {
+        socket.emit('leave-chat-room');
+    }
+    
+    currentChatRoom = null;
+    currentChatRoomId = null;
+    document.getElementById('chat-room-list').style.display = 'flex';
+    document.getElementById('chat-room-content').style.display = 'none';
+    document.getElementById('chat-input').value = '';
+    
+    // Xóa tin nhắn cũ
+    document.getElementById('chat-messages').innerHTML = '<div class="empty">Chưa có tin nhắn</div>';
+}
+
+function sendChatMessage() {
+    const input = document.getElementById('chat-input');
+    const message = input.value.trim();
+    if (!message) return;
+    if (!currentChatRoomId) {
+        alert('Bạn chưa vào phòng chat nào!');
+        return;
+    }
+    
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    const userName = user?.display_name || user?.username || 'Người chơi';
+    
+    // Gửi tin nhắn lên server
+    if (socket && socket.connected) {
+        socket.emit('chat-message', {
+            message: message,
+            roomId: currentChatRoomId,
+            userName: userName
+        });
+    } else {
+        // Fallback: hiển thị local nếu mất kết nối
+        addChatMessage('system', '❌ Mất kết nối server, tin nhắn không được gửi!');
+    }
+    
+    input.value = '';
+}
+
+function addChatMessage(type, content) {
+    const container = document.getElementById('chat-messages');
+    if (!container) return;
+    
+    // Xóa thông báo "Chưa có tin nhắn" nếu có
+    const emptyMsg = container.querySelector('.empty');
+    if (emptyMsg) emptyMsg.remove();
+    
+    const div = document.createElement('div');
+    const isSystem = type === 'system';
+    div.style.cssText = `
+        padding: 4px 10px;
+        margin-bottom: 2px;
+        border-radius: 4px;
+        font-size: 13px;
+        color: ${isSystem ? '#94a3b8' : '#f8fafc'};
+        ${isSystem ? 'text-align: center; font-style: italic;' : ''}
+        ${!isSystem ? 'background: rgba(255,255,255,0.05);' : ''}
+        word-wrap: break-word;
+    `;
+    div.textContent = content;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
+
+// ===== LẮNG NGHE SỰ KIỆN CHAT TỪ SERVER =====
+if (socket) {
+    // Nhận tin nhắn chat
+    socket.on('chat-message', (data) => {
+        console.log('📨 Nhận tin nhắn chat:', data);
+        addChatMessage(data.type, data.content);
+    });
+    
+    // Xác nhận đã vào phòng
+    socket.on('chat-joined', (data) => {
+        console.log('✅ Đã vào phòng chat:', data);
+        document.getElementById('chat-messages').innerHTML = '';
+        addChatMessage('system', `✅ Đã vào ${data.roomName}`);
+        addChatMessage('system', '💬 Hãy bắt đầu trò chuyện!');
+    });
+    
+    // Lỗi chat
+    socket.on('chat-error', (data) => {
+        console.error('❌ Lỗi chat:', data);
+        addChatMessage('system', `❌ ${data.message}`);
+    });
+}
+
+// ===== XỬ LÝ ENTER ĐỂ GỬI TIN NHẮN =====
+document.addEventListener('DOMContentLoaded', function() {
+    const chatInput = document.getElementById('chat-input');
+    if (chatInput) {
+        // Xóa sự kiện cũ để tránh trùng
+        chatInput.removeEventListener('keypress', handleChatEnter);
+        chatInput.addEventListener('keypress', handleChatEnter);
+    }
+});
+
+function handleChatEnter(e) {
+    if (e.key === 'Enter') {
+        sendChatMessage();
+    }
+}
+
+// ===== ĐĂNG XUẤT =====
+function logout() {
+    if (confirm('Bạn có chắc muốn đăng xuất?')) {
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('user');
+        location.reload();
+    }
+}

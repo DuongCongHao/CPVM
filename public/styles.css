@@ -552,12 +552,11 @@ button.action-btn:disabled {
 
 /* 1. Khung Card tổng thể trên Mobile */
 .lobby-card {
-    width: 92% !important;
-    max-width: 400px !important;
-    padding: 20px 16px !important;
-    border-radius: 20px !important;
-    background: #1e1b4b !important;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.6) !important;
+    background: linear-gradient(145deg, #1e1b4b, #15132e) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7) !important;
+    padding: 30px 25px !important;
+    border-radius: 24px !important;
 }
 
 /* 2. Khung Profile Người Chơi (User Panel) */
@@ -660,19 +659,21 @@ button.action-btn:disabled {
 }
 
 .lobby-card h2 {
-    margin: 0 0 10px 0;
-    font-size: 34px;
-    font-weight: 900;
-    background: linear-gradient(to right, #38bdf8, #818cf8, #f43f5e);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    letter-spacing: 2px;
-    
-    /* 🔥 BỔ SUNG CĂN GIỮA */
-    text-align: center;
-    width: 100%;
+    font-size: 38px !important;
+    font-weight: 900 !important;
+    background: linear-gradient(135deg, #facc15, #f59e0b, #f97316) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    text-shadow: 0 0 40px rgba(250, 204, 21, 0.15) !important;
+    letter-spacing: 3px !important;
 }
-
+.lobby-card .sub-title {
+    color: #94a3b8;
+    font-size: 14px;
+    text-align: center;
+    margin-bottom: 25px;
+    letter-spacing: 1px;
+}
 .lobby-card p {
     color: #94a3b8;
     font-size: 14px;
@@ -1025,7 +1026,26 @@ button.action-btn:disabled {
 
 
 @media (max-width:480px){
-
+.lobby-card {
+    padding: 20px 16px !important;
+}    
+.lobby-card h2 {
+    font-size: 28px !important;
+}
+    
+.lobby-grid {
+    gap: 10px;
+}    
+.lobby-card-item {
+    padding: 16px 8px;
+    border-radius: 12px;
+}    
+.lobby-item-icon {
+    font-size: 32px;
+}    
+.lobby-item-title {
+    font-size: 13px;
+}
 body{
     padding:6px;
 }
@@ -2026,4 +2046,116 @@ body.hao-shake{
 #confirm-ok:hover {
     transform: scale(1.02);
     box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+}
+/* ===== 4 NÚT CHỨC NĂNG ===== */
+.lobby-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.lobby-card-item {
+    background: linear-gradient(145deg, rgba(30, 27, 75, 0.6), rgba(15, 23, 42, 0.4));
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 20px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.lobby-card-item::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.05), rgba(168, 85, 247, 0.05));
+    opacity: 0;
+    transition: opacity 0.4s;
+}
+
+.lobby-card-item:hover::before {
+    opacity: 1;
+}
+
+.lobby-card-item:hover {
+    transform: translateY(-4px) scale(1.02);
+    border-color: rgba(56, 189, 248, 0.2);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+}
+
+.lobby-item-icon {
+    font-size: 40px;
+    margin-bottom: 6px;
+    display: block;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
+
+.lobby-item-title {
+    font-weight: 700;
+    color: #f8fafc;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+}
+
+.lobby-item-desc {
+    color: #94a3b8;
+    font-size: 11px;
+    margin-top: 2px;
+    opacity: 0.7;
+}
+
+/* ===== MÀU SẮC RIÊNG CHO TỪNG NÚT ===== */
+.lobby-card-item:nth-child(1) {
+    border-color: rgba(239, 68, 68, 0.15);
+}
+.lobby-card-item:nth-child(1):hover {
+    border-color: rgba(239, 68, 68, 0.4);
+    box-shadow: 0 8px 30px rgba(239, 68, 68, 0.15);
+}
+
+.lobby-card-item:nth-child(2) {
+    border-color: rgba(250, 204, 21, 0.15);
+}
+.lobby-card-item:nth-child(2):hover {
+    border-color: rgba(250, 204, 21, 0.4);
+    box-shadow: 0 8px 30px rgba(250, 204, 21, 0.15);
+}
+
+.lobby-card-item:nth-child(3) {
+    border-color: rgba(52, 211, 153, 0.15);
+}
+.lobby-card-item:nth-child(3):hover {
+    border-color: rgba(52, 211, 153, 0.4);
+    box-shadow: 0 8px 30px rgba(52, 211, 153, 0.15);
+}
+
+.lobby-card-item:nth-child(4) {
+    border-color: rgba(96, 165, 250, 0.15);
+}
+.lobby-card-item:nth-child(4):hover {
+    border-color: rgba(96, 165, 250, 0.4);
+    box-shadow: 0 8px 30px rgba(96, 165, 250, 0.15);
+}
+/* Header - Căn giữa và đẹp */
+.lobby-card h2 {
+    text-align: center !important;
+    font-size: 34px !important;
+    font-weight: 900 !important;
+    margin-bottom: 5px !important;
+    background: linear-gradient(135deg, #facc15, #f59e0b, #f97316) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    text-shadow: 0 0 40px rgba(250, 204, 21, 0.1) !important;
+    letter-spacing: 2px !important;
+}
+
+.lobby-card .sub-title {
+    text-align: center !important;
+    color: #94a3b8 !important;
+    font-size: 14px !important;
+    margin-bottom: 20px !important;
+    letter-spacing: 1px !important;
 }

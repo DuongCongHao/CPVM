@@ -149,25 +149,10 @@ loginBtn.onclick = async ()=>{
 
 };
 function initLobby(user){
+    console.log("🔧 Init Lobby với user:", user);
 
-    console.log(user);
-
-    document.getElementById("username-input").value =
-        user.display_name || user.username;
-
-    document.getElementById("username-input").disabled=true;
-    document
-    .getElementById("logout-btn")
-    .onclick=()=>{
-
-        localStorage.removeItem("currentUser");
-
-        location.reload();
-
-    }
-    document.getElementById("user-level").innerText = user.level;
-
-        const rankMap = {
+    // ===== CẬP NHẬT THÔNG TIN =====
+    const rankMap = {
         "Bùn": "bun.jpg",
         "Sắt": "sat.jpg",
         "Đồng": "dong.jpg",
@@ -176,31 +161,52 @@ function initLobby(user){
         "Kim Cương": "kimcuong.jpg",
         "Hali": "hali.jpg"
     };
-
-    const rankIcon = document.getElementById("user-rank-icon");
-
+    
+    const rankIcon = document.getElementById('lobby-rank-icon');
     if (rankIcon) {
         rankIcon.src = "assets/ranks/" + (rankMap[user.rank] || "bun.jpg");
     }
-    document.getElementById("user-coin").innerText = user.coin;
-    document.getElementById("user-panel").style.display="block";
-
-    document.getElementById("user-display").innerText=user.display_name;
-}
-window.onload=()=>{
-
-    const user=localStorage.getItem("currentUser");
-
-    if(user){
-
-        const u=JSON.parse(user);
-
-        document.getElementById("login-screen").style.display="none";
-
-        document.getElementById("lobby-screen").style.display="flex";
-
-        initLobby(u);
-
+    
+    const nameEl = document.getElementById('lobby-user-name');
+    if (nameEl) {
+        nameEl.textContent = user.display_name || user.username || "Người chơi";
+    }
+    
+    const levelEl = document.getElementById('lobby-user-level');
+    if (levelEl) {
+        levelEl.textContent = user.level || 1;
+    }
+    
+    const coinEl = document.getElementById('lobby-user-coin');
+    if (coinEl) {
+        coinEl.textContent = user.coin || user.coins || 0;
     }
 
+    // Cập nhật input username
+    const usernameInput = document.getElementById("username-input");
+    if (usernameInput) {
+        usernameInput.value = user.display_name || user.username || "Người chơi";
+        usernameInput.disabled = true;
+    }
+
+    // ===== HIỂN THỊ SẢNH =====
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("lobby-screen").style.display = "flex";
+    
+    // 🔥 HIỂN THỊ 4 NÚT, ẨN TẤT CẢ NỘI DUNG
+    document.getElementById('lobby-grid').style.display = 'grid';
+    document.getElementById('arena-content').style.display = 'none';
+    document.getElementById('shop-content').style.display = 'none';
+    document.getElementById('chat-content').style.display = 'none';
+    document.getElementById('userinfo-content').style.display = 'none';
+    
+    console.log("✅ Đã khởi tạo sảnh thành công!");
 }
+
+window.onload = function() {
+    const user = localStorage.getItem("currentUser");
+    if (user) {
+        const u = JSON.parse(user);
+        initLobby(u);
+    }
+};

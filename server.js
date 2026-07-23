@@ -90,7 +90,88 @@
 
     io.on('connection', (socket) => {
         console.log(`🔌 Thiết bị kết nối mới: ${socket.id}`);
+        // ===== HỆ THỐNG CHAT =====
+        // Lưu phòng chat hiện tại của socket
+        socket.currentChatRoom = null;
+        socket.chatUserName = null;
+        socket.chatUserId = null;
 
+        // Tham gia phòng chat
+        socket.on('join-chat-room', (data) => {
+            const { roomId, roomName, userName, userId } = data;
+            
+            // Rời phòng cũ nếu có
+            if (socket.currentChatRoom) {
+                socket.leave(socket.currentChatRoom);
+                console.log(`💬 ${socket.chatUserName || 'Ai đó'} đã rời phòng ${socket.currentChatRoom}`);
+            }
+            
+            // Tham gia phòng mới
+            const chatRoomName = `chat_${roomId}`;
+            socket.join(chatRoomName);
+            socket.currentChatRoom = chatRoomName;
+            socket.chatUserName = userName || 'Người chơi';
+            socket.chatUserId = userId || 'unknown';
+            
+            console.log(`💬 ${socket.chatUserName} đã vào phòng chat ${roomName} (${chatRoomName})`);
+            
+            // Lấy số người trong phòng
+            const room = io.sockets.adapter.rooms.get(chatRoomName);
+            const memberCount = room ? room.size : 0;
+            
+            // Gửi thông báo cho mọi người trong phòng
+            io.to(chatRoomName).emit('chat-message', {
+                type: 'system',
+                content: `🔹 ${socket.chatUserName} đã vào phòng! (${memberCount} người)`,
+                time: new Date().toLocaleTimeString()
+            });
+            
+            // Gửi lại thông tin phòng cho người vừa vào
+            socket.emit('chat-joined', {
+                roomId: roomId,
+                roomName: roomName,
+                message: `✅ Đã vào phòng ${roomName}`,
+                memberCount: memberCount
+            });
+        });
+
+        // Gửi tin nhắn chat
+        socket.on('chat-message', (data) => {
+            const { message, roomId, userName } = data;
+            const chatRoomName = `chat_${roomId}`;
+            
+            if (!socket.currentChatRoom || socket.currentChatRoom !== chatRoomName) {
+                socket.emit('chat-error', { message: 'Bạn chưa vào phòng chat nào!' });
+                return;
+            }
+            
+            console.log(`💬 ${userName || socket.chatUserName}: ${message}`);
+            
+            // Gửi tin nhắn cho tất cả trong phòng (bao gồm cả người gửi)
+            io.to(chatRoomName).emit('chat-message', {
+                type: 'user',
+                content: `${userName || socket.chatUserName}: ${message}`,
+                time: new Date().toLocaleTimeString()
+            });
+        });
+
+        // Rời phòng chat
+        socket.on('leave-chat-room', () => {
+            if (socket.currentChatRoom) {
+                const roomName = socket.currentChatRoom;
+                const userName = socket.chatUserName || 'Ai đó';
+                
+                io.to(roomName).emit('chat-message', {
+                    type: 'system',
+                    content: `🔹 ${userName} đã rời phòng.`,
+                    time: new Date().toLocaleTimeString()
+                });
+                
+                socket.leave(roomName);
+                socket.currentChatRoom = null;
+                console.log(`💬 ${userName} đã rời phòng chat`);
+            }
+        });
         // 🌐 1. XỬ LÝ GHÉP TRẬN NGẪU NHIÊN (QUICK MATCH)
         socket.on('request-quick-match', (data) => {
 
@@ -640,7 +721,21 @@
         // ===== XỬ LÝ KHI NGƯỜI CHƠI MẤT KẾT NỐI =====
         socket.on('disconnect', () => {
             console.log(`❌ Thiết bị ngắt kết nối: ${socket.id}`);
-            
+            // ===== 🆕 XỬ LÝ RỜI PHÒNG CHAT =====
+            if (socket.currentChatRoom) {
+                const roomName = socket.currentChatRoom;
+                const userName = socket.chatUserName || 'Ai đó';
+                
+                io.to(roomName).emit('chat-message', {
+                    type: 'system',
+                    content: `🔹 ${userName} đã mất kết nối.`,
+                    time: new Date().toLocaleTimeString()
+                });
+                
+                socket.leave(roomName);
+                socket.currentChatRoom = null;
+                console.log(`💬 ${userName} đã rời phòng chat do disconnect`);
+            }
             // Xóa khỏi hàng đợi tìm trận nhanh nếu đang đợi
             quickMatchQueue = quickMatchQueue.filter(s => s.id !== socket.id);
 

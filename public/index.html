@@ -256,6 +256,210 @@
             gap:15px;
             margin-top:20px;
         }
+        /* ===== SẢNH CHÍNH ===== */
+        .lobby-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .lobby-card-item {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 18px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .lobby-card-item:hover {
+            background: rgba(15, 23, 42, 0.7);
+            border-color: rgba(56, 189, 248, 0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+
+        .lobby-item-icon {
+            font-size: 32px;
+            margin-bottom: 4px;
+        }
+
+        .lobby-item-title {
+            font-weight: bold;
+            color: #f8fafc;
+            font-size: 14px;
+        }
+
+        .lobby-item-desc {
+            color: #94a3b8;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        .back-btn {
+            width: 100%;
+            margin-top: 10px;
+            padding: 10px;
+            background: #475569;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .back-btn:hover {
+            background: #64748b;
+        }
+
+        .logout-btn {
+            width: 100%;
+            margin-top: 8px;
+            padding: 10px;
+            background: #ef4444;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .logout-btn:hover {
+            background: #dc2626;
+        }
+
+        /* User info */
+        .userinfo-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid #facc15;
+            margin-bottom: 10px;
+            object-fit: cover;
+        }
+        .userinfo-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #f8fafc;
+        }
+        .userinfo-stat {
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+        .userinfo-stat strong {
+            color: #facc15;
+        }
+        .userinfo-stat .coin {
+            color: #34d399;
+        }
+        .userinfo-stat .rank {
+            color: #38bdf8;
+        }
+        .userinfo-stat .exp {
+            color: #a855f7;
+        }
+
+        /* Chat */
+        .chat-room-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        .chat-room-item {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            padding: 12px 16px;
+            cursor: pointer;
+            text-align: center;
+            min-width: 100px;
+            flex: 1;
+            transition: all 0.3s;
+        }
+        .chat-room-item:hover {
+            background: rgba(15, 23, 42, 0.7);
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+        .chat-room-icon {
+            font-size: 22px;
+        }
+        .chat-room-name {
+            color: #f8fafc;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .chat-messages {
+            background: #0f172a;
+            border-radius: 10px;
+            padding: 10px;
+            height: 180px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+        .chat-messages .empty {
+            color: #64748b;
+            text-align: center;
+            padding: 20px;
+        }
+        .chat-input-box {
+            display: flex;
+            gap: 10px;
+        }
+        .chat-input-box input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            background: #1e293b;
+            color: white;
+        }
+        .chat-input-box button {
+            padding: 10px 20px;
+            background: #3b82f6;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .chat-input-box button:hover {
+            background: #2563eb;
+        }
+        .leave-chat-btn {
+            width: 100%;
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: #ef4444;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .leave-chat-btn:hover {
+            background: #dc2626;
+        }
+
+        @media (max-width: 480px) {
+            .lobby-grid {
+                gap: 8px;
+            }
+            .lobby-card-item {
+                padding: 14px 8px;
+            }
+            .lobby-item-icon {
+                font-size: 26px;
+            }
+            .lobby-item-title {
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -317,49 +521,115 @@
 
         </div>
     </div>
-    <!-- ================= MÀN HÌNH CHỜ NHẬP TÊN & CHỌN CHẾ ĐỘ PHÒNG ================= -->
+
+    <!-- ================= SẢNH CHÍNH (LOBBY) ================= -->
     <div id="lobby-screen" style="display:none" class="lobby-container">
         <div class="lobby-card">
-            <h2>ĐẠI CHIẾN HALI</h2>
-            <p style="text-align: center; color: #94a3b8; font-size: 13px;">
-                Nhập tên của bạn và chọn phương thức tham gia đấu trường
-            </p>
-
-            <!-- Khung thông tin profile nằm gọn bên trong card -->
-            <div id="user-panel">
-                <!-- Khối bên trái: Ảnh + Chữ -->
-                <div class="user-profile-header">
-                    <div class="lobby-rank-img-wrapper">
-                        <img id="user-rank-icon" src="assets/ranks/bun.jpg" alt="Rank" class="lobby-rank-badge">
-                    </div>
-
-                    <div class="user-stats-details">
-                        <div id="user-display">Người chơi</div>
-                        <div class="stat-item">🏅 Level: <strong id="user-level" style="color: #facc15;">1</strong></div>
-                        <div class="stat-item">🪙 Coin: <strong id="user-coin" style="color: #34d399;">0</strong></div>
-                    </div>
-                </div>
-
-                <!-- Nút Đăng xuất bên phải -->
-                <button id="logout-btn">Đăng xuất</button>
+            <div class="lobby-header">
+                <h2>🏰 ĐẠI CHIẾN HALI</h2>
+                <p class="sub-title">Sẵn sàng chiến đấu!</p>
             </div>
 
-            <!-- Input Tên -->
-            <div class="input-group" style="margin-top: 10px;">
-                <input type="text" id="username-input" placeholder="Nhập tên..." value="Đỡ nè" style="width: 100%; padding: 10px; border-radius: 8px; background: #0f172a; color: white; border: 1px solid #334155;">
+            <!-- ===== 4 NÚT CHỨC NĂNG ===== -->
+            <div class="lobby-grid" id="lobby-grid">
+                <!-- 1. ĐẤU TRƯỜNG -->
+                <div class="lobby-card-item" onclick="showArena()">
+                    <div class="lobby-item-icon">⚔️</div>
+                    <div class="lobby-item-title">Đấu trường</div>
+                    <div class="lobby-item-desc">Ghép trận ngẫu nhiên</div>
+                </div>
+
+                <!-- 2. CỬA HÀNG -->
+                <div class="lobby-card-item" onclick="showShop()">
+                    <div class="lobby-item-icon">🛒</div>
+                    <div class="lobby-item-title">Cửa hàng</div>
+                    <div class="lobby-item-desc">Mua skin, vật phẩm</div>
+                </div>
+
+                <!-- 3. PHÒNG CHAT -->
+                <div class="lobby-card-item" onclick="showChatRooms()">
+                    <div class="lobby-item-icon">💬</div>
+                    <div class="lobby-item-title">Phòng chat</div>
+                    <div class="lobby-item-desc">Kết nối bạn bè</div>
+                </div>
+
+                <!-- 4. THÔNG TIN -->
+                <div class="lobby-card-item" onclick="showUserInfo()">
+                    <div class="lobby-item-icon">👤</div>
+                    <div class="lobby-item-title">Thông tin</div>
+                    <div class="lobby-item-desc">Xem hồ sơ</div>
+                </div>
             </div>
 
-            <!-- Group nút bấm -->
-            <div class="lobby-buttons-group">
-                <button id="btn-quick-match" class="btn-lobby btn-quick">GHÉP NGẪU NHIÊN</button>
-                <button id="btn-create-room" class="btn-lobby btn-create">TẠO PHÒNG RIÊNG TƯ</button>
-                <div class="room-input-box">
-                    <input type="text" id="room-id-input" placeholder="Nhập ID phòng...">
-                    <button id="btn-join-room" class="btn-lobby btn-join">VÀO PHÒNG</button>
+            <!-- ===== KHU VỰC NỘI DUNG ===== -->
+            <div id="lobby-content" style="margin-top: 15px;">
+                <!-- Nội dung mặc định: Đấu trường -->
+                <!-- Nội dung Đấu trường -->
+                <div id="arena-content" style="display: none;">
+                    <!-- Input Tên -->
+                    <div class="input-group" style="margin-top: 10px;">
+                        <input type="text" id="username-input" placeholder="Nhập tên..." style="width: 100%; padding: 10px; border-radius: 8px; background: #0f172a; color: white; border: 1px solid #334155;">
+                    </div>
+
+                    <!-- Group nút bấm -->
+                    <div class="lobby-buttons-group">
+                        <button id="btn-quick-match" class="btn-lobby btn-quick" onclick="startQuickMatch()">⚡ GHÉP NGẪU NHIÊN</button>
+                        <button id="btn-create-room" class="btn-lobby btn-create" onclick="createNewRoom()">🏠 TẠO PHÒNG RIÊNG</button>
+                        <div class="room-input-box">
+                            <input type="text" id="room-id-input" placeholder="Nhập mã phòng...">
+                            <button id="btn-join-room" class="btn-lobby btn-join" onclick="joinRoomWithId()">🔗 VÀO PHÒNG</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Trạng thái -->
+                    <div id="lobby-status" style="margin-top: 15px; padding: 10px; border-radius: 8px; background: #1e293b; color: #94a3b8; text-align: center; font-size: 14px;">
+                        🟢 Sẵn sàng tham gia đấu trường
+                    </div>
+                    
+                    <!-- Nút quay lại -->
+                    <button class="back-btn" onclick="backToLobby()">⬅️ Quay lại</button>
                 </div>
-                <!-- THÊM ĐOẠN NÀY -->
-                <div id="lobby-status"
-                    >
+
+                <!-- Cửa hàng -->
+                <div id="shop-content" style="display: none;">
+                    <div style="text-align: center; color: #94a3b8; font-size: 14px; padding: 30px 10px;">
+                        🛒 Cửa hàng đang được xây dựng...
+                        <br><br>
+                        <span style="color: #facc15; font-size: 20px;">🌟 Sắp ra mắt!</span>
+                    </div>
+                    <button class="back-btn" onclick="backToLobby()">⬅️ Quay lại</button>
+                </div>
+
+                <!-- Phòng chat -->
+                <div id="chat-content" style="display: none;">
+                    <div id="chat-room-list" class="chat-room-list">
+                        <!-- Phòng chat sẽ được tạo bằng JS -->
+                    </div>
+                    <div id="chat-room-content" style="display: none;">
+                        <div id="chat-messages" class="chat-messages">
+                            <div class="empty">Chưa có tin nhắn</div>
+                        </div>
+                        <div class="chat-input-box">
+                            <input type="text" id="chat-input" placeholder="Nhập tin nhắn...">
+                            <button onclick="sendChatMessage()">Gửi</button>
+                        </div>
+                        <button class="leave-chat-btn" onclick="leaveChatRoom()">🚪 Rời phòng chat</button>
+                    </div>
+                    <button class="back-btn" onclick="backToLobby()">⬅️ Quay lại</button>
+                </div>
+
+                <!-- Thông tin người chơi -->
+                <div id="userinfo-content" style="display: none;">
+                    <div style="text-align: center; padding: 15px 10px;">
+                        <img id="userinfo-avatar" class="userinfo-avatar" src="assets/ranks/bun.jpg" alt="Avatar">
+                        <div id="userinfo-name" class="userinfo-name">Người chơi</div>
+                        <div class="userinfo-stat">🏅 Level: <strong id="userinfo-level">1</strong></div>
+                        <div class="userinfo-stat">🪙 Coin: <strong id="userinfo-coin" class="coin">0</strong></div>
+                        <div class="userinfo-stat">⭐ Rank: <strong id="userinfo-rank" class="rank">Bùn</strong></div>
+                        <div class="userinfo-stat">📊 EXP: <strong id="userinfo-exp" class="exp">0</strong></div>
+                    </div>
+                    <button class="back-btn" onclick="backToLobby()">⬅️ Quay lại</button>
+                    <button class="logout-btn" onclick="logout()">🚪 Đăng xuất</button>
                 </div>
             </div>
         </div>
