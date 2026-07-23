@@ -372,6 +372,7 @@
         <!-- Khu vực hiển thị mã phòng cho người chơi theo dõi (Sửa lỗi thiếu ID element) -->
         <div class="room-display-tag" id="room-id-display">Mã Phòng: <strong style="color: #f59e0b;">---</strong></div>
         <!-- Thêm vào trong div id="game-screen" -->
+        <!-- Nút rời trận (đã có sẵn, không cần sửa) -->
         <button id="btn-leave-game" onclick="leaveGame()" style="
             position: fixed;
             bottom: 20px;
@@ -596,11 +597,24 @@
     </div>
 
 </div>
-    <!-- Thêm vào cuối body, trước các script -->
-    <div id="custom-notification">
-        <button class="notification-close" onclick="hideNotification()">×</button>
-        <span id="notification-message">Thông báo</span>
+    <!-- ===== CUSTOM CONFIRM MODAL ===== -->
+<div id="custom-confirm" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 999999; display: none; justify-content: center; align-items: center;">
+    <div style="background: #1e293b; padding: 30px 25px; border-radius: 16px; max-width: 400px; width: 90%; border: 2px solid #facc15; box-shadow: 0 20px 60px rgba(0,0,0,0.8);">
+        <div style="font-size: 48px; text-align: center; margin-bottom: 10px;">⚠️</div>
+        <h3 id="confirm-title" style="color: #facc15; text-align: center; font-size: 20px; margin-bottom: 10px;">Xác nhận rời trận</h3>
+        <p id="confirm-message" style="color: #cbd5e1; text-align: center; font-size: 15px; line-height: 1.6; margin-bottom: 20px;">
+            Bạn có chắc muốn rời trận đấu? Hành động này sẽ bị tính là THUA CUỘC!
+        </p>
+        <div style="display: flex; gap: 12px;">
+            <button id="confirm-cancel" style="flex: 1; padding: 12px; border: none; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; background: #475569; color: #94a3b8; transition: 0.3s;">
+                ❌ Hủy
+            </button>
+            <button id="confirm-ok" style="flex: 1; padding: 12px; border: none; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; transition: 0.3s;">
+                🚪 Rời trận
+            </button>
+        </div>
     </div>
+</div>
     <!-- ================= THỨ TỰ NẠP JAVASCRIPT CHUẨN KIẾN TRÚC GAME ONLINE ================= -->
     
     <!-- 1. Thư viện Socket.IO cốt lõi từ CDN tải nhanh -->

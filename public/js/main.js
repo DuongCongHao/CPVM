@@ -1520,31 +1520,48 @@
 
     // ===== RỜI TRẬN =====
     function leaveGame() {
-        if (!confirm('⚠️ Bạn có chắc muốn rời trận đấu?\n\nHành động này sẽ bị tính là THUA CUỘC!')) {
-            return;
-        }
-        
-        // Gửi yêu cầu rời phòng lên server
-        if (socket && socket.connected) {
-            socket.emit('leave-room', {
-                reason: 'player_left'
-            });
-            console.log("📤 Đã gửi yêu cầu rời phòng lên server");
-        }
-        
-        // Quay về lobby
-        document.getElementById('game-screen').style.display = 'none';
-        document.getElementById('lobby-screen').style.display = 'flex';
-        enableLobbyButtons();
-        hideLeaveButton();
-        
-        if (typeof addLog === 'function') {
-            addLog('🚪 Bạn đã rời khỏi trận đấu.');
-        }
-        
-        // Reset game state
-        window.gameStarted = false;
-        window.gameEnding = false;
+        showConfirm(
+            '⚠️ Xác nhận rời trận',
+            'Bạn có chắc muốn rời trận đấu?\n\nHành động này sẽ bị tính là THUA CUỘC!',
+            function() {
+                // ✅ Đồng ý rời trận
+                console.log("🚪 Đang gửi yêu cầu rời phòng...");
+                
+                if (typeof showNotification === 'function') {
+                    showNotification('🚪 Đang rời trận đấu...', 'warning', 2000);
+                }
+                
+                if (socket && socket.connected) {
+                    socket.emit('leave-room', {
+                        reason: 'player_left'
+                    });
+                    console.log("📤 Đã gửi leave-room lên server");
+                }
+                
+                setTimeout(() => {
+                    document.getElementById('game-screen').style.display = 'none';
+                    document.getElementById('lobby-screen').style.display = 'flex';
+                    if (typeof enableLobbyButtons === 'function') {
+                        enableLobbyButtons();
+                    }
+                    if (typeof hideLeaveButton === 'function') {
+                        hideLeaveButton();
+                    }
+                    window.gameStarted = false;
+                    window.gameEnding = false;
+                    if (typeof hideNotification === 'function') {
+                        hideNotification();
+                    }
+                }, 1500);
+            },
+            function() {
+                // ❌ Hủy rời trận
+                console.log("✅ Đã hủy rời trận");
+                if (typeof showNotification === 'function') {
+                    showNotification('✅ Đã hủy rời trận', 'info', 1500);
+                }
+            }
+        );
     }
     // Hàm hiển thị chỉ số mới nhất lên Màn hình Sảnh
     function updateLobbyUI(userData) {
@@ -1642,5 +1659,65 @@ function hideNotification() {
     if (notificationTimeout) {
         clearTimeout(notificationTimeout);
         notificationTimeout = null;
+    }
+}
+function showConfirm(title, message, onConfirm, onCancel) {
+    const modal = document.getElementById('custom-confirm');
+    const titleEl = document.getElementById('confirm-title');
+    const msgEl = document.getElementById('confirm-message');
+    const okBtn = document.getElementById('confirm-ok');
+    const cancelBtn = document.getElementById('confirm-cancel');
+    
+    if (!modal) {
+        // Fallback: dùng confirm cũ nếu chưa có modal
+        if (confirm(message)) {
+            if (onConfirm) onConfirm();
+        } else {
+            if (onCancel) onCancel();
+        }
+        return;
+    }
+    
+    titleEl.textContent = title || 'Xác nhận';
+    msgEl.textContent = message || 'Bạn có chắc chắn?';
+    
+    // Xóa sự kiện cũ
+    const newOk = okBtn.cloneNode(true);
+    const newCancel = cancelBtn.cloneNode(true);
+    okBtn.parentNode.replaceChild(newOk, okBtn);
+    cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+    
+    newOk.addEventListener('click', () => {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        if (onConfirm) onConfirm();
+    });
+    
+    newCancel.addEventListener('click', () => {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        if (onCancel) onCancel();
+    });
+    
+    // Click bên ngoài để đóng
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+            if (onCancel) onCancel();
+        }
+    });
+    
+    modal.style.display = 'flex';
+    setTimeout(() => {
+        modal.classList.add('show');
+    }, 10);
+}
+// ===== ĐÓNG CONFIRM =====
+function closeConfirm() {
+    const modal = document.getElementById('custom-confirm');
+    if (modal) {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
     }
 }
