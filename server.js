@@ -660,29 +660,47 @@
         });
         
 
-
         socket.on("gameOver", async (data) => {
             const roomId = socket.roomId;
             if (!roomId || !rooms[roomId]) return;
 
-            // Chống gửi nhiều lần
+            // 🔥 THÊM: Nếu phòng đã kết thúc rồi thì bỏ qua
             if (finishedRooms.has(roomId)) {
-                console.log("⚠️ GAMEOVER đã xử lý rồi:", roomId);
+                console.log("⚠️ GAMEOVER đã xử lý rồi, bỏ qua:", roomId);
                 return;
             }
 
             finishedRooms.add(roomId);
-            console.log("🔥 SERVER NHẬN GAMEOVER:", data);
+            console.log("🔥 SERVER NHẬN GAMEOVER lần đầu:", data);
 
-            // Xóa bộ đếm đếm ngược của phòng khi game over
             if (rooms[roomId].timer) clearInterval(rooms[roomId].timer);
 
-            // Gửi kết quả cho cả phòng để Client chạy Animation
-            io.to(roomId).emit("gameOver", data);
+            // 🔥 CHỈ GỬI CHO NGƯỜI THẮNG (để hiển thị popup và cộng điểm)
+            const winner = rooms[roomId].players.find(p => p.playerNumber === data.winnerId);
+            if (winner) {
+                const winnerSocket = io.sockets.sockets.get(winner.id);
+                if (winnerSocket) {
+                    winnerSocket.emit("gameOver", {
+                        winnerId: data.winnerId,
+                        reason: data.reason,
+                        message: `🎉 Bạn đã chiến thắng!`
+                    });
+                }
+            }
 
-            // 💡 LƯU Ý: Việc cập nhật DB (Points, EXP, Coins, Rank) 
-            // đã được Client gửi chính xác qua 'updatePlayerStats' rồi, 
-            // nên không gọi axios ở đây nữa để tránh bị ghi đè dữ liệu!
+            // 🔥 GỬI CHO NGƯỜI THUA (chỉ thông báo, không cộng điểm)
+            const loser = rooms[roomId].players.find(p => p.playerNumber !== data.winnerId);
+            if (loser) {
+                const loserSocket = io.sockets.sockets.get(loser.id);
+                if (loserSocket) {
+                    loserSocket.emit("gameOver", {
+                        winnerId: data.winnerId,
+                        reason: data.reason,
+                        message: `💀 Bạn đã thua cuộc!`,
+                        isLoser: true
+                    });
+                }
+            }
         });
         // =========================================================================
         // 📊 PHẦN THÊM MỚI: HỨNG DỮ LIỆU CẬP NHẬT CHỈ SỐ (EXP, RANK, COINS) TỪ CLIENT
@@ -717,11 +735,11 @@
 
 
         });
-        // Xử lý khi người chơi bất ngờ mất kết nối hoặc thoát ứng dụng
         // ===== XỬ LÝ KHI NGƯỜI CHƠI MẤT KẾT NỐI =====
         socket.on('disconnect', () => {
             console.log(`❌ Thiết bị ngắt kết nối: ${socket.id}`);
-            // ===== 🆕 XỬ LÝ RỜI PHÒNG CHAT =====
+            
+            // ===== XỬ LÝ RỜI PHÒNG CHAT =====
             if (socket.currentChatRoom) {
                 const roomName = socket.currentChatRoom;
                 const userName = socket.chatUserName || 'Ai đó';
@@ -736,6 +754,7 @@
                 socket.currentChatRoom = null;
                 console.log(`💬 ${userName} đã rời phòng chat do disconnect`);
             }
+            
             // Xóa khỏi hàng đợi tìm trận nhanh nếu đang đợi
             quickMatchQueue = quickMatchQueue.filter(s => s.id !== socket.id);
 
@@ -745,13 +764,23 @@
                 return;
             }
             
+            // 🔥 KIỂM TRA: NẾU PHÒNG ĐÃ KẾT THÚC, KHÔNG XỬ LÝ GÌ
+            if (finishedRooms.has(roomId)) {
+                console.log(`⚠️ Phòng ${roomId} đã kết thúc, bỏ qua xử lý disconnect`);
+                // Xóa phòng và thoát
+                if (rooms[roomId]) {
+                    if (rooms[roomId].timer) clearInterval(rooms[roomId].timer);
+                    delete rooms[roomId];
+                }
+                return;
+            }
+            
             console.log(`📢 Người chơi ${socket.id} đã rời khỏi phòng ${roomId}`);
             
             // Tìm người chơi bị mất kết nối
             const disconnectedPlayer = rooms[roomId].players.find(p => p.id === socket.id);
             if (!disconnectedPlayer) {
                 console.log(`⚠️ Không tìm thấy người chơi ${socket.id} trong phòng ${roomId}`);
-                // Hủy bộ đếm và xóa phòng
                 if (rooms[roomId].timer) clearInterval(rooms[roomId].timer);
                 delete rooms[roomId];
                 return;
@@ -761,18 +790,24 @@
             const opponent = rooms[roomId].players.find(p => p.id !== socket.id);
             
             if (opponent) {
-                // 🔥 NGƯỜI CÒN LẠI ĐƯỢC XỬ THẮNG
                 console.log(`🏆 ${opponent.name} được xử thắng vì ${disconnectedPlayer.name} đã mất kết nối!`);
                 
-                // Gửi sự kiện gameOver cho người còn lại
-                io.to(roomId).emit('gameOver', {
-                    winnerId: opponent.playerNumber,
-                    reason: 'disconnect',
-                    message: `${disconnectedPlayer.name} đã mất kết nối. Bạn được xử thắng!`
-                });
+                // 🔥 CHỈ GỬI CHO ĐỐI THỦ (NGƯỜI CÒN LẠI) - KHÔNG GỬI CHO CẢ PHÒNG
+                const opponentSocket = io.sockets.sockets.get(opponent.id);
+                if (opponentSocket) {
+                    opponentSocket.emit('gameOver', {
+                        winnerId: opponent.playerNumber,
+                        reason: 'disconnect',
+                        message: `${disconnectedPlayer.name} đã mất kết nối. Bạn được xử thắng!`
+                    });
+                    console.log(`📤 Đã gửi gameOver cho ${opponent.name}`);
+                }
             } else {
                 console.log(`⚠️ Không tìm thấy đối thủ trong phòng ${roomId}`);
             }
+            
+            // Đánh dấu phòng đã kết thúc
+            finishedRooms.add(roomId);
             
             // Hủy bộ đếm thời gian của phòng
             if (rooms[roomId].timer) {
@@ -795,6 +830,17 @@
                 return;
             }
             
+            // 🔥 KIỂM TRA: NẾU PHÒNG ĐÃ KẾT THÚC, KHÔNG XỬ LÝ GÌ
+            if (finishedRooms.has(roomId)) {
+                console.log(`⚠️ Phòng ${roomId} đã kết thúc, bỏ qua xử lý leave-room`);
+                // Xóa phòng và thoát
+                if (rooms[roomId]) {
+                    if (rooms[roomId].timer) clearInterval(rooms[roomId].timer);
+                    delete rooms[roomId];
+                }
+                return;
+            }
+            
             const leaver = rooms[roomId].players.find(p => p.id === socket.id);
             if (!leaver) {
                 console.log(`⚠️ Không tìm thấy người chơi ${socket.id} trong phòng`);
@@ -806,7 +852,7 @@
             if (opponent) {
                 console.log(`🏆 ${opponent.name} được xử thắng vì ${leaver.name} đã rời trận!`);
                 
-                // 🔥 CHỈ GỬI CHO ĐỐI THỦ (NGƯỜI CÒN LẠI)
+                // 🔥 CHỈ GỬI CHO ĐỐI THỦ (NGƯỜI CÒN LẠI) - KHÔNG GỬI CHO CẢ PHÒNG
                 const opponentSocket = io.sockets.sockets.get(opponent.id);
                 if (opponentSocket) {
                     opponentSocket.emit('gameOver', {
@@ -817,6 +863,9 @@
                     console.log(`📤 Đã gửi gameOver cho ${opponent.name}`);
                 }
             }
+            
+            // Đánh dấu phòng đã kết thúc
+            finishedRooms.add(roomId);
             
             if (rooms[roomId].timer) clearInterval(rooms[roomId].timer);
             delete rooms[roomId];

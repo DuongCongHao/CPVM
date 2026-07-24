@@ -128,42 +128,27 @@
             console.log("📊 data.message:", data.message);
             console.log("📊 data.winnerId:", data.winnerId);
             console.log("📊 myPlayerNumber:", window.myPlayerNumber);
+            console.log("📊 isLoser:", data.isLoser);
             
             // Ẩn nút rời trận
             if (typeof hideLeaveButton === 'function') {
                 hideLeaveButton();
             }
             
-            // 🔥 KIỂM TRA: Bạn có phải người thắng không?
             const isWin = (window.myPlayerNumber === data.winnerId);
             console.log(`🏆 Bạn có thắng không? ${isWin}`);
             
-            // 🔥 NẾU LÀ NGƯỜI RỜI (THUA) - KHÔNG HIỂN THỊ POPUP THẮNG
-            if ((data.reason === 'leave' || data.reason === 'disconnect') && !isWin) {
-                console.log("🚪 Bạn đã rời trận (thua), quay về lobby...");
+            // 🔥 NẾU LÀ NGƯỜI THUA - VẪN HIỂN THỊ POPUP THUA (CÓ TRỪ ĐIỂM)
+            if (data.isLoser === true) {
+                console.log("🚪 Bạn là người thua, hiển thị popup thua...");
                 
-                // Hiển thị thông báo đẹp
-                if (typeof showNotification === 'function') {
-                    showNotification(`💀 ${data.message || 'Bạn đã rời trận đấu.'}`, 'warning', 3000);
-                } else {
-                    alert(data.message || 'Bạn đã rời trận đấu.');
+                // Gọi gameOver để hiển thị popup và trừ điểm
+                if (typeof gameOver === 'function') {
+                    gameOver(data.winnerId, data.reason);
+                } else if (typeof showGameOver === 'function') {
+                    showGameOver(data.winnerId, data.reason);
                 }
-                
-                if (typeof addLog === 'function') {
-                    addLog(`🚪 ${data.message || 'Bạn đã rời trận đấu.'}`);
-                }
-                
-                // Quay về lobby sau 2.5 giây
-                setTimeout(() => {
-                    document.getElementById('game-screen').style.display = 'none';
-                    document.getElementById('lobby-screen').style.display = 'flex';
-                    if (typeof enableLobbyButtons === 'function') {
-                        enableLobbyButtons();
-                    }
-                    window.gameStarted = false;
-                    window.gameEnding = false;
-                }, 2500);
-                return; // 🔥 THOÁT KHÔNG GỌI gameOver
+                return;
             }
             
             // 🔥 NẾU LÀ NGƯỜI THẮNG (bao gồm cả khi đối thủ rời)
@@ -188,7 +173,7 @@
                 return;
             }
             
-            // 🔥 TRƯỜNG HỢP CÒN LẠI: THUA BÌNH THƯỜNG (không phải do rời)
+            // 🔥 TRƯỜNG HỢP CÒN LẠI: THUA BÌNH THƯỜNG (không có isLoser flag)
             if (typeof gameOver === 'function') {
                 gameOver(data.winnerId, data.reason);
             } else if (typeof showGameOver === 'function') {
@@ -1099,11 +1084,52 @@
         console.log("📊 Lý do:", reason);
         console.log("👤 myPlayerNumber:", myPlayerNumber);
         
-        // 🔥 NẾU LÀ NGƯỜI RỜI (THUA) - KHÔNG LÀM GÌ CẢ
-        if ((reason === 'leave' || reason === 'disconnect') && myPlayerNumber !== winnerId) {
-            console.log("🚪 Bạn đã rời trận (thua), bỏ qua gameOver!");
+        // 🔥 NẾU LÀ NGƯỜI THUA - KHÔNG GỬI GAMEOVER LÊN SERVER (VẪN HIỂN THỊ POPUP TRỪ ĐIỂM)
+        if (myPlayerNumber !== winnerId) {
+            console.log("🚪 Bạn là người thua, không gửi gameOver lên server!");
+            
+            // Ẩn nút rời trận
+            if (typeof hideLeaveButton === 'function') {
+                hideLeaveButton();
+            }
+            
+            // Đánh dấu game kết thúc
+            window.gameEnding = true;
+            
+            // Vô hiệu hóa nút roll
+            const rollBtn = document.getElementById('roll-btn');
+            if (rollBtn) {
+                rollBtn.disabled = true;
+                rollBtn.innerText = "⏳ KẾT THÚC";
+            }
+            
+            // Lấy user từ localStorage
+            const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+            console.log("👤 User từ localStorage:", currentUser);
+            
+            if (!currentUser) {
+                console.error("❌ Không tìm thấy user!");
+                showSimpleGameOver(winnerId);
+                return;
+            }
+            
+            // 🔥 GỌI ANIMATION CHO NGƯỜI THUA (isWin = false) - VẪN CÓ HIỆU ỨNG TRỪ ĐIỂM
+            if (typeof showMatchResultAnimation === 'function') {
+                console.log("🎬 Gọi showMatchResultAnimation với isWin = false (trừ điểm)");
+                showMatchResultAnimation(false, currentUser);
+            } else {
+                console.error("❌ Không tìm thấy hàm showMatchResultAnimation!");
+                showSimpleGameOver(winnerId);
+            }
             return;
         }
+        
+        // 🔥 NẾU LÀ NGƯỜI THẮNG - KIỂM TRA ĐÃ GỬI GAMEOVER CHƯA
+        if (window._gameOverSent) {
+            console.log("⛔ Đã gửi gameOver rồi, bỏ qua!");
+            return;
+        }
+        window._gameOverSent = true;
         
         // Ẩn nút rời trận
         if (typeof hideLeaveButton === 'function') {
@@ -1120,13 +1146,13 @@
             rollBtn.innerText = "⏳ ĐANG KẾT THÚC...";
         }
         
-        // GỬI SERVER: Trận đấu kết thúc
+        // GỬI SERVER: Trận đấu kết thúc (CHỈ 1 LẦN)
         if (socket && socket.connected) {
             socket.emit("gameOver", {
                 winnerId: winnerId,
                 reason: reason
             });
-            console.log("📤 Đã gửi gameOver lên server");
+            console.log("📤 Đã gửi gameOver lên server (lần đầu và duy nhất)");
         }
 
         // Lấy user từ localStorage
@@ -1160,7 +1186,7 @@
             }
         }
         
-        // Gọi animation
+        // Gọi animation (CHO CẢ THẮNG VÀ THUA)
         if (typeof showMatchResultAnimation === 'function') {
             console.log("🎬 Gọi showMatchResultAnimation với user:", currentUser);
             showMatchResultAnimation(isWin, currentUser);
@@ -1998,4 +2024,11 @@ function logout() {
         localStorage.removeItem('user');
         location.reload();
     }
+}
+// ===== NÚT QUAY VỀ =====
+function handleBackToLobby() {
+    // Chỉ reload trang, không gửi gì thêm
+    // Không gọi socket.emit hay gameOver gì cả
+    console.log("🔙 Quay về lobby - reload trang");
+    location.reload();
 }
