@@ -31,7 +31,7 @@ h1 {
     -webkit-text-fill-color: transparent;
     filter: drop-shadow(0 0 15px rgba(129, 140, 248, 0.3));
 }
-
+/* ===== CONTAINER CHÍNH ===== */
 .container {
     display: flex;
     gap: 30px;
@@ -41,8 +41,17 @@ h1 {
     align-items: flex-start;
 }
 
-
-
+/* ===== BÀN CỜ ===== */
+.board {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: repeat(6, 1fr);
+    gap: clamp(3px, 0.7vw, 8px);
+    padding: clamp(5px, 1vw, 12px);
+    width: min(70vw, 700px);
+    aspect-ratio: 1 / 1;
+    position: relative;
+}
 .cell {
     background: #1e293b;
     border-radius: 12px;
@@ -953,351 +962,6 @@ button.action-btn:disabled {
     transform: scale(1.1);
 }
 
-/* ==================================================
-   RESPONSIVE GAME SYSTEM
-   Không ảnh hưởng logic JS
-================================================== */
-
-/* =====================
-   MAIN GAME CONTAINER
-===================== */
-.container {
-    width: 100%;
-
-    max-width: 1200px;
-
-    display: flex;
-
-    justify-content: center;
-
-    align-items: center;
-
-    gap: 20px;
-
-
-}
-
-
-/* =====================
-       BOARD SCALE
-===================== */
-
-
-.board {
-
-
-    width: min(70vw, 700px);
-
-    aspect-ratio: 1 / 1;
-
-
-    display: grid;
-
-
-    grid-template-columns: repeat(6, 1fr);
-
-    grid-template-rows: repeat(6, 1fr);
-
-
-    gap: clamp(3px, 0.7vw, 8px);
-
-
-    padding: clamp(5px, 1vw, 12px);
-
-
-}
-
-
-
-/* =====================
-       CELL
-===================== */
-
-
-.cell {
-
-
-    min-width: 0;
-
-    min-height: 0;
-
-
-    padding: clamp(3px, 0.7vw, 10px);
-
-
-    font-size: clamp(7px, 1vw, 11px);
-
-
-    overflow: hidden;
-
-
-}
-
-
-
-.cell-title {
-
-    font-size: clamp(8px, 1vw, 10px);
-
-}
-
-
-.cell-price {
-
-    font-size: clamp(7px, 1vw, 11px);
-
-}
-
-
-
-/* =====================
- PLAYER TOKEN
-===================== */
-
-
-.token-slot {
-
-    width: 35%;
-
-    height: 45%;
-
-
-}
-
-
-.p-avatar {
-
-    font-size: clamp(14px, 2vw, 26px);
-
-}
-
-
-
-.p-tag {
-
-    font-size: clamp(6px, 0.8vw, 8px);
-
-}
-
-
-/* =====================
- CENTER AREA
-===================== */
-
-
-.cell-center {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-
-    gap: 12px;
-
-    width: 100%;
-    height: 100%;
-
-    padding: 12px;
-}
-
-#use-skill-btn {
-    display: block;
-    width: 85%;
-    margin: 10px auto 0 auto;
-}
-
-#use-skill-btn:disabled {
-    background: #475569;
-}
-
-
-
-.turn-indicator {
-
-    font-size: clamp(8px, 1vw, 13px);
-
-}
-
-
-
-/* =====================
- SIDE PANEL
-===================== */
-
-
-.side-panel {
-
-
-    width: min(30vw, 350px);
-
-}
-
-
-
-/* =====================
- TABLET
-===================== */
-
-
-@media(max-width:900px) {
-
-
-    .container {
-
-
-        flex-direction: column;
-
-
-    }
-
-
-
-    .board {
-
-
-        width: min(90vw, 600px);
-
-
-    }
-
-
-
-    .side-panel {
-
-
-        width: min(90vw, 500px);
-
-
-    }
-
-
-
-}
-
-/* =====================
- MOBILE
-===================== */
-
-
-@media (max-width:480px) {
-    #shop-content {
-        max-height: 75vh;
-        padding: 0 4px;
-    }
-
-    #shop-items {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 6px;
-        max-height: 250px;
-        min-height: 120px;
-        padding: 4px 2px;
-    }
-
-    #shop-items .shop-item {
-        padding: 8px 4px;
-        border-radius: 8px;
-    }
-
-    #shop-items .shop-item .icon {
-        font-size: 24px;
-    }
-
-    #shop-items .shop-item .name {
-        font-size: 10px;
-    }
-
-    #shop-items .shop-item .price {
-        font-size: 10px;
-    }
-
-    .shop-category-btn {
-        padding: 4px 10px;
-        font-size: 10px;
-        border-radius: 12px;
-    }
-
-    #shop-content .back-btn {
-        padding: 8px;
-        font-size: 13px;
-        margin-top: 8px;
-    }
-
-    /* Đảm bảo nút quay lại không bị che */
-    #shop-content {
-        padding-bottom: 5px;
-    }
-
-    #equipment-content {
-        max-height: 75vh;
-        overflow-y: auto;
-        padding: 0 4px;
-    }
-
-    #equipment-content .equip-item-card {
-        padding: 6px 10px;
-        min-width: 50px;
-    }
-
-    #equipment-content .equip-item-card .icon {
-        font-size: 22px;
-    }
-
-    #equipment-content .equip-item-card .name {
-        font-size: 10px;
-    }
-
-    #equipment-content .back-btn {
-        padding: 8px;
-        font-size: 13px;
-        margin-top: 8px;
-        position: sticky;
-        bottom: 0;
-        background: #1e1b4b;
-        z-index: 10;
-    }
-}
-
-.lobby-card {
-    padding: 20px 16px !important;
-}
-
-.lobby-card h2 {
-    font-size: 28px !important;
-}
-
-.lobby-grid {
-    gap: 10px;
-}
-
-.lobby-card-item {
-    padding: 16px 8px;
-    border-radius: 12px;
-}
-
-.lobby-item-icon {
-    font-size: 32px;
-}
-
-.lobby-item-title {
-    font-size: 13px;
-}
-
-body {
-    padding: 6px;
-}
-
-#game-screen h1 {
-    display: none;
-}
-
-#help-btn {
-    width: 28px;
-    height: 28px;
-    top: 8px;
-    right: 8px;
-
-    font-size: 16px;
-    font-weight: 700;
-}
 
 .player-top {
 
@@ -1316,11 +980,6 @@ body {
     font-size: 9px;
 
     padding: 2px 5px;
-}
-
-.skill-tag {
-    font-size: 10px;
-    padding: 3px 6px;
 }
 
 h1 {
@@ -1461,10 +1120,6 @@ button.action-btn {
 
 /* popup thắng */
 
-#game-over-overlay {
-    padding: 10px;
-}
-
 .victory-box {
     width: 95%;
     max-width: 320px;
@@ -1484,57 +1139,6 @@ button.action-btn {
     width: 100%;
 }
 
-.result-modal {
-    padding: 18px 14px !important;
-    width: 92vw !important;
-}
-
-.rank-badge-card {
-    width: 60px !important;
-    height: 60px !important;
-    border-width: 2px !important;
-}
-
-#match-status-title {
-    font-size: 20px !important;
-}
-
-#winner-text {
-    font-size: 13px !important;
-    padding: 6px 10px !important;
-}
-
-.stat-box {
-    padding: 8px 12px !important;
-    margin-bottom: 6px !important;
-}
-
-.points-display {
-    font-size: 14px !important;
-}
-
-.delta-text {
-    font-size: 12px !important;
-    padding: 1px 8px !important;
-}
-
-.exp-info {
-    font-size: 12px !important;
-}
-
-#level-badge {
-    font-size: 11px !important;
-    padding: 1px 10px !important;
-}
-
-#coin-reward {
-    font-size: 14px !important;
-}
-
-.bar-bg {
-    height: 6px !important;
-}
-}
 
 .notification-panel {
     padding: 10px;
@@ -2102,13 +1706,6 @@ body.hao-shake {
 }
 
 /* --- GIAO DIỆN BẢNG TỔNG KẾT TRẬN ĐẤU --- */
-
-.summary-card h2 {
-    color: #fff;
-    margin-bottom: 20px;
-    text-transform: uppercase;
-}
-
 .result-modal {
     background: #141423;
     color: #fff;
@@ -2122,16 +1719,6 @@ body.hao-shake {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.stat-box {
-    background: rgba(32, 32, 56, 0.8);
-    padding: 12px 15px;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-/* Rank Styling */
-
 .points-display {
     display: flex !important;
     justify-content: center !important;
@@ -2140,23 +1727,13 @@ body.hao-shake {
     font-size: 16px !important;
     margin-top: 4px !important;
 }
-
-.delta-text {
-    font-weight: bold;
-    font-size: 14px;
-    padding: 2px 10px;
-    border-radius: 12px;
+.summary-card h2 {
+    color: #fff;
+    margin-bottom: 20px;
+    text-transform: uppercase;
 }
 
-.delta-plus {
-    color: #4efe80;
-    background: rgba(78, 254, 128, 0.15);
-}
 
-.delta-minus {
-    color: #ff4757;
-    background: rgba(255, 71, 87, 0.15);
-}
 
 /* EXP Styling */
 .exp-info {
@@ -2910,4 +2487,126 @@ body.hao-shake {
     background: #1e1b4b;
     border: 1px solid rgba(255, 255, 255, 0.1);
     z-index: 10;
+}
+/* ===== FIX BỐ CỤC DESKTOP ===== */
+@media (min-width: 769px) {
+    .container {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: flex-start !important;
+        align-items: flex-start !important;
+        padding-left: 30px !important;
+        gap: 25px !important;
+        flex-wrap: nowrap !important;
+    }
+
+    .board {
+        width: min(65vw, 680px) !important;
+        margin-left: -20px !important;
+        flex-shrink: 0 !important;
+    }
+
+    .side-panel {
+        width: min(28vw, 340px) !important;
+        flex-shrink: 0 !important;
+        margin-left: 0 !important;
+    }
+
+    /* Ô đỏ (chính là khung thông tin người chơi) */
+    .side-panel .status-card {
+        border-left: 4px solid #ef4444 !important;
+        padding-left: 12px !important;
+        position: relative;
+    }
+
+    .side-panel .status-card::before {
+        content: '';
+        position: absolute;
+        left: -8px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 8px;
+        height: 60%;
+        background: #ef4444;
+        border-radius: 4px;
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+        animation: redPulse 1.2s ease-in-out infinite alternate;
+    }
+
+    @keyframes redPulse {
+        0% { opacity: 0.5; box-shadow: 0 0 10px rgba(239, 68, 68, 0.3); }
+        100% { opacity: 1; box-shadow: 0 0 30px rgba(239, 68, 68, 0.7); }
+    }
+}
+
+/* Mobile vẫn giữ nguyên bố cục dọc */
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column !important;
+        padding-left: 0 !important;
+        align-items: center !important;
+    }
+    .board {
+        margin-left: 0 !important;
+        width: 96vw !important;
+    }
+    .side-panel {
+        width: 96vw !important;
+        max-width: 430px !important;
+    }
+    .side-panel .status-card::before {
+        display: none;
+    }
+}
+.points-display {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 8px !important;
+    font-size: 16px !important;
+    margin-top: 4px !important;
+}
+
+.delta-text {
+    font-weight: bold;
+    font-size: 14px;
+    padding: 2px 10px;
+    border-radius: 12px;
+}
+
+.delta-plus {
+    color: #4efe80;
+    background: rgba(78, 254, 128, 0.15);
+}
+
+.delta-minus {
+    color: #ff4757;
+    background: rgba(255, 71, 87, 0.15);
+}
+/* ===== RANK ICON IN PLAYER INFO ===== */
+.player-rank-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    object-fit: cover;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
+.p1-rank-icon {
+    border: 2px solid #ef4444;
+}
+
+.p2-rank-icon {
+    border: 2px solid #3b82f6;
+}
+
+/* Hiệu ứng glow cho rank cao */
+.rank-glow {
+    animation: rankPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes rankPulse {
+    0%, 100% { box-shadow: 0 0 5px rgba(250, 204, 21, 0.3); }
+    50% { box-shadow: 0 0 15px rgba(250, 204, 21, 0.6); }
 }

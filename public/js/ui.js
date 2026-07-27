@@ -1,35 +1,54 @@
 // ===== CẬP NHẬT GIAO DIỆN =====
 function updateUI() {
-    document.getElementById('p1-money').innerText = players[1].money;
-    document.getElementById('p2-money').innerText = players[2].money;
-    document.getElementById('p1-round').innerText = `Vòng: ${players[1].rounds}`;
-    document.getElementById('p2-round').innerText = `Vòng: ${players[2].rounds}`;
+    // ===== KIỂM TRA PLAYERS =====
+    if (!players || !players[1] || !players[2]) {
+        console.warn("⚠️ Players chưa sẵn sàng!");
+        return;
+    }
     
-    document.getElementById('p1-skip').style.display = players[1].skipNextTurn ? 'block' : 'none';
-    document.getElementById('p2-skip').style.display = players[2].skipNextTurn ? 'block' : 'none';
+    // ===== KIỂM TRA ELEMENT TỒN TẠI =====
+    const p1Money = document.getElementById('p1-money');
+    const p2Money = document.getElementById('p2-money');
+    const p1Round = document.getElementById('p1-round');
+    const p2Round = document.getElementById('p2-round');
+    const p1Skip = document.getElementById('p1-skip');
+    const p2Skip = document.getElementById('p2-skip');
+    const turnTxt = document.getElementById('turn-txt');
+    
+    // 🔥 NẾU KHÔNG TÌM THẤY ELEMENT -> THOÁT
+    if (!p1Money || !p2Money || !p1Round || !p2Round) {
+        console.warn("⚠️ UI elements chưa được render!");
+        return;
+    }
+    
+    p1Money.innerText = players[1].money;
+    p2Money.innerText = players[2].money;
+    p1Round.innerText = `Vòng: ${players[1].rounds}`;
+    p2Round.innerText = `Vòng: ${players[2].rounds}`;
+    
+    if (p1Skip) p1Skip.style.display = players[1].skipNextTurn ? 'block' : 'none';
+    if (p2Skip) p2Skip.style.display = players[2].skipNextTurn ? 'block' : 'none';
 
-    if (gameStarted && currentTurn) {
-        const turnTxt = document.getElementById('turn-txt');
-        // Thêm chữ (BẠN) nếu đang đến lượt của chính thiết bị này
-        const isMyTurnText = (typeof myPlayerNumber !== 'undefined' && myPlayerNumber === currentTurn) ? " (BẠN)" : "";
-        turnTxt.innerText = `LƯỢT ĐI: ${players[currentTurn].name}${isMyTurnText}`;
-        turnTxt.style.background = currentTurn === 1 ? '#ef4444' : '#3b82f6';
+    if (gameStarted && currentTurn && players[currentTurn]) {
+        if (turnTxt) {
+            const isMyTurnText = (typeof myPlayerNumber !== 'undefined' && myPlayerNumber === currentTurn) ? " (BẠN)" : "";
+            turnTxt.innerText = `LƯỢT ĐI: ${players[currentTurn].name}${isMyTurnText}`;
+            turnTxt.style.background = currentTurn === 1 ? '#ef4444' : '#3b82f6';
+        }
     }
 
+    // ===== CẬP NHẬT VỊ TRÍ QUÂN CỜ =====
     for(let i = 0; i < TOTAL_CELLS; i++) {
         const el = document.getElementById(`cell-${i}`);
         if (!el) continue;
 
-        // Cập nhật vị trí hiển thị avatar người chơi và hộp quà
-        el.classList.toggle('has-p1', players[1].pos === i);
-        el.classList.toggle('has-p2', players[2].pos === i);
-        el.classList.toggle('has-gift', cellsData[i].hasGift);
+        el.classList.toggle('has-p1', players[1] && players[1].pos === i);
+        el.classList.toggle('has-p2', players[2] && players[2].pos === i);
+        el.classList.toggle('has-gift', cellsData[i] && cellsData[i].hasGift);
 
-        // 🔥 TỰ ĐỘNG ĐỒNG BỘ MÀU SẮC Ô ĐẤT THEO BIẾN OWNER CHO CẢ 2 BÊN
-        if (i > 0) { // Bỏ qua ô START (ô số 0)
+        if (i > 0) {
             const priceEl = document.getElementById(`price-${i}`);
             if (priceEl) {
-                // Nếu là ô đặc biệt thì hiển thị tên, không hiện tiền
                 if (i === spiderWebIndex) {
                     priceEl.innerText = "KHOÁ LƯỢT";
                 } else if (typeof lightningIndex !== 'undefined' && i === lightningIndex) {
@@ -39,19 +58,15 @@ function updateUI() {
                 }
             }
 
-            // Xóa viền lỗi hiển thị nếu có
             el.style.borderTop = "none"; 
 
-            if (cellsData[i].owner === 1) {
-                // Đất thuộc về P1 (Đỏ) -> Nhuộm đỏ
+            if (cellsData[i] && cellsData[i].owner === 1) {
                 el.style.background = "linear-gradient(135deg, #7f1d1d, #ef4444)"; 
                 el.style.color = "#ffffff";
-            } else if (cellsData[i].owner === 2) {
-                // Đất thuộc về P2 (Xanh) -> Nhuộm xanh
+            } else if (cellsData[i] && cellsData[i].owner === 2) {
                 el.style.background = "linear-gradient(135deg, #1e3a8a, #3b82f6)"; 
                 el.style.color = "#ffffff";
             } else {
-                // Đất trống chưa ai mua -> Trả lại giao diện tối ban đầu
                 el.style.background = ""; 
                 el.style.color = "";
             }
@@ -60,21 +75,13 @@ function updateUI() {
 
     // ===== CẬP NHẬT NÚT DÙNG KỸ NĂNG =====
     const skillBtn = document.getElementById("use-skill-btn");
-
     if (skillBtn) {
         const mySkill = players[myPlayerNumber]?.skill;
-
-        if (
-            gameStarted &&
-            currentTurn === myPlayerNumber &&
-            mySkill &&
-            !players[myPlayerNumber].skillUsed
-        ) {
+        if (gameStarted && currentTurn === myPlayerNumber && mySkill && !players[myPlayerNumber].skillUsed) {
             skillBtn.disabled = false;
             skillBtn.innerText = "🎴 " + mySkill.name;
         } else {
             skillBtn.disabled = true;
-
             if (mySkill && !players[myPlayerNumber].skillUsed) {
                 skillBtn.innerText = "🎴 " + mySkill.name;
             } else {
@@ -87,6 +94,7 @@ function updateUI() {
 // ===== NHẬT KÝ TRẬN ĐẤU =====
 function addLog(text) {
     const logBox = document.getElementById('log');
+    if (!logBox) return;
     logBox.innerHTML += `<div class="log-entry">${text}</div>`;
     logBox.scrollTop = logBox.scrollHeight;
 }
@@ -94,7 +102,6 @@ function addLog(text) {
 // ===== HIỆU ỨNG SÉT THẦN THOR =====
 function showThorStrike(cellIndex) {
     const cell = document.getElementById("cell-" + cellIndex);
-
     if (!cell) return;
 
     cell.style.position = "relative";
@@ -141,6 +148,11 @@ function showNotification(title, desc, color, confirmCallback, showTwoButtons = 
     const titleEl = document.getElementById('notify-title');
     const descEl = document.getElementById('notify-desc');
     const btnBox = document.getElementById('notify-btns-box');
+    
+    if (!panel || !titleEl || !descEl || !btnBox) {
+        console.warn("⚠️ Notification elements chưa được render!");
+        return;
+    }
     
     titleEl.innerText = title;
     titleEl.style.color = color;
@@ -232,16 +244,77 @@ function handleDecision(isYes) {
 
     updateUI();
 }
+
 // --- HIỂN THỊ BẢNG TỔNG KẾT ---
 function showMatchSummary(exp, rankInfo, coins) {
-    document.getElementById('exp-gain').innerText = `+${exp} EXP`;
-    document.getElementById('rank-gain').innerText = rankInfo;
-    document.getElementById('coin-gain').innerText = `+${coins}$`;
-    document.getElementById('match-summary-modal').style.display = 'flex';
+    const expEl = document.getElementById('exp-gain');
+    const rankEl = document.getElementById('rank-gain');
+    const coinEl = document.getElementById('coin-gain');
+    const modalEl = document.getElementById('match-summary-modal');
+    
+    if (expEl) expEl.innerText = `+${exp} EXP`;
+    if (rankEl) rankEl.innerText = rankInfo;
+    if (coinEl) coinEl.innerText = `+${coins}$`;
+    if (modalEl) modalEl.style.display = 'flex';
 }
 
 // Xử lý khi bấm nút "VỀ PHÒNG CHỜ"
-document.getElementById('btn-back-lobby').addEventListener('click', () => {
-    document.getElementById('match-summary-modal').style.display = 'none';
-    // Nếu bạn có hàm quay lại lobby (ví dụ: showLobby()), hãy gọi nó ở đây
-});
+const backBtn = document.getElementById('btn-back-lobby');
+if (backBtn) {
+    backBtn.addEventListener('click', () => {
+        const modal = document.getElementById('match-summary-modal');
+        if (modal) modal.style.display = 'none';
+    });
+}
+
+// ===== CẬP NHẬT RANK TRONG TRẬN =====
+// ===== CẬP NHẬT RANK TRONG TRẬN =====
+function updateRankDisplay() {
+    console.log("===== updateRankDisplay =====");
+    console.log("window.players:", window.players);
+    
+    const rankMap = {
+        "Bùn": { name: "Bùn", icon: "bun.jpg" },
+        "Sắt": { name: "Sắt", icon: "sat.jpg" },
+        "Đồng": { name: "Đồng", icon: "dong.jpg" },
+        "Bạc": { name: "Bạc", icon: "bac.jpg" },
+        "Vàng": { name: "Vàng", icon: "vang.jpg" },
+        "Kim Cương": { name: "Kim Cương", icon: "kimcuong.jpg" },
+        "Hali": { name: "Hali", icon: "hali.jpg" }
+    };
+    
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    if (!currentUser) {
+        console.warn("⚠️ Không tìm thấy currentUser");
+        return;
+    }
+    
+    const myPlayerNum = window.myPlayerNumber || 1;
+    const opponentNum = myPlayerNum === 1 ? 2 : 1;
+    
+    // ===== CẬP NHẬT RANK CỦA MÌNH =====
+    const myRank = currentUser.rank || "Bùn";
+    const myRankInfo = rankMap[myRank] || rankMap["Bùn"];
+    const myIcon = document.getElementById(`p${myPlayerNum}-rank-icon`);
+    if (myIcon) {
+        myIcon.src = `assets/ranks/${myRankInfo.icon}`;
+        myIcon.alt = myRank;
+        myIcon.title = `Rank: ${myRank}`;
+        console.log(`✅ Cập nhật rank của bạn: ${myRank}`);
+    }
+    
+    // ===== CẬP NHẬT RANK CỦA ĐỐI THỦ =====
+    if (window.players && window.players[opponentNum]) {
+        const opponentRank = window.players[opponentNum].rank || "Bùn";
+        const opponentRankInfo = rankMap[opponentRank] || rankMap["Bùn"];
+        const oppIcon = document.getElementById(`p${opponentNum}-rank-icon`);
+        if (oppIcon) {
+            oppIcon.src = `assets/ranks/${opponentRankInfo.icon}`;
+            oppIcon.alt = opponentRank;
+            oppIcon.title = `Rank: ${opponentRank}`;
+            console.log(`✅ Cập nhật rank đối thủ: ${opponentRank}`);
+        }
+    } else {
+        console.warn("⚠️ Chưa có dữ liệu đối thủ");
+    }
+}

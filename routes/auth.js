@@ -308,5 +308,118 @@ router.post("/update-skin", async (req, res) => {
         });
     }
 });
+// ========================
+// 5. 🆕 LẤY THÔNG TIN USER (BAO GỒM RANK)
+// ========================
+router.get("/user/:username", async (req, res) => {
+    try {
+        const { username } = req.params;
 
+        if (!username) {
+            return res.status(400).json({
+                success: false,
+                message: "Thiếu username!"
+            });
+        }
+
+        console.log(`📥 Lấy thông tin user: ${username}`);
+
+        const { data: user, error } = await supabase
+            .from("users")
+            .select("id, username, display_name, level, exp, points, rank, coin, avatar, owned_skins, current_skin, owned_dice, owned_board")
+            .eq("username", username)
+            .maybeSingle();
+
+        if (error || !user) {
+            return res.status(404).json({
+                success: false,
+                message: "Không tìm thấy người dùng"
+            });
+        }
+
+        console.log(`✅ Đã lấy thông tin user ${username}, rank: ${user.rank}`);
+
+        res.json({
+            success: true,
+            id: user.id,
+            username: user.username,
+            display_name: user.display_name || user.username,
+            level: user.level || 1,
+            exp: user.exp || 0,
+            points: user.points || 0,
+            rank: user.rank || "Bùn",
+            coin: user.coin || 0,
+            avatar: user.avatar || "default",
+            owned_skins: user.owned_skins || ['skin_default'],
+            current_skin: user.current_skin || 'skin_default',
+            owned_dice: user.owned_dice || [],
+            owned_board: user.owned_board || []
+        });
+
+    } catch (err) {
+        console.error("❌ Lỗi lấy user:", err.message);
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
+    }
+});
+// ========================
+// 5. LẤY THÔNG TIN USER (BAO GỒM RANK)
+// ========================
+router.get("/user/:username", async (req, res) => {
+    try {
+        const { username } = req.params;
+
+        if (!username) {
+            return res.status(400).json({
+                success: false,
+                message: "Thiếu username!"
+            });
+        }
+
+        console.log(`📥 Lấy thông tin user: "${username}"`);
+
+        // 🔥 TÌM THEO CẢ username VÀ display_name
+        const { data: user, error } = await supabase
+            .from("users")
+            .select("id, username, display_name, level, exp, points, rank, coin, avatar, owned_skins, current_skin, owned_dice, owned_board")
+            .or(`username.eq.${username},display_name.eq.${username}`)
+            .maybeSingle();
+
+        if (error || !user) {
+            console.log(`❌ Không tìm thấy user: "${username}"`);
+            return res.status(404).json({
+                success: false,
+                message: "Không tìm thấy người dùng"
+            });
+        }
+
+        console.log(`✅ Đã lấy thông tin user "${username}", rank: ${user.rank}`);
+
+        res.json({
+            success: true,
+            id: user.id,
+            username: user.username,
+            display_name: user.display_name || user.username,
+            level: user.level || 1,
+            exp: user.exp || 0,
+            points: user.points || 0,
+            rank: user.rank || "Bùn",
+            coin: user.coin || 0,
+            avatar: user.avatar || "default",
+            owned_skins: user.owned_skins || ['skin_default'],
+            current_skin: user.current_skin || 'skin_default',
+            owned_dice: user.owned_dice || [],
+            owned_board: user.owned_board || []
+        });
+
+    } catch (err) {
+        console.error("❌ Lỗi lấy user:", err.message);
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
+    }
+});
 module.exports = router;

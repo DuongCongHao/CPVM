@@ -147,7 +147,26 @@ loginBtn.onclick = async ()=>{
             
             localStorage.setItem("currentUser", JSON.stringify(userData));
             localStorage.setItem("user", JSON.stringify(userData));
-
+            // ===== 🆕 GỬI THÔNG TIN USER LÊN SERVER =====
+            if (typeof socket !== 'undefined' && socket && socket.connected) {
+                socket.emit('setUserInfo', {
+                    userId: userData.id || userData.username,
+                    username: userData.username
+                });
+                console.log('📤 Đã gửi thông tin user lên server:', userData.username);
+            } else {
+                console.warn('⚠️ Socket chưa sẵn sàng, sẽ gửi sau...');
+                // Nếu socket chưa sẵn sàng, thử gửi sau 1 giây
+                setTimeout(() => {
+                    if (typeof socket !== 'undefined' && socket && socket.connected) {
+                        socket.emit('setUserInfo', {
+                            userId: userData.id || userData.username,
+                            username: userData.username
+                        });
+                        console.log('📤 Đã gửi thông tin user lên server (delay):', userData.username);
+                    }
+                }, 1000);
+            }
             document.getElementById("login-screen").style.display = "none";
             document.getElementById("lobby-screen").style.display = "flex";
 

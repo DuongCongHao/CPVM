@@ -4,7 +4,34 @@ if (typeof socket !== 'undefined' && socket) {
     // =========================================================================
     // 🔥 HỆ THỐNG QUẢN LÝ PHÒNG (ROOM CHƠI TỰ DO)
     // =========================================================================
-    
+    // ===== NHẬN RANK TỪ SERVER =====
+    socket.on('userRankResponse', (data) => {
+        console.log('📥 Nhận rank từ server:', data);
+        
+        if (data.success) {
+            // Lấy user hiện tại từ localStorage
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            
+            if (currentUser && currentUser.username === data.username) {
+                // Cập nhật rank
+                currentUser.rank = data.rank || 'Bùn';
+                currentUser.level = data.level || 1;
+                currentUser.coin = data.coin || 0;
+                currentUser.exp = data.exp || 0;
+                
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                
+                // Cập nhật giao diện
+                if (typeof updateRankDisplay === 'function') {
+                    updateRankDisplay();
+                }
+                
+                console.log(`✅ Đã cập nhật rank: ${data.rank}`);
+            }
+        } else {
+            console.error('❌ Lỗi lấy rank:', data.error);
+        }
+    });
     // SERVER TRẢ VỀ: Khi tạo phòng riêng tư thành công
     socket.off('room-created').on('room-created', (data) => {
         const roomId = data.roomId;
@@ -16,7 +43,112 @@ if (typeof socket !== 'undefined' && socket) {
             lobbyStatus.innerHTML = `Mã phòng của bạn: <strong style="color:#f59e0b; font-size:18px;">${roomId}</strong><br>Hãy gửi mã này cho bạn bè để cùng tham gia. Đang chờ người chơi thứ 2...`;
         }
     });
+    // ============================================
+    // SOCKET HANDLERS - PHẦN CUỐI FILE
+    // ============================================
 
+    // ===== NHẬN DANH SÁCH NGƯỜI CHƠI =====
+    socket.on('update-lobby-players', (players) => {
+        window.players = {};
+        players.forEach(p => {
+            window.players[p.playerNumber] = p;
+        });
+        
+        // Cập nhật rank cho đối thủ
+        if (typeof updateRankDisplay === 'function') {
+            updateRankDisplay();
+        }
+    });
+
+    // ===== NHẬN THÔNG TIN PHÒNG =====
+    socket.on('room-joined', (data) => {
+        if (data.players) {
+            window.players = {};
+            data.players.forEach(p => {
+                window.players[p.playerNumber] = p;
+            });
+            
+            // Cập nhật rank
+            if (typeof updateRankDisplay === 'function') {
+                updateRankDisplay();
+            }
+        }
+    });
+
+    // ===== NHẬN RANK TỪ SERVER =====
+    socket.on('userRankResponse', (data) => {
+        console.log('📥 Nhận rank từ server:', data);
+        
+        if (!data.success) {
+            console.error('❌ Lỗi lấy rank:', data.error);
+            return;
+        }
+        
+        let needUpdate = false;
+        
+        // Cập nhật rank cho mình (so sánh với username)
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        if (currentUser && currentUser.username === data.username) {
+            currentUser.rank = data.rank || 'Bùn';
+            currentUser.level = data.level || 1;
+            currentUser.coin = data.coin || 0;
+            currentUser.exp = data.exp || 0;
+            
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            
+            console.log(`✅ Đã cập nhật rank của bạn: ${data.rank}`);
+            needUpdate = true;
+        }
+        
+        // ===== CẬP NHẬT RANK CHO ĐỐI THỦ =====
+        // 🔥 QUAN TRỌNG: So sánh với id hoặc userId, KHÔNG so sánh với name
+        if (window.players) {
+            for (let i = 1; i <= 2; i++) {
+                const player = window.players[i];
+                if (!player) continue;
+                
+                // Nếu player này có id hoặc userId khớp với username từ server
+                // HOẶC nếu player này KHÔNG phải là mình
+                if (player.id === data.username || player.userId === data.username) {
+                    if (player.rank !== data.rank) {
+                        player.rank = data.rank || 'Bùn';
+                        console.log(`✅ Đã cập nhật rank cho đối thủ ${player.name}: ${data.rank}`);
+                        needUpdate = true;
+                    }
+                    break;
+                }
+            }
+        }
+        
+        // ===== NẾU VẪN CHƯA TÌM THẤY, THỬ TÌM BẰNG CÁCH LOẠI TRỪ =====
+        if (!needUpdate && window.players) {
+            // Tìm player KHÔNG phải là mình
+            for (let i = 1; i <= 2; i++) {
+                const player = window.players[i];
+                if (!player) continue;
+                
+                // Nếu player này KHÔNG phải là mình
+                if (currentUser && player.id !== currentUser.id && player.userId !== currentUser.id) {
+                    if (player.rank !== data.rank) {
+                        player.rank = data.rank || 'Bùn';
+                        console.log(`✅ Đã cập nhật rank cho đối thủ ${player.name}: ${data.rank}`);
+                        needUpdate = true;
+                    }
+                    break;
+                }
+            }
+        }
+        
+        // Cập nhật giao diện
+        if (needUpdate && typeof updateRankDisplay === 'function') {
+            setTimeout(() => {
+                updateRankDisplay();
+            }, 200);
+        }
+    });
+
+    // SERVER TRẢ VỀ: Khi kết nối vào phòng thành công (Quick Match hoặc Join by ID)
     // SERVER TRẢ VỀ: Khi kết nối vào phòng thành công (Quick Match hoặc Join by ID)
     socket.off('room-joined').on('room-joined', (data) => {
         // 🔥 RESET CỜ GAME ENDING KHI VÀO PHÒNG MỚI
@@ -26,7 +158,6 @@ if (typeof socket !== 'undefined' && socket) {
         const roomId = data.roomId;
         if (typeof displayRoomId === 'function') displayRoomId(roomId);
         if (typeof addLog === 'function') addLog(`🚪 Bạn đã tham gia vào phòng [${roomId}].`);
-        // 🔥 HIỂN THỊ NÚT RỜI TRẬN
         if (typeof showLeaveButton === 'function') {
             showLeaveButton();
         }
@@ -35,65 +166,56 @@ if (typeof socket !== 'undefined' && socket) {
             lobbyStatus.innerText = "Đã vào phòng thành công! Đang chờ đối thủ sẵn sàng...";
         }
         
-        // 🆕 NẾU CÓ DỮ LIỆU PLAYERS, KHỞI TẠO GAME
         if (data.players && Array.isArray(data.players) && data.players.length === 2) {
             console.log("📥 Nhận dữ liệu players từ server:", data.players);
             
             // Lưu thông tin players
             window.players = {};
+            const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+            let opponentId = null;
+            
             data.players.forEach((p, index) => {
                 const playerNum = index + 1;
                 window.players[playerNum] = {
-                    id: p.id || p.userId,
+                    id: p.id || p.userId,           // ✅ LƯU ID TỪ SERVER
+                    userId: p.userId || p.id,       // ✅ LƯU USER ID
                     name: p.name || `Player ${playerNum}`,
                     money: 1000,
                     pos: 0,
                     rounds: 0,
                     socketId: p.socketId || p.id,
                     skillUsed: false,
-                    skin: p.skin || 'skin_default'
+                    skin: p.skin || 'skin_default',
+                    rank: p.rank || 'Bùn'
                 };
+                
+                // 🔥 LƯU ID CỦA ĐỐI THỦ
+                if (currentUser) {
+                    if (p.id !== currentUser.id && p.userId !== currentUser.id) {
+                        opponentId = p.id || p.userId;
+                        console.log(`👤 Đối thủ ID: ${opponentId}, Name: ${p.name}`);
+                    }
+                }
             });
             
-            // Xác định player number của mình
-            const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-            if (currentUser) {
-                data.players.forEach((p, index) => {
-                    if (p.id === currentUser.id || p.userId === currentUser.id) {
-                        window.myPlayerNumber = index + 1;
-                        console.log(`✅ Bạn là Player ${window.myPlayerNumber}`);
-                    }
+            // ===== GỬI YÊU CẦU LẤY RANK CHO MÌNH =====
+            if (currentUser && currentUser.username) {
+                socket.emit('getUserRank', { 
+                    username: currentUser.username 
                 });
+                console.log('📤 Đã gửi yêu cầu lấy rank cho mình:', currentUser.username);
             }
             
-            // Đánh dấu game đã bắt đầu
-            window.gameStarted = true;
-            window.currentTurn = 1;
-            window.isMoving = false;
-            window.extraTurns = 0;
-            
-            // Ẩn lobby, hiển thị game
-            const lobbyScreen = document.getElementById('lobby-screen');
-            const gameScreen = document.getElementById('game-screen');
-            if (lobbyScreen) lobbyScreen.style.display = 'none';
-            if (gameScreen) gameScreen.style.display = 'block';
-            
-            // Cập nhật trạng thái lobby
-            if (lobbyStatus) {
-                lobbyStatus.innerText = "🎮 Đang vào trận đấu...";
+            // ===== GỬI YÊU CẦU LẤY RANK CHO ĐỐI THỦ =====
+            // 🔥 GỬI BẰNG ID HOẶC USERNAME
+            if (opponentId) {
+                socket.emit('getUserRank', { 
+                    username: opponentId 
+                });
+                console.log('📤 Đã gửi yêu cầu lấy rank cho đối thủ với ID:', opponentId);
             }
             
-            // Khởi tạo bàn cờ
-            if (typeof initializeBoard === 'function') {
-                initializeBoard();
-            }
-            
-            // Xác định lượt đi
-            if (typeof determineTurn === 'function') {
-                determineTurn();
-            }
-            
-            // Cập nhật UI
+            // ===== CẬP NHẬT UI (KHÔNG GỌI determineTurn) =====
             if (typeof updateUI === 'function') {
                 updateUI();
             }
@@ -102,11 +224,18 @@ if (typeof socket !== 'undefined' && socket) {
                 checkMyTurnControl();
             }
             
-            // Thêm log
             if (typeof addLog === 'function') {
                 addLog(`🎮 TRẬN ĐẤU BẮT ĐẦU!`);
                 if (window.players[1]) addLog(`👤 ${window.players[1].name} VS ${window.players[2]?.name || '???'}`);
                 if (window.myPlayerNumber) addLog(`👤 Bạn là Player ${window.myPlayerNumber}`);
+            }
+            
+            // ===== ÁP DỤNG SKIN =====
+            if (typeof updatePlayerSkin === 'function') {
+                setTimeout(function() {
+                    updatePlayerSkin();
+                    console.log("✅ Đã áp dụng skin vào bàn cờ");
+                }, 300);
             }
             
             console.log("✅ Game đã sẵn sàng!");
@@ -114,6 +243,7 @@ if (typeof socket !== 'undefined' && socket) {
             console.log("🎯 Current turn:", window.currentTurn);
             console.log("👤 My player number:", window.myPlayerNumber);
         }
+        
         if (typeof checkAndPlaySkinEffects === 'function') {
             setTimeout(function() {
                 checkAndPlaySkinEffects();
@@ -156,6 +286,8 @@ if (typeof socket !== 'undefined' && socket) {
     });
 
     socket.off('startGame').on('startGame', (data) => {
+        console.log("🎮 Nhận startGame từ server:", data);
+        
         document.getElementById('lobby-screen').style.display = 'none';
         document.getElementById('game-screen').style.display = 'block';
 
@@ -185,11 +317,46 @@ if (typeof socket !== 'undefined' && socket) {
                 : "🎴 Chưa có thẻ";
         }
         
+        // ===== KHỞI TẠO BÀN CỜ =====
         initializeBoard();
-        if (typeof determineTurn === 'function')
-            determineTurn();
+        
+        // ===== LẤY RANK TỪ SERVER =====
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        if (currentUser && currentUser.username) {
+            socket.emit('getUserRank', { 
+                username: currentUser.username 
+            });
+            console.log('📤 Đã gửi yêu cầu lấy rank cho:', currentUser.username);
+        }
+        
+        // ===== LẤY RANK CHO ĐỐI THỦ =====
+        if (window.players) {
+            for (let i = 1; i <= 2; i++) {
+                if (window.players[i] && window.players[i].name !== currentUser?.username) {
+                    socket.emit('getUserRank', { 
+                        username: window.players[i].name 
+                    });
+                    console.log('📤 Đã gửi yêu cầu lấy rank cho đối thủ:', window.players[i].name);
+                    break;
+                }
+            }
+        }
+        
+        // ===== ĐỢI 1 GIÂY ĐỂ RANK VỀ RỒI MỚI PHÂN ĐỊNH LƯỢT =====
+        setTimeout(() => {
+            // Cập nhật rank lần cuối
+            if (typeof updateRankDisplay === 'function') {
+                updateRankDisplay();
+            }
+            
+            // Xác định lượt đi
+            if (typeof determineTurn === 'function') {
+                determineTurn();
+            }
+            
+            console.log("✅ Đã hoàn tất khởi tạo game!");
+        }, 1000);
     });
-
     // ===== THIÊN TAI XUẤT HIỆN =====
     socket.off('lightningSummoned').on('lightningSummoned', (data) => {
         lightningIndex = data.lightningIndex;

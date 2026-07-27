@@ -4,6 +4,7 @@
     const app = express();
     const http = require('http');
     const server = http.createServer(app);
+    const PORT = process.env.PORT || 3000;
     app.use(express.json());
     const authRoutes = require("./routes/auth");
     // Cấu hình CORS để nhận mọi kết nối từ các thiết bị khác nhau
@@ -95,6 +96,64 @@
         socket.currentChatRoom = null;
         socket.chatUserName = null;
         socket.chatUserId = null;
+        // ===== 🆕 LƯU RANK MẶC ĐỊNH =====
+        socket.rank = 'Bùn';
+        
+        // ===== 🆕 LẤY RANK NGAY KHI KẾT NỐI (NẾU CÓ USER ID) =====
+        socket.on('setUserInfo', async (data) => {
+            const { userId, username } = data;
+            socket.userId = userId;
+            socket.username = username;
+            
+            try {
+                // Gọi API lấy rank từ database
+                const response = await axios.get(`http://localhost:${PORT}/api/user/${username}`);
+                if (response.data && response.data.success !== false) {
+                    socket.rank = response.data.rank || 'Bùn';
+                    console.log(`✅ Đã lấy rank cho ${username}: ${socket.rank}`);
+                } else {
+                    socket.rank = 'Bùn';
+                    console.log(`⚠️ Không tìm thấy rank cho ${username}, mặc định Bùn`);
+                }
+            } catch (err) {
+                console.error(`❌ Lỗi lấy rank cho ${username}:`, err.message);
+                socket.rank = 'Bùn';
+            }
+        });
+        // ===== LẤY RANK TỪ DATABASE =====
+        socket.on('getUserRank', (data) => {
+            const { username } = data;
+            console.log(`📥 Yêu cầu lấy rank của: ${username}`);
+            
+            // Gọi API từ routes/auth.js
+            axios.get(`http://localhost:${PORT}/api/user/${username}`)
+                .then(response => {
+                    const user = response.data;
+                    if (user && user.success !== false) {
+                        socket.emit('userRankResponse', {
+                            success: true,
+                            username: username,
+                            rank: user.rank || 'Bùn',
+                            level: user.level || 1,
+                            coin: user.coin || 0,
+                            exp: user.exp || 0
+                        });
+                        console.log(`✅ Đã gửi rank cho ${username}: ${user.rank}`);
+                    } else {
+                        socket.emit('userRankResponse', {
+                            success: false,
+                            error: 'Không tìm thấy người dùng'
+                        });
+                    }
+                })
+                .catch(err => {
+                    console.error('❌ Lỗi lấy rank:', err.message);
+                    socket.emit('userRankResponse', {
+                        success: false,
+                        error: err.message
+                    });
+                });
+        });
         // Thêm vào server.js, trong io.on('connection')
         socket.on('trigger-skin-effect', (data) => {
             const roomId = socket.roomId;
@@ -217,7 +276,8 @@
                         playerNumber:1,
                         rounds:0,
                         skillUsed:false,
-                        skin: opponentSocket.skin || 'skin_default' // ✅ THÊM DÒNG NÀY
+                        skin: opponentSocket.skin || 'skin_default', // ✅ THÊM DÒNG NÀY
+                        rank: opponentSocket.rank || 'Bùn'
                     },
 
                     {
@@ -227,7 +287,8 @@
                         playerNumber:2,
                         rounds:0,
                         skillUsed:false,
-                        skin: socket.skin || 'skin_default' // ✅ THÊM DÒNG NÀY
+                        skin: socket.skin || 'skin_default', // ✅ THÊM DÒNG NÀY
+                        rank: socket.rank || 'Bùn'
                     }
 
                     ],
@@ -247,7 +308,8 @@
                     name: p.name,
                     socketId: p.id,
                     playerNumber: p.playerNumber,
-                    skin: p.skin || 'skin_default' // ✅ ĐÚNG: dùng p.skin của từng player
+                    skin: p.skin || 'skin_default', // ✅ ĐÚNG: dùng p.skin của từng player
+                    rank: p.rank || 'Bùn'
                 }));
                 // ✅ THÊM ĐOẠN NÀY: GỬI SKIN CHO CẢ 2 CLIENT
                 io.to(roomId).emit('player-skins', {
@@ -320,7 +382,8 @@
                     playerNumber:1,
                     rounds:0,
                     skillUsed:false,
-                    skin: socket.skin || 'skin_default' // ✅ THÊM DÒNG NÀY
+                    skin: socket.skin || 'skin_default', // ✅ THÊM DÒNG NÀY
+                    rank: socket.rank || 'Bùn'
                     }
                 ],
                 currentTurn: null,
@@ -367,8 +430,8 @@
             rounds:0,
 
             skillUsed:false,
-            skin: socket.skin || 'skin_default' // ✅ THÊM DÒNG NÀY
-
+            skin: socket.skin || 'skin_default', // ✅ THÊM DÒNG NÀY
+            rank: socket.rank || 'Bùn'
             });
             rooms[roomId].status = 'playing';
             // ✅ THÊM ĐOẠN NÀY: GỬI SKIN CHO CẢ 2 CLIENT
@@ -383,7 +446,8 @@
                 name: p.name,
                 socketId: p.id,
                 playerNumber: p.playerNumber,
-                skin: p.skin || 'skin_default' // ✅ THÊM DÒNG NÀY
+                skin: p.skin || 'skin_default', // ✅ THÊM DÒNG NÀY
+                rank: p.rank || 'Bùn'
             }));
 
             // ✅ SỬA: Thêm players vào room-joined
@@ -900,8 +964,7 @@
             console.log(`🗑️ Đã xóa phòng ${roomId}`);
         });
     });
-
-    const PORT = process.env.PORT || 3000;
     server.listen(PORT, () => {
         console.log(`Server đa phòng đang chạy online tại cổng: ${PORT}`);
     });
+    

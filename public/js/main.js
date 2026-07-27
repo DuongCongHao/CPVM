@@ -28,7 +28,10 @@
             socket = io(SOCKET_SERVER_URL);
             console.log("🔌 Đang kết nối tới Socket Server tại: " + SOCKET_SERVER_URL);
         }
+    } else {
+        console.log("✅ Socket đã được khởi tạo từ trước");
     }
+    
     // Thêm vào đầu file
     if (typeof gameEnding === 'undefined') window.gameEnding = false;
     // Kiểm tra an toàn trước khi khởi tạo biến trạng thái game để tránh lỗi "already been declared"
