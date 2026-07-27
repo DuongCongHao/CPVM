@@ -4,34 +4,6 @@ if (typeof socket !== 'undefined' && socket) {
     // =========================================================================
     // 🔥 HỆ THỐNG QUẢN LÝ PHÒNG (ROOM CHƠI TỰ DO)
     // =========================================================================
-    // ===== NHẬN RANK TỪ SERVER =====
-    socket.on('userRankResponse', (data) => {
-        console.log('📥 Nhận rank từ server:', data);
-        
-        if (data.success) {
-            // Lấy user hiện tại từ localStorage
-            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-            
-            if (currentUser && currentUser.username === data.username) {
-                // Cập nhật rank
-                currentUser.rank = data.rank || 'Bùn';
-                currentUser.level = data.level || 1;
-                currentUser.coin = data.coin || 0;
-                currentUser.exp = data.exp || 0;
-                
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                
-                // Cập nhật giao diện
-                if (typeof updateRankDisplay === 'function') {
-                    updateRankDisplay();
-                }
-                
-                console.log(`✅ Đã cập nhật rank: ${data.rank}`);
-            }
-        } else {
-            console.error('❌ Lỗi lấy rank:', data.error);
-        }
-    });
     // SERVER TRẢ VỀ: Khi tạo phòng riêng tư thành công
     socket.off('room-created').on('room-created', (data) => {
         const roomId = data.roomId;
@@ -64,8 +36,24 @@ if (typeof socket !== 'undefined' && socket) {
     socket.on('room-joined', (data) => {
         if (data.players) {
             window.players = {};
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            
             data.players.forEach(p => {
-                window.players[p.playerNumber] = p;
+                const playerNum = p.playerNumber;
+                window.players[playerNum] = {
+                    id: p.id || p.userId,
+                    userId: p.userId || p.id,
+                    name: p.name,
+                    money: 1000,
+                    pos: 0,
+                    rounds: 0,
+                    socketId: p.socketId || p.id,
+                    skillUsed: false,
+                    skin: p.skin || 'skin_default',
+                    rank: p.rank || 'Bùn'   // ← LẤY RANK TỪ SERVER
+                };
+                
+                console.log(`👤 Player ${playerNum}: ${p.name}, Rank: ${p.rank || 'Bùn'}`);
             });
             
             // Cập nhật rank
@@ -75,80 +63,6 @@ if (typeof socket !== 'undefined' && socket) {
         }
     });
 
-    // ===== NHẬN RANK TỪ SERVER =====
-    socket.on('userRankResponse', (data) => {
-        console.log('📥 Nhận rank từ server:', data);
-        
-        if (!data.success) {
-            console.error('❌ Lỗi lấy rank:', data.error);
-            return;
-        }
-        
-        let needUpdate = false;
-        
-        // Cập nhật rank cho mình (so sánh với username)
-        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-        if (currentUser && currentUser.username === data.username) {
-            currentUser.rank = data.rank || 'Bùn';
-            currentUser.level = data.level || 1;
-            currentUser.coin = data.coin || 0;
-            currentUser.exp = data.exp || 0;
-            
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            localStorage.setItem('user', JSON.stringify(currentUser));
-            
-            console.log(`✅ Đã cập nhật rank của bạn: ${data.rank}`);
-            needUpdate = true;
-        }
-        
-        // ===== CẬP NHẬT RANK CHO ĐỐI THỦ =====
-        // 🔥 QUAN TRỌNG: So sánh với id hoặc userId, KHÔNG so sánh với name
-        if (window.players) {
-            for (let i = 1; i <= 2; i++) {
-                const player = window.players[i];
-                if (!player) continue;
-                
-                // Nếu player này có id hoặc userId khớp với username từ server
-                // HOẶC nếu player này KHÔNG phải là mình
-                if (player.id === data.username || player.userId === data.username) {
-                    if (player.rank !== data.rank) {
-                        player.rank = data.rank || 'Bùn';
-                        console.log(`✅ Đã cập nhật rank cho đối thủ ${player.name}: ${data.rank}`);
-                        needUpdate = true;
-                    }
-                    break;
-                }
-            }
-        }
-        
-        // ===== NẾU VẪN CHƯA TÌM THẤY, THỬ TÌM BẰNG CÁCH LOẠI TRỪ =====
-        if (!needUpdate && window.players) {
-            // Tìm player KHÔNG phải là mình
-            for (let i = 1; i <= 2; i++) {
-                const player = window.players[i];
-                if (!player) continue;
-                
-                // Nếu player này KHÔNG phải là mình
-                if (currentUser && player.id !== currentUser.id && player.userId !== currentUser.id) {
-                    if (player.rank !== data.rank) {
-                        player.rank = data.rank || 'Bùn';
-                        console.log(`✅ Đã cập nhật rank cho đối thủ ${player.name}: ${data.rank}`);
-                        needUpdate = true;
-                    }
-                    break;
-                }
-            }
-        }
-        
-        // Cập nhật giao diện
-        if (needUpdate && typeof updateRankDisplay === 'function') {
-            setTimeout(() => {
-                updateRankDisplay();
-            }, 200);
-        }
-    });
-
-    // SERVER TRẢ VỀ: Khi kết nối vào phòng thành công (Quick Match hoặc Join by ID)
     // SERVER TRẢ VỀ: Khi kết nối vào phòng thành công (Quick Match hoặc Join by ID)
     socket.off('room-joined').on('room-joined', (data) => {
         // 🔥 RESET CỜ GAME ENDING KHI VÀO PHÒNG MỚI
@@ -169,16 +83,18 @@ if (typeof socket !== 'undefined' && socket) {
         if (data.players && Array.isArray(data.players) && data.players.length === 2) {
             console.log("📥 Nhận dữ liệu players từ server:", data.players);
             
-            // Lưu thông tin players
             window.players = {};
             const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-            let opponentId = null;
+            
+            // 🔥 LOG ĐỂ DEBUG
+            console.log("📊 currentUser:", currentUser);
             
             data.players.forEach((p, index) => {
                 const playerNum = index + 1;
+                
                 window.players[playerNum] = {
-                    id: p.id || p.userId,           // ✅ LƯU ID TỪ SERVER
-                    userId: p.userId || p.id,       // ✅ LƯU USER ID
+                    id: p.id || p.userId,
+                    userId: p.userId || p.id,
                     name: p.name || `Player ${playerNum}`,
                     money: 1000,
                     pos: 0,
@@ -189,30 +105,43 @@ if (typeof socket !== 'undefined' && socket) {
                     rank: p.rank || 'Bùn'
                 };
                 
-                // 🔥 LƯU ID CỦA ĐỐI THỦ
-                if (currentUser) {
-                    if (p.id !== currentUser.id && p.userId !== currentUser.id) {
-                        opponentId = p.id || p.userId;
-                        console.log(`👤 Đối thủ ID: ${opponentId}, Name: ${p.name}`);
-                    }
-                }
+                console.log(`👤 Player ${playerNum}: id=${p.id}, userId=${p.userId}, name=${p.name}, rank=${p.rank || 'Bùn'}`);
             });
             
-            // ===== GỬI YÊU CẦU LẤY RANK CHO MÌNH =====
-            if (currentUser && currentUser.username) {
-                socket.emit('getUserRank', { 
-                    username: currentUser.username 
+            // ===== XÁC ĐỊNH PLAYER NUMBER CỦA MÌNH =====
+            if (currentUser) {
+                let found = false;
+                data.players.forEach((p, index) => {
+                    // 🔥 SO SÁNH VỚI CẢ id VÀ userId
+                    if (p.id === currentUser.id || p.id === currentUser.username || 
+                        p.userId === currentUser.id || p.userId === currentUser.username) {
+                        window.myPlayerNumber = index + 1;
+                        console.log(`✅ Bạn là Player ${window.myPlayerNumber} (${p.name})`);
+                        found = true;
+                    }
                 });
-                console.log('📤 Đã gửi yêu cầu lấy rank cho mình:', currentUser.username);
+                
+                // 🔥 NẾU KHÔNG TÌM THẤY, THỬ SO SÁNH BẰNG TÊN
+                if (!found) {
+                    data.players.forEach((p, index) => {
+                        if (p.name === currentUser.display_name || p.name === currentUser.username) {
+                            window.myPlayerNumber = index + 1;
+                            console.log(`✅ Bạn là Player ${window.myPlayerNumber} (bằng tên: ${p.name})`);
+                            found = true;
+                        }
+                    });
+                }
+                
+                // 🔥 NẾU VẪN KHÔNG TÌM THẤY, MẶC ĐỊNH LÀ PLAYER 1
+                if (!found) {
+                    window.myPlayerNumber = 1;
+                    console.warn(`⚠️ Không tìm thấy player của bạn, mặc định là Player 1`);
+                }
             }
             
-            // ===== GỬI YÊU CẦU LẤY RANK CHO ĐỐI THỦ =====
-            // 🔥 GỬI BẰNG ID HOẶC USERNAME
-            if (opponentId) {
-                socket.emit('getUserRank', { 
-                    username: opponentId 
-                });
-                console.log('📤 Đã gửi yêu cầu lấy rank cho đối thủ với ID:', opponentId);
+            // ===== CẬP NHẬT RANK =====
+            if (typeof updateRankDisplay === 'function') {
+                updateRankDisplay();
             }
             
             // ===== CẬP NHẬT UI (KHÔNG GỌI determineTurn) =====
@@ -320,27 +249,7 @@ if (typeof socket !== 'undefined' && socket) {
         // ===== KHỞI TẠO BÀN CỜ =====
         initializeBoard();
         
-        // ===== LẤY RANK TỪ SERVER =====
-        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-        if (currentUser && currentUser.username) {
-            socket.emit('getUserRank', { 
-                username: currentUser.username 
-            });
-            console.log('📤 Đã gửi yêu cầu lấy rank cho:', currentUser.username);
-        }
         
-        // ===== LẤY RANK CHO ĐỐI THỦ =====
-        if (window.players) {
-            for (let i = 1; i <= 2; i++) {
-                if (window.players[i] && window.players[i].name !== currentUser?.username) {
-                    socket.emit('getUserRank', { 
-                        username: window.players[i].name 
-                    });
-                    console.log('📤 Đã gửi yêu cầu lấy rank cho đối thủ:', window.players[i].name);
-                    break;
-                }
-            }
-        }
         
         // ===== ĐỢI 1 GIÂY ĐỂ RANK VỀ RỒI MỚI PHÂN ĐỊNH LƯỢT =====
         setTimeout(() => {

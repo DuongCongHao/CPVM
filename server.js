@@ -242,13 +242,26 @@
             }
         });
         // 🌐 1. XỬ LÝ GHÉP TRẬN NGẪU NHIÊN (QUICK MATCH)
-        socket.on('request-quick-match', (data) => {
+        socket.on('request-quick-match', async (data) => {
 
             socket.username = data.name || "Vô danh";
 
             socket.userId = data.userId;
             socket.skin = data.skin || 'skin_default'; // ✅ THÊM DÒNG NÀY
+            socket.rank = 'Bùn';
             // Lọc bỏ các socket đã đứt kết nối hoặc chính socket này để tránh tự ghép với mình
+            // ===== 🆕 LẤY RANK =====
+            if (data.userId) {
+                try {
+                    const response = await axios.get(`http://localhost:${PORT}/api/user/${data.userId}`);
+                    if (response.data && response.data.success !== false) {
+                        socket.rank = response.data.rank || 'Bùn';
+                        console.log(`✅ Đã lấy rank cho ${data.userId}: ${socket.rank}`);
+                    }
+                } catch (err) {
+                    console.error(`❌ Lỗi lấy rank cho ${data.userId}:`, err.message);
+                }
+            }
             quickMatchQueue = quickMatchQueue.filter(s => s.connected && s.id !== socket.id);
             
             // Nếu có người đang xếp hàng đợi hợp lệ
@@ -364,12 +377,23 @@
 
         });
         // 🏠 2. XỬ LÝ TỰ TẠO PHÒNG RIÊNG (PRIVATE ROOM)
-        socket.on('request-create-room', (data) => {
+        socket.on('request-create-room', async (data) => {
             socket.username = data.name || "Chủ phòng";
             socket.userId = data.userId;
             socket.skin = data.skin || 'skin_default'; // ✅ THÊM DÒNG NÀY
+            socket.rank = 'Bùn';
             let roomId = 'ROOM_' + Math.floor(1000 + Math.random() * 9000); // Mã 4 chữ số ngẫu nhiên
-            
+            if (data.userId) {
+                try {
+                    const response = await axios.get(`http://localhost:${PORT}/api/user/${data.userId}`);
+                    if (response.data && response.data.success !== false) {
+                        socket.rank = response.data.rank || 'Bùn';
+                        console.log(`✅ Đã lấy rank cho ${data.userId}: ${socket.rank}`);
+                    }
+                } catch (err) {
+                    console.error(`❌ Lỗi lấy rank cho ${data.userId}:`, err.message);
+                }
+            }
             socket.join(roomId);
             socket.roomId = roomId;
             const skills = randomSkills();
@@ -401,12 +425,23 @@
         });
 
         // 🚪 3. XỬ LÝ VÀO PHÒNG QUA ID BẠN BÈ
-        socket.on('request-join-room', (data) => {
+        socket.on('request-join-room', async (data) => {
             let roomId = data.roomId;
             socket.userId = data.userId;
             socket.skin = data.skin || 'skin_default'; // ✅ THÊM DÒNG NÀY
             socket.username = data.name || "Khách";
-
+            socket.rank = 'Bùn';
+            if (data.userId) {
+                try {
+                    const response = await axios.get(`http://localhost:${PORT}/api/user/${data.userId}`);
+                    if (response.data && response.data.success !== false) {
+                        socket.rank = response.data.rank || 'Bùn';
+                        console.log(`✅ Đã lấy rank cho ${data.userId}: ${socket.rank}`);
+                    }
+                } catch (err) {
+                    console.error(`❌ Lỗi lấy rank cho ${data.userId}:`, err.message);
+                }
+            }
             if (!rooms[roomId]) {
                 return socket.emit('room-error', { message: "Mã phòng không tồn tại! Vui lòng kiểm tra lại." });
             }

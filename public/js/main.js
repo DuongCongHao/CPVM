@@ -320,10 +320,10 @@
                 lobbyStatus.innerHTML = "⏳ Đang tìm kiếm đối thủ phù hợp trên hệ thống...<br>Vui lòng đợi người chơi khác vào trận.";
             }
 
-            // ✅ THÊM SKIN VÀO DATA GỬI LÊN SERVER
+            // ✅ SỬA: GỬI userId LÀ USERNAME (KHÔNG PHẢI ID)
             socket.emit('request-quick-match', {
-                name: username,
-                userId: user.id,
+                name: user.display_name || user.username || username,
+                userId: user.username,  // ← ✅ USERNAME ĐĂNG NHẬP
                 skin: user.skin || 'skin_default'
             });
 
@@ -351,10 +351,10 @@
                 lobbyStatus.innerHTML = "⚙️ Đang gửi yêu cầu khởi tạo phòng riêng tư lên Server...";
             }
 
-            // ✅ THÊM SKIN VÀO DATA GỬI LÊN SERVER
+            // ✅ SỬA: GỬI userId LÀ USERNAME
             socket.emit('request-create-room', {
-                name: username,
-                userId: user.id,
+                name: user.display_name || user.username || username,
+                userId: user.username,  // ← ✅ USERNAME ĐĂNG NHẬP
                 skin: user.skin || 'skin_default'
             });
 
@@ -363,7 +363,6 @@
             enableLobbyButtons();
         }
     }
-
     function joinRoomWithId() {
         const username = getValidUsername();
         if (!username) return;
@@ -390,10 +389,10 @@
                 lobbyStatus.innerHTML = `🏃‍♂️ Đang kết nối vào phòng [${roomId}]...`;
             }
 
-            // ✅ THÊM SKIN VÀO DATA GỬI LÊN SERVER
+            // ✅ SỬA: GỬI userId LÀ USERNAME
             socket.emit('request-join-room', {
-                name: username,
-                userId: user.id,
+                name: user.display_name || user.username || username,
+                userId: user.username,  // ← ✅ USERNAME ĐĂNG NHẬP
                 roomId: roomId,
                 skin: user.skin || 'skin_default'
             });

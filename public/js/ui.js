@@ -268,7 +268,6 @@ if (backBtn) {
 }
 
 // ===== CẬP NHẬT RANK TRONG TRẬN =====
-// ===== CẬP NHẬT RANK TRONG TRẬN =====
 function updateRankDisplay() {
     console.log("===== updateRankDisplay =====");
     console.log("window.players:", window.players);
@@ -289,8 +288,12 @@ function updateRankDisplay() {
         return;
     }
     
+    console.log("📊 currentUser:", currentUser);
+    
     const myPlayerNum = window.myPlayerNumber || 1;
     const opponentNum = myPlayerNum === 1 ? 2 : 1;
+    
+    console.log(`📊 myPlayerNum: ${myPlayerNum}, opponentNum: ${opponentNum}`);
     
     // ===== CẬP NHẬT RANK CỦA MÌNH =====
     const myRank = currentUser.rank || "Bùn";
@@ -299,7 +302,6 @@ function updateRankDisplay() {
     if (myIcon) {
         myIcon.src = `assets/ranks/${myRankInfo.icon}`;
         myIcon.alt = myRank;
-        myIcon.title = `Rank: ${myRank}`;
         console.log(`✅ Cập nhật rank của bạn: ${myRank}`);
     }
     
@@ -311,10 +313,11 @@ function updateRankDisplay() {
         if (oppIcon) {
             oppIcon.src = `assets/ranks/${opponentRankInfo.icon}`;
             oppIcon.alt = opponentRank;
-            oppIcon.title = `Rank: ${opponentRank}`;
             console.log(`✅ Cập nhật rank đối thủ: ${opponentRank}`);
         }
     } else {
         console.warn("⚠️ Chưa có dữ liệu đối thủ");
+        console.warn("⚠️ window.players:", window.players);
+        console.warn(`⚠️ window.players[${opponentNum}]:`, window.players ? window.players[opponentNum] : 'undefined');
     }
 }
