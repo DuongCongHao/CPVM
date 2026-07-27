@@ -311,21 +311,19 @@ h1 {
 }
 
 .player-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 6px;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;        /* Cho phép xuống dòng nếu cần */
 }
-
-.player-top>span:first-child {
-    flex: 1;
-    min-width: 0;
-
-    display: flex;
-    align-items: center;
-    gap: 6px;
-
-    overflow: hidden;
+.player-top > span:first-child {
+    flex: 1 !important;
+    min-width: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;        /* Cho phép xuống dòng */
 }
 
 .player-left {
@@ -359,15 +357,14 @@ h1 {
 
 #p1-name-display,
 #p2-name-display {
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-
-    white-space: nowrap;
-
-    font-weight: 700;
+    overflow: visible !important;      /* Cho phép hiển thị đầy đủ */
+    white-space: normal !important;    /* Cho phép xuống dòng nếu cần */
+    text-overflow: unset !important;   /* Bỏ dấu ... */
+    max-width: 140px !important;       /* Giới hạn chiều rộng tối đa */
+    word-break: break-word !important; /* Tự động xuống dòng nếu quá dài */
+    line-height: 1.2 !important;       /* Giãn dòng */
 }
+
 
 .player-info:last-child {
     margin-bottom: 0;
@@ -2490,6 +2487,78 @@ body.hao-shake {
 }
 /* ===== FIX BỐ CỤC DESKTOP ===== */
 @media (min-width: 769px) {
+    .player-info {
+        padding: 12px 16px !important;
+        border-radius: 14px !important;
+    }
+    .player-name,
+    #p1-name-display,
+    #p2-name-display {
+        font-size: 18px !important;
+        font-weight: 800 !important;
+    }
+    .player-rank-icon,
+    #p1-rank-icon,
+    #p2-rank-icon {
+        width: 32px !important;
+        height: 32px !important;
+        border-width: 3px !important;
+    }
+    .player-money {
+        font-size: 20px !important;
+        font-weight: 900 !important;
+        min-width: 80px !important;
+    }
+    
+    .player-money span {
+        font-size: 20px !important;
+    }
+    
+    /* Số vòng */
+    .player-round {
+        font-size: 13px !important;
+        padding: 4px 10px !important;
+        border-radius: 8px !important;
+        font-weight: 800 !important;
+    }
+    .skill-tag {
+        font-size: 14px !important;
+        padding: 6px 12px !important;
+        border-radius: 10px !important;
+        font-weight: 700 !important;
+    }
+    
+    /* Status card */
+    .status-card {
+        padding: 20px !important;
+        border-radius: 20px !important;
+    }
+    
+    /* Player top layout */
+    .player-top {
+        gap: 12px !important;
+        margin-bottom: 4px !important;
+    }
+    
+    .player-top > span:first-child {
+        gap: 10px !important;
+        font-size: 16px !important;
+    }
+    
+    /* Skip badge */
+    .skip-badge {
+        font-size: 12px !important;
+        padding: 4px 10px !important;
+        border-radius: 12px !important;
+    }
+    
+    /* Turn indicator */
+    .turn-indicator {
+        font-size: 16px !important;
+        padding: 12px 20px !important;
+        border-radius: 40px !important;
+        font-weight: 900 !important;
+    }
     .container {
         display: flex !important;
         flex-direction: row !important;
