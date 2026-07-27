@@ -1,6 +1,14 @@
     window.haoBossTriggered = false;
     window.haoWarningPlayed=false;
-    
+    // 🆕 THÊM SKIN_LIST VÀO WINDOW ĐỂ DÙNG CHUNG
+    window.SKIN_LIST = [
+        { id: 'skin_default', name: 'Mặc định', icon: '🏃‍♂️' },
+        { id: 'skin_dragon', name: 'Rồng thần', icon: '🐉' },
+        { id: 'skin_ninja', name: 'Ninja', icon: '🥷' },
+        { id: 'skin_wizard', name: 'Phù thủy', icon: '🧙' },
+        { id: 'skin_robot', name: 'Robot', icon: '🤖' },
+        { id: 'skin_car', name: 'Ô tô', icon: '🚗' }
+    ];
     // ===== KHỞI TẠO KẾT NỐI SOCKET.IO THÔNG MINH (TỰ ĐỘNG ĐỔI URL) =====
     const NODE_JS_PORT = 3000; 
     window.lightningIndex = null;
@@ -44,6 +52,51 @@
     // 🌐 HỆ THỐNG LẮNG NGHE & ĐỒNG BỘ SOCKET TRẬN ĐẤU (BẬY PHÒNG)
     // =========================================================================
     if (socket) {
+        // 🆕 NHẬN SKIN TỪ SERVER VÀ ÁP DỤNG CHO CẢ 2 NGƯỜI CHƠI
+        socket.on('player-skins', (data) => {
+            console.log('🎨 Nhận skin từ server:', data);
+            // ✅ THÊM DÒNG NÀY: LƯU SKIN VÀO window.players ĐỂ updatePlayerSkin DÙNG
+            if (window.players) {
+                if (window.players[1]) window.players[1].skin = data.player1;
+                if (window.players[2]) window.players[2].skin = data.player2;
+            }
+            // Lấy danh sách skin từ SKIN_LIST (đã có trong auth.js)
+            // Nếu SKIN_LIST chưa có, tự định nghĩa
+            const SKIN_LIST = window.SKIN_LIST || [
+                { id: 'skin_default', name: 'Mặc định', icon: '🏃‍♂️' },
+                { id: 'skin_dragon', name: 'Rồng thần', icon: '🐉' },
+                { id: 'skin_ninja', name: 'Ninja', icon: '🥷' },
+                { id: 'skin_wizard', name: 'Phù thủy', icon: '🧙' },
+                { id: 'skin_robot', name: 'Robot', icon: '🤖' },
+                { id: 'skin_car', name: 'Ô tô', icon: '🚗' }
+            ];
+            
+            // Áp dụng skin cho Player 1
+            const skin1 = SKIN_LIST.find(s => s.id === data.player1);
+            if (skin1) {
+                for (let i = 0; i < 36; i++) {
+                    const slot = document.getElementById(`slot-p1-${i}`);
+                    if (slot) {
+                        const avatar = slot.querySelector('.p-avatar');
+                        if (avatar) avatar.textContent = skin1.icon;
+                    }
+                }
+                console.log(`✅ Đã áp dụng skin Player 1: ${skin1.name}`);
+            }
+            
+            // Áp dụng skin cho Player 2 (đối thủ)
+            const skin2 = SKIN_LIST.find(s => s.id === data.player2);
+            if (skin2) {
+                for (let i = 0; i < 36; i++) {
+                    const slot = document.getElementById(`slot-p2-${i}`);
+                    if (slot) {
+                        const avatar = slot.querySelector('.p-avatar');
+                        if (avatar) avatar.textContent = skin2.icon;
+                    }
+                }
+                console.log(`✅ Đã áp dụng skin Player 2: ${skin2.name}`);
+            }
+        });
         // 🕸️ Lắng nghe vị trí Mạng Nhện ngẫu nhiên do server khởi tạo đầu trận
         socket.on('init-traps', (data) => {
             window.spiderWebIndex = data.spiderWebIndex;
@@ -229,221 +282,105 @@
     }
 
     function startQuickMatch() {
-
         const username = getValidUsername();
-
         if (!username) return;
 
-
-        const user = JSON.parse(
-            localStorage.getItem("currentUser")
-        );
-
-
+        const user = JSON.parse(localStorage.getItem("currentUser"));
         if (!user) {
-
             alert("Bạn chưa đăng nhập!");
-
             return;
-
         }
-
-
 
         if (socket && socket.connected) {
-
-
             disableLobbyButtons();
 
-
-            const lobbyStatus =
-                document.getElementById('lobby-status');
-
-
+            const lobbyStatus = document.getElementById('lobby-status');
             if (lobbyStatus) {
-
-                lobbyStatus.innerHTML =
-                "⏳ Đang tìm kiếm đối thủ phù hợp trên hệ thống...<br>Vui lòng đợi người chơi khác vào trận.";
-
+                lobbyStatus.innerHTML = "⏳ Đang tìm kiếm đối thủ phù hợp trên hệ thống...<br>Vui lòng đợi người chơi khác vào trận.";
             }
 
-
-
-            socket.emit(
-                'request-quick-match',
-                {
-
-                    name: username,
-
-                    userId: user.id
-
-                }
-            );
-
+            // ✅ THÊM SKIN VÀO DATA GỬI LÊN SERVER
+            socket.emit('request-quick-match', {
+                name: username,
+                userId: user.id,
+                skin: user.skin || 'skin_default'
+            });
 
         } else {
-
-
-            alert(
-                "❌ Thất bại: Hiện tại mất kết nối tới máy chủ, không thể ghép trận!"
-            );
-
-
+            alert("❌ Thất bại: Hiện tại mất kết nối tới máy chủ, không thể ghép trận!");
             enableLobbyButtons();
-
         }
-
     }
 
     function createNewRoom() {
-
         const username = getValidUsername();
-
         if (!username) return;
 
-
-        const user = JSON.parse(
-            localStorage.getItem("currentUser")
-        );
-
-
-        if(!user){
-
+        const user = JSON.parse(localStorage.getItem("currentUser"));
+        if (!user) {
             alert("Bạn chưa đăng nhập!");
-
             return;
-
         }
-
 
         if (socket && socket.connected) {
-
-
             disableLobbyButtons();
 
-
-            const lobbyStatus =
-            document.getElementById('lobby-status');
-
-
+            const lobbyStatus = document.getElementById('lobby-status');
             if (lobbyStatus) {
-
-                lobbyStatus.innerHTML =
-                "⚙️ Đang gửi yêu cầu khởi tạo phòng riêng tư lên Server...";
-
+                lobbyStatus.innerHTML = "⚙️ Đang gửi yêu cầu khởi tạo phòng riêng tư lên Server...";
             }
 
-
-            socket.emit(
-                'request-create-room',
-                {
-
-                    name: username,
-
-                    userId:user.id
-
-                }
-            );
-
+            // ✅ THÊM SKIN VÀO DATA GỬI LÊN SERVER
+            socket.emit('request-create-room', {
+                name: username,
+                userId: user.id,
+                skin: user.skin || 'skin_default'
+            });
 
         } else {
-
-
-            alert(
-            "❌ Thất bại: Mất kết nối máy chủ, không thể tạo phòng riêng tư!"
-            );
-
-
+            alert("❌ Thất bại: Mất kết nối máy chủ, không thể tạo phòng riêng tư!");
             enableLobbyButtons();
-
         }
-
     }
 
     function joinRoomWithId() {
-
         const username = getValidUsername();
-
         if (!username) return;
 
-
-        const user = JSON.parse(
-            localStorage.getItem("currentUser")
-        );
-
-
-        if(!user){
-
+        const user = JSON.parse(localStorage.getItem("currentUser"));
+        if (!user) {
             alert("Bạn chưa đăng nhập!");
-
             return;
-
         }
 
-
-        const roomIdInput =
-        document.getElementById('room-id-input');
-
-
-        const roomId =
-        roomIdInput ? roomIdInput.value.trim() : "";
-
+        const roomIdInput = document.getElementById('room-id-input');
+        const roomId = roomIdInput ? roomIdInput.value.trim() : "";
 
         if (!roomId) {
-
-            alert(
-            "Vui lòng nhập ID phòng (Mã phòng) do bạn của bạn gửi!"
-            );
-
+            alert("Vui lòng nhập ID phòng (Mã phòng) do bạn của bạn gửi!");
             return;
-
         }
-
 
         if (socket && socket.connected) {
-
-
             disableLobbyButtons();
 
-
-            const lobbyStatus =
-            document.getElementById('lobby-status');
-
-
+            const lobbyStatus = document.getElementById('lobby-status');
             if (lobbyStatus) {
-
-                lobbyStatus.innerHTML =
-                `🏃‍♂️ Đang kết nối vào phòng [${roomId}]...`;
-
+                lobbyStatus.innerHTML = `🏃‍♂️ Đang kết nối vào phòng [${roomId}]...`;
             }
 
-
-            socket.emit(
-                'request-join-room',
-                {
-
-                    name: username,
-
-                    userId:user.id,
-
-                    roomId:roomId
-
-                }
-            );
-
+            // ✅ THÊM SKIN VÀO DATA GỬI LÊN SERVER
+            socket.emit('request-join-room', {
+                name: username,
+                userId: user.id,
+                roomId: roomId,
+                skin: user.skin || 'skin_default'
+            });
 
         } else {
-
-
-            alert(
-            "❌ Thất bại: Không thể kết nối đến máy chủ để vào phòng!"
-            );
-
-
+            alert("❌ Thất bại: Không thể kết nối đến máy chủ để vào phòng!");
             enableLobbyButtons();
-
         }
-
     }
     function displayRoomId(roomId) {
         const roomDisplayEl = document.getElementById('room-id-display');
@@ -699,6 +636,14 @@
             
             boardEl.appendChild(cellEl);
         });
+        
+        // ===== 🆕 THÊM: ÁP DỤNG SKIN SAU KHI VẼ BÀN CỜ =====
+        if (typeof updatePlayerSkin === 'function') {
+            setTimeout(function() {
+                updatePlayerSkin();
+                console.log("✅ Đã áp dụng skin vào bàn cờ");
+            }, 150);
+        }
     }
 
     function syncGameToRemote() {
@@ -1746,71 +1691,6 @@ function closeConfirm() {
         modal.classList.remove('show');
         modal.style.display = 'none';
     }
-}
-// ===== CHUYỂN ĐỔI GIỮA CÁC TAB =====
-function showArena() {
-    // Ẩn 4 nút
-    document.getElementById('lobby-grid').style.display = 'none';
-    
-    // Ẩn tất cả nội dung khác
-    document.getElementById('shop-content').style.display = 'none';
-    document.getElementById('chat-content').style.display = 'none';
-    document.getElementById('userinfo-content').style.display = 'none';
-    
-    // Hiển thị nội dung Đấu trường
-    document.getElementById('arena-content').style.display = 'block';
-}
-
-function showShop() {
-    // Ẩn 4 nút
-    document.getElementById('lobby-grid').style.display = 'none';
-    
-    // Ẩn tất cả nội dung khác
-    document.getElementById('arena-content').style.display = 'none';
-    document.getElementById('chat-content').style.display = 'none';
-    document.getElementById('userinfo-content').style.display = 'none';
-    
-    // Hiển thị Cửa hàng
-    document.getElementById('shop-content').style.display = 'block';
-}
-
-function showChatRooms() {
-    // Ẩn 4 nút
-    document.getElementById('lobby-grid').style.display = 'none';
-    
-    // Ẩn tất cả nội dung khác
-    document.getElementById('arena-content').style.display = 'none';
-    document.getElementById('shop-content').style.display = 'none';
-    document.getElementById('userinfo-content').style.display = 'none';
-    
-    // Hiển thị Phòng chat
-    document.getElementById('chat-content').style.display = 'block';
-    loadChatRooms();
-}
-
-function showUserInfo() {
-    // Ẩn 4 nút
-    document.getElementById('lobby-grid').style.display = 'none';
-    
-    // Ẩn tất cả nội dung khác
-    document.getElementById('arena-content').style.display = 'none';
-    document.getElementById('shop-content').style.display = 'none';
-    document.getElementById('chat-content').style.display = 'none';
-    
-    // Hiển thị Thông tin
-    document.getElementById('userinfo-content').style.display = 'block';
-    loadUserInfo();
-}
-
-function backToLobby() {
-    // Hiển thị lại 4 nút
-    document.getElementById('lobby-grid').style.display = 'grid';
-    
-    // Ẩn tất cả nội dung
-    document.getElementById('arena-content').style.display = 'none';
-    document.getElementById('shop-content').style.display = 'none';
-    document.getElementById('chat-content').style.display = 'none';
-    document.getElementById('userinfo-content').style.display = 'none';
 }
 
 // ===== HIỂN THỊ THÔNG TIN NGƯỜI CHƠI =====

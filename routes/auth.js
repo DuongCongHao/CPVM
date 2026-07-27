@@ -58,7 +58,7 @@ router.post("/register", async (req, res) => {
 
         const hash = await bcrypt.hash(password, 10);
 
-        // Khởi tạo tài khoản mới chuẩn Rank Bùn và 0 điểm
+        // 🆕 THÊM CÁC TRƯỜNG MỚI: owned_skins, current_skin, owned_dice, owned_board
         const { error } = await supabase
             .from("users")
             .insert({
@@ -68,10 +68,15 @@ router.post("/register", async (req, res) => {
                 password_hash: hash,
                 level: 1,
                 exp: 0,
-                points: 0,        // Mới tạo tài khoản -> 0 RP
-                rank: "Bùn",     // Mới tạo tài khoản -> Rank Bùn (thay vì Đồng)
+                points: 0,
+                rank: "Bùn",
                 coin: 1000,
-                avatar: "default"
+                avatar: "default",
+                // 🆕 CÁC TRƯỜNG MỚI
+                owned_skins: ['skin_default'],
+                current_skin: 'skin_default',
+                owned_dice: [],
+                owned_board: []
             });
 
         if (error) {
@@ -124,11 +129,28 @@ router.post("/login", async (req, res) => {
             });
         }
 
+        // Xóa password_hash trước khi gửi về client
         delete user.password_hash;
 
+        // 🆕 TRẢ VỀ USER VỚI CÁC TRƯỜNG MỚI
         res.json({
             success: true,
-            user
+            user: {
+                id: user.id,
+                username: user.username,
+                display_name: user.display_name,
+                level: user.level,
+                exp: user.exp,
+                points: user.points,
+                rank: user.rank,
+                coin: user.coin,
+                avatar: user.avatar,
+                // 🆕 CÁC TRƯỜNG MỚI
+                owned_skins: user.owned_skins || ['skin_default'],
+                current_skin: user.current_skin || 'skin_default',
+                owned_dice: user.owned_dice || [],
+                owned_board: user.owned_board || []
+            }
         });
 
     } catch (err) {
@@ -140,11 +162,10 @@ router.post("/login", async (req, res) => {
 });
 
 // ========================
-// 3. CẬP NHẬT KẾT QUẢ SAU TRẬN ĐẤU (FIX CHUẨN 100%)
+// 3. CẬP NHẬT KẾT QUẢ SAU TRẬN ĐẤU
 // ========================
 router.post("/update-result", async (req, res) => {
     try {
-        // Hứng tất cả các kiểu đặt tên tham số (coin/coins, points, win...)
         const { id, level, exp, points, rank, coins, coin, win } = req.body;
 
         // 1. Lấy thông tin user hiện tại từ DB
@@ -180,19 +201,17 @@ router.post("/update-result", async (req, res) => {
             let currentPoints = user.points || 0;
 
             if (win) {
-                currentExp += 150;      // Thắng: +150 EXP
-                currentCoin += 50;      // Thắng: +50 Coin
-                currentPoints += 25;    // Thắng: +25 RP
+                currentExp += 150;
+                currentCoin += 50;
+                currentPoints += 25;
             } else {
-                currentExp += 50;       // Thua: +50 EXP
-                currentCoin += 25;      // Thua: +25 Coin
-                currentPoints = Math.max(0, currentPoints - 20); // Thua: -20 RP (không âm)
+                currentExp += 50;
+                currentCoin += 25;
+                currentPoints = Math.max(0, currentPoints - 20);
             }
 
-            // Tính Level mới (Cứ 1000 EXP lên 1 Cấp)
             let currentLevel = Math.floor(currentExp / 1000) + 1;
 
-            // Tính Rank theo mốc RP chuẩn
             let currentRank = "Bùn";
             if (currentPoints >= 600) currentRank = "Hali";
             else if (currentPoints >= 500) currentRank = "Kim Cương";
@@ -238,5 +257,56 @@ router.post("/update-result", async (req, res) => {
     }
 });
 
+// ========================
+// 4. 🆕 CẬP NHẬT SKIN
+// ========================
+router.post("/update-skin", async (req, res) => {
+    try {
+        const { userId, owned_skins, current_skin } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                message: "Thiếu userId!"
+            });
+        }
+
+        console.log("📝 Cập nhật skin cho user:", userId);
+        console.log("   owned_skins:", owned_skins);
+        console.log("   current_skin:", current_skin);
+
+        const { data, error } = await supabase
+            .from("users")
+            .update({
+                owned_skins: owned_skins || ['skin_default'],
+                current_skin: current_skin || 'skin_default'
+            })
+            .eq("id", userId)
+            .select();
+
+        if (error) {
+            console.log("❌ Lỗi cập nhật skin:", error.message);
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+
+        console.log("✅ Cập nhật skin thành công!");
+
+        res.json({
+            success: true,
+            message: "Cập nhật skin thành công!",
+            user: data[0]
+        });
+
+    } catch (err) {
+        console.error("❌ Lỗi:", err.message);
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
+    }
+});
 
 module.exports = router;

@@ -178,7 +178,7 @@
             socket.username = data.name || "Vô danh";
 
             socket.userId = data.userId;
-            
+            socket.skin = data.skin || 'skin_default'; // ✅ THÊM DÒNG NÀY
             // Lọc bỏ các socket đã đứt kết nối hoặc chính socket này để tránh tự ghép với mình
             quickMatchQueue = quickMatchQueue.filter(s => s.connected && s.id !== socket.id);
             
@@ -206,7 +206,8 @@
                         name: opponentSocket.username,
                         playerNumber:1,
                         rounds:0,
-                        skillUsed:false
+                        skillUsed:false,
+                        skin: opponentSocket.skin || 'skin_default' // ✅ THÊM DÒNG NÀY
                     },
 
                     {
@@ -215,7 +216,8 @@
                         name: socket.username,
                         playerNumber:2,
                         rounds:0,
-                        skillUsed:false
+                        skillUsed:false,
+                        skin: socket.skin || 'skin_default' // ✅ THÊM DÒNG NÀY
                     }
 
                     ],
@@ -227,15 +229,21 @@
                     timer: null,
                     skills: skills
                 };
-
+                // ✅ THÊM LOG ĐỂ DEBUG
+                console.log(`🎨 Skin P1: ${rooms[roomId].players[0].skin}, P2: ${rooms[roomId].players[1].skin}`);
                 // ✅ THÊM MỚI: Tạo mảng players để gửi cho client
                 const playersData = rooms[roomId].players.map(p => ({
                     id: p.userId || p.id,
                     name: p.name,
                     socketId: p.id,
-                    playerNumber: p.playerNumber
+                    playerNumber: p.playerNumber,
+                    skin: p.skin || 'skin_default' // ✅ ĐÚNG: dùng p.skin của từng player
                 }));
-
+                // ✅ THÊM ĐOẠN NÀY: GỬI SKIN CHO CẢ 2 CLIENT
+                io.to(roomId).emit('player-skins', {
+                    player1: rooms[roomId].players[0].skin || 'skin_default',
+                    player2: rooms[roomId].players[1].skin || 'skin_default'
+                });
                 // ✅ SỬA: Báo thông tin phòng về cho client (THÊM players)
                 opponentSocket.emit('room-joined', { 
                     roomId: roomId,
@@ -287,6 +295,7 @@
         socket.on('request-create-room', (data) => {
             socket.username = data.name || "Chủ phòng";
             socket.userId = data.userId;
+            socket.skin = data.skin || 'skin_default'; // ✅ THÊM DÒNG NÀY
             let roomId = 'ROOM_' + Math.floor(1000 + Math.random() * 9000); // Mã 4 chữ số ngẫu nhiên
             
             socket.join(roomId);
@@ -300,7 +309,8 @@
                     name:socket.username,
                     playerNumber:1,
                     rounds:0,
-                    skillUsed:false
+                    skillUsed:false,
+                    skin: socket.skin || 'skin_default' // ✅ THÊM DÒNG NÀY
                     }
                 ],
                 currentTurn: null,
@@ -321,6 +331,7 @@
         socket.on('request-join-room', (data) => {
             let roomId = data.roomId;
             socket.userId = data.userId;
+            socket.skin = data.skin || 'skin_default'; // ✅ THÊM DÒNG NÀY
             socket.username = data.name || "Khách";
 
             if (!rooms[roomId]) {
@@ -345,17 +356,24 @@
 
             rounds:0,
 
-            skillUsed:false
+            skillUsed:false,
+            skin: socket.skin || 'skin_default' // ✅ THÊM DÒNG NÀY
 
             });
             rooms[roomId].status = 'playing';
+            // ✅ THÊM ĐOẠN NÀY: GỬI SKIN CHO CẢ 2 CLIENT
+            io.to(roomId).emit('player-skins', {
+                player1: rooms[roomId].players[0].skin || 'skin_default',
+                player2: rooms[roomId].players[1].skin || 'skin_default'
+            });
 
             // ✅ THÊM MỚI: Tạo mảng players để gửi cho client
             const playersData = rooms[roomId].players.map(p => ({
                 id: p.userId || p.id,
                 name: p.name,
                 socketId: p.id,
-                playerNumber: p.playerNumber
+                playerNumber: p.playerNumber,
+                skin: p.skin || 'skin_default' // ✅ THÊM DÒNG NÀY
             }));
 
             // ✅ SỬA: Thêm players vào room-joined

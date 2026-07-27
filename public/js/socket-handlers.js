@@ -50,7 +50,8 @@ if (typeof socket !== 'undefined' && socket) {
                     pos: 0,
                     rounds: 0,
                     socketId: p.socketId || p.id,
-                    skillUsed: false
+                    skillUsed: false,
+                    skin: p.skin || 'skin_default'
                 };
             });
             

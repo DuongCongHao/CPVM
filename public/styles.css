@@ -2159,3 +2159,154 @@ body.hao-shake{
     margin-bottom: 20px !important;
     letter-spacing: 1px !important;
 }
+/* ===== SHOP CATEGORY BUTTONS ===== */
+.shop-category-btn {
+    padding: 6px 14px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    background: rgba(15, 23, 42, 0.5);
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.3s;
+    white-space: nowrap;
+}
+
+.shop-category-btn:hover {
+    background: rgba(56, 189, 248, 0.1);
+    border-color: rgba(56, 189, 248, 0.3);
+}
+
+.shop-category-btn.active {
+    background: rgba(56, 189, 248, 0.2);
+    border-color: #38bdf8;
+    color: #38bdf8;
+}
+
+/* ===== EQUIPMENT ===== */
+#equipment-content .equip-item {
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #f8fafc;
+    transition: all 0.3s;
+}
+
+#equipment-content .equip-item:hover {
+    background: rgba(15, 23, 42, 0.7);
+    border-color: rgba(56, 189, 248, 0.2);
+}
+
+#equipment-content .equip-item .icon {
+    font-size: 22px;
+}
+
+#equipment-content .equip-item .name {
+    flex: 1;
+}
+
+#equipment-content .equip-item .badge {
+    font-size: 10px;
+    padding: 1px 8px;
+    border-radius: 10px;
+    background: rgba(52, 211, 153, 0.2);
+    color: #34d399;
+}
+
+#equipment-content .equip-empty {
+    color: #64748b;
+    text-align: center;
+    padding: 20px;
+    width: 100%;
+    font-size: 14px;
+}
+/* ===== MÀU SẮC RIÊNG CHO TỪNG NÚT ===== */
+.lobby-arena {
+    border-color: rgba(239, 68, 68, 0.15);
+}
+.lobby-arena:hover {
+    border-color: rgba(239, 68, 68, 0.4);
+    box-shadow: 0 8px 30px rgba(239, 68, 68, 0.15);
+}
+
+.lobby-shop {
+    border-color: rgba(250, 204, 21, 0.15);
+}
+.lobby-shop:hover {
+    border-color: rgba(250, 204, 21, 0.4);
+    box-shadow: 0 8px 30px rgba(250, 204, 21, 0.15);
+}
+
+.lobby-chat {
+    border-color: rgba(52, 211, 153, 0.15);
+}
+.lobby-chat:hover {
+    border-color: rgba(52, 211, 153, 0.4);
+    box-shadow: 0 8px 30px rgba(52, 211, 153, 0.15);
+}
+
+.lobby-equip {
+    border-color: rgba(168, 85, 247, 0.15);
+}
+.lobby-equip:hover {
+    border-color: rgba(168, 85, 247, 0.4);
+    box-shadow: 0 8px 30px rgba(168, 85, 247, 0.15);
+}
+
+.lobby-userinfo {
+    border-color: rgba(96, 165, 250, 0.15);
+}
+.lobby-userinfo:hover {
+    border-color: rgba(96, 165, 250, 0.4);
+    box-shadow: 0 8px 30px rgba(96, 165, 250, 0.15);
+}
+/* ===== EQUIPMENT LIST ===== */
+.equip-item-card {
+    background: rgba(15, 23, 42, 0.5);
+    border: 2px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 10px 14px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    min-width: 70px;
+    flex: 0 1 auto;
+}
+
+.equip-item-card:hover {
+    background: rgba(15, 23, 42, 0.7);
+    border-color: rgba(56, 189, 248, 0.3);
+    transform: translateY(-2px);
+}
+
+.equip-item-card.active {
+    border-color: #facc15;
+    background: rgba(250, 204, 21, 0.15);
+    box-shadow: 0 0 20px rgba(250, 204, 21, 0.15);
+}
+
+.equip-item-card .icon {
+    font-size: 30px;
+    display: block;
+}
+
+.equip-item-card .name {
+    font-size: 11px;
+    color: #f8fafc;
+    font-weight: 600;
+    display: block;
+    margin-top: 2px;
+}
+
+.equip-item-card .badge {
+    font-size: 9px;
+    color: #facc15;
+    display: block;
+    margin-top: 2px;
+}
