@@ -6,7 +6,10 @@ const audioGame = {
     run: new Audio('audio/run.mp3'),         
     buyLand: new Audio('audio/muadat.mp3'),   
     loseMoney: new Audio('audio/mattien.mp3'), 
-    lightning: new Audio('audio/thunder.mp3')  
+    lightning: new Audio('audio/thunder.mp3'),
+    dragon: new Audio('audio/dragon.mp3'),
+    phoenix: new Audio('audio/phoenix.mp3'),
+    horse: new Audio('audio/horse.mp3')
 };
 
 // ===== CẤU HÌNH ÂM LƯỢNG =====

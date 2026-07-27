@@ -255,14 +255,18 @@ window.onload = function() {
 
 // ===== SKIN DATA =====
 const SKIN_LIST = [
-    { id: 'skin_default', name: 'Mặc định', icon: '🏃‍♂️', price: 0, desc: 'Quân cờ cơ bản' },
-    { id: 'skin_dragon', name: 'Rồng thần', icon: '🐉', price: 5000, desc: 'Rồng bay uy nghi' },
-    { id: 'skin_ninja', name: 'Ninja', icon: '🥷', price: 3000, desc: 'Ninja bí ẩn' },
-    { id: 'skin_wizard', name: 'Phù thủy', icon: '🧙', price: 1000, desc: 'Phù thủy quyền năng' },
-    { id: 'skin_robot', name: 'Robot', icon: '🤖', price: 2000, desc: 'Người máy tương lai' },
-    { id: 'skin_car', name: 'Ô tô', icon: '🚗', price: 1500, desc: 'Xe hơi tốc độ' },
+    { id: 'skin_default', name: 'Mặc định', icon: '🏃‍♂️', price: 0, desc: 'Quân cờ cơ bản', rarity: 'common' },
+    { id: 'skin_dragon', name: 'Rồng thần', icon: '🐉', price: 10000, desc: 'Rồng bay uy nghi', rarity: 'legendary', 
+      sound: 'dragon', effect: 'dragon_fire' },
+    { id: 'skin_phoenix', name: 'Phượng hoàng', icon: '🐦‍🔥', price: 5000, desc: 'Phượng hoàng bất tử', rarity: 'legendary',
+      sound: 'phoenix', effect: 'phoenix_feather' },
+    { id: 'skin_unicorn', name: 'Kỳ lân', icon: '🦄', price: 7500, desc: 'Kỳ lân huyền thoại', rarity: 'legendary',
+      sound: 'horse', effect: 'unicorn_magic' },
+    { id: 'skin_ninja', name: 'Ninja', icon: '🥷', price: 3000, desc: 'Ninja bí ẩn', rarity: 'rare' },
+    { id: 'skin_wizard', name: 'Phù thủy', icon: '🧙', price: 1000, desc: 'Phù thủy quyền năng', rarity: 'uncommon' },
+    { id: 'skin_robot', name: 'Robot', icon: '🤖', price: 2000, desc: 'Người máy tương lai', rarity: 'rare' },
+    { id: 'skin_car', name: 'Ô tô', icon: '🚗', price: 1500, desc: 'Xe hơi tốc độ', rarity: 'common' },
 ];
-
 // ===== SHOP FUNCTIONS =====
 let shopFilter = 'all';
 
@@ -342,6 +346,8 @@ function updatePlayerSkin() {
     const SKIN_LIST = window.SKIN_LIST || [
         { id: 'skin_default', name: 'Mặc định', icon: '🏃‍♂️' },
         { id: 'skin_dragon', name: 'Rồng thần', icon: '🐉' },
+        { id: 'skin_phoenix', name: 'Phượng hoàng', icon: '🦅' },
+        { id: 'skin_unicorn', name: 'Kỳ lân', icon: '🦄' }, // 🆕 THÊM DÒNG NÀY
         { id: 'skin_ninja', name: 'Ninja', icon: '🥷' },
         { id: 'skin_wizard', name: 'Phù thủy', icon: '🧙' },
         { id: 'skin_robot', name: 'Robot', icon: '🤖' },

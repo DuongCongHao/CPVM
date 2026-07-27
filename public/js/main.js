@@ -2,12 +2,17 @@
     window.haoWarningPlayed=false;
     // 🆕 THÊM SKIN_LIST VÀO WINDOW ĐỂ DÙNG CHUNG
     window.SKIN_LIST = [
-        { id: 'skin_default', name: 'Mặc định', icon: '🏃‍♂️' },
-        { id: 'skin_dragon', name: 'Rồng thần', icon: '🐉' },
-        { id: 'skin_ninja', name: 'Ninja', icon: '🥷' },
-        { id: 'skin_wizard', name: 'Phù thủy', icon: '🧙' },
-        { id: 'skin_robot', name: 'Robot', icon: '🤖' },
-        { id: 'skin_car', name: 'Ô tô', icon: '🚗' }
+        { id: 'skin_default', name: 'Mặc định', icon: '🏃‍♂️', price: 0, desc: 'Quân cờ cơ bản', rarity: 'common' },
+        { id: 'skin_dragon', name: 'Rồng thần', icon: '🐉', price: 5000, desc: 'Rồng bay uy nghi', rarity: 'legendary', 
+        sound: 'dragon', effect: 'dragon_fire' },
+        { id: 'skin_phoenix', name: 'Phượng hoàng', icon: '🦅', price: 6000, desc: 'Phượng hoàng bất tử', rarity: 'legendary',
+        sound: 'phoenix', effect: 'phoenix_feather' },
+        { id: 'skin_unicorn', name: 'Kỳ lân', icon: '🦄', price: 4000, desc: 'Kỳ lân huyền thoại', rarity: 'legendary',
+        sound: 'horse', effect: 'unicorn_magic' },
+        { id: 'skin_ninja', name: 'Ninja', icon: '🥷', price: 3000, desc: 'Ninja bí ẩn', rarity: 'rare' },
+        { id: 'skin_wizard', name: 'Phù thủy', icon: '🧙', price: 1000, desc: 'Phù thủy quyền năng', rarity: 'uncommon' },
+        { id: 'skin_robot', name: 'Robot', icon: '🤖', price: 2000, desc: 'Người máy tương lai', rarity: 'rare' },
+        { id: 'skin_car', name: 'Ô tô', icon: '🚗', price: 1500, desc: 'Xe hơi tốc độ', rarity: 'common' }
     ];
     // ===== KHỞI TẠO KẾT NỐI SOCKET.IO THÔNG MINH (TỰ ĐỘNG ĐỔI URL) =====
     const NODE_JS_PORT = 3000; 
@@ -52,6 +57,18 @@
     // 🌐 HỆ THỐNG LẮNG NGHE & ĐỒNG BỘ SOCKET TRẬN ĐẤU (BẬY PHÒNG)
     // =========================================================================
     if (socket) {
+        // Thêm vào phần if (socket)
+        socket.on('skin-effect', (data) => {
+            console.log('🎬 Nhận hiệu ứng skin từ server:', data);
+            
+            if (data.skinId === 'skin_phoenix') {
+                playPhoenixEffectGlobal();
+            } else if (data.skinId === 'skin_dragon') {
+                playDragonEffectGlobal();
+            } else if (data.skinId === 'skin_unicorn') {
+                playUnicornEffectGlobal(); // 🆕 THÊM NẾU CÓ
+            }
+        });
         // 🆕 NHẬN SKIN TỪ SERVER VÀ ÁP DỤNG CHO CẢ 2 NGƯỜI CHƠI
         socket.on('player-skins', (data) => {
             console.log('🎨 Nhận skin từ server:', data);
@@ -65,6 +82,7 @@
             const SKIN_LIST = window.SKIN_LIST || [
                 { id: 'skin_default', name: 'Mặc định', icon: '🏃‍♂️' },
                 { id: 'skin_dragon', name: 'Rồng thần', icon: '🐉' },
+                { id: 'skin_phoenix', name: 'Phượng hoàng', icon: '🦅' }, // ✅ THÊM DÒNG NÀY
                 { id: 'skin_ninja', name: 'Ninja', icon: '🥷' },
                 { id: 'skin_wizard', name: 'Phù thủy', icon: '🧙' },
                 { id: 'skin_robot', name: 'Robot', icon: '🤖' },
@@ -1897,6 +1915,382 @@ function handleChatEnter(e) {
     }
 }
 
+// ===== HIỂN THỊ CHỦ ĐỀ SKIN VIP =====
+function showSkinEffectText(title, subtitle, color1, color2, icon) {
+    const textDiv = document.createElement('div');
+    textDiv.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 52px;
+        font-weight: 900;
+        color: #fff;
+        text-shadow: 0 0 30px ${color1}, 0 0 60px ${color2}, 0 0 100px ${color2};
+        z-index: 99999;
+        pointer-events: none;
+        animation: skinEffectIn 2.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        text-align: center;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 25px 50px;
+        border-radius: 24px;
+        border: 2px solid ${color1};
+        box-shadow: 0 0 60px ${color1}44, inset 0 0 60px ${color1}22;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    `;
+    textDiv.innerHTML = `
+        <div style="font-size: 90px; margin-bottom: 8px; filter: drop-shadow(0 0 30px ${color1});">${icon}</div>
+        <div style="font-size: 32px; font-weight: 900; background: linear-gradient(135deg, ${color1}, ${color2}); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: none;">
+            ${title}
+        </div>
+        <div style="font-size: 16px; color: ${color1}; margin-top: 6px; letter-spacing: 4px; font-weight: 300; -webkit-text-fill-color: ${color1};">
+            ${subtitle}
+        </div>
+    `;
+    document.body.appendChild(textDiv);
+    
+    // Xóa sau 3 giây
+    setTimeout(() => {
+        if (textDiv.parentNode) {
+            textDiv.style.opacity = '0';
+            textDiv.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => {
+                if (textDiv.parentNode) textDiv.remove();
+            }, 500);
+        }
+    }, 2800);
+}
+
+
+
+// ===== HIỆU ỨNG HẠT SÁNG CHUNG =====
+function createParticleEffect() {
+    const colors = ['#facc15', '#f97316', '#ef4444', '#a855f7', '#38bdf8', '#34d399'];
+    const container = document.getElementById('board');
+    if (!container) return;
+    
+    for (let i = 0; i < 30; i++) {
+        const particle = document.createElement('div');
+        const size = Math.random() * 8 + 4;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const x = Math.random() * 100;
+        const y = Math.random() * 100;
+        const duration = Math.random() * 1.5 + 1;
+        const delay = Math.random() * 0.5;
+        
+        particle.style.cssText = `
+            position: absolute;
+            width: ${size}px;
+            height: ${size}px;
+            background: ${color};
+            border-radius: 50%;
+            top: ${y}%;
+            left: ${x}%;
+            pointer-events: none;
+            z-index: 9999;
+            box-shadow: 0 0 10px ${color};
+            animation: particleFloat ${duration}s ease-out ${delay}s forwards;
+        `;
+        container.appendChild(particle);
+        setTimeout(() => particle.remove(), (duration + delay) * 1000 + 500);
+    }
+}
+function playPhoenixEffectGlobal() {
+    console.log('🔥 Kích hoạt hiệu ứng Phượng hoàng (toàn cục)');
+    
+    // Thêm class phoenix cho avatar
+    document.querySelectorAll('.slot-p1 .p-avatar, .slot-p2 .p-avatar').forEach(el => {
+        if (el.textContent === '🦅' || el.textContent === '🔥') {
+            el.classList.add('skin-phoenix');
+        }
+    });
+    
+    // 🔥 HIỆU ỨNG CHỮ: PHƯỢNG HOÀNG GIÁNG THẾ
+    showSkinEffectText(
+        '🔥 PHƯỢNG HOÀNG GIÁNG THẾ',
+        '⚡ BẤT TỬ CHI LỰC ⚡',
+        '#facc15',
+        '#ef4444',
+        '🦅'
+    );
+    
+    // Lông vũ rơi (nhiều hơn, mượt hơn)
+    createPhoenixFeathersAdvanced();
+    
+    // Hiệu ứng ánh sáng rực rỡ
+    const flashContainer = document.createElement('div');
+    flashContainer.style.cssText = `
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 99998;
+        background: radial-gradient(circle at 50% 50%, rgba(250, 204, 21, 0.3) 0%, rgba(239, 68, 68, 0.15) 40%, transparent 70%);
+        animation: phoenixFlash 2.5s ease-out forwards;
+    `;
+    document.body.appendChild(flashContainer);
+    setTimeout(() => {
+        if (flashContainer.parentNode) flashContainer.remove();
+    }, 2800);
+    
+    // Âm thanh
+    if (audioGame && audioGame.phoenix) {
+        audioGame.phoenix.currentTime = 0;
+        audioGame.phoenix.volume = 0.8;
+        audioGame.phoenix.play().catch(() => {});
+    }
+}
+
+function playDragonEffectGlobal() {
+    console.log('🐉 Kích hoạt hiệu ứng Rồng thần (toàn cục)');
+    
+    // Thêm class legendary cho avatar
+    document.querySelectorAll('.slot-p1 .p-avatar, .slot-p2 .p-avatar').forEach(el => {
+        if (el.textContent === '🐉') {
+            el.classList.add('skin-legendary');
+        }
+    });
+    
+    // 🐉 HIỆU ỨNG CHỮ: RỒNG THẦN XUẤT HIỆN
+    showSkinEffectText(
+        '🐉 RỒNG THẦN XUẤT HIỆN',
+        '⚡ UY LỰC VẠN CỔ ⚡',
+        '#f97316',
+        '#dc2626',
+        '🐉'
+    );
+    
+    // Rung màn hình mạnh mẽ hơn
+    document.body.classList.add('dragon-shake');
+    setTimeout(() => {
+        document.body.classList.remove('dragon-shake');
+    }, 1800);
+    
+    // Hiệu ứng lửa bùng nổ
+    const fireContainer = document.createElement('div');
+    fireContainer.style.cssText = `
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 99998;
+        background: radial-gradient(circle at 50% 50%, rgba(255, 100, 0, 0.35) 0%, rgba(200, 50, 0, 0.15) 40%, transparent 70%);
+        animation: dragonFire 2.5s ease-out forwards;
+    `;
+    document.body.appendChild(fireContainer);
+    setTimeout(() => {
+        if (fireContainer.parentNode) fireContainer.remove();
+    }, 2800);
+    
+    // Âm thanh
+    if (audioGame && audioGame.dragon) {
+        audioGame.dragon.currentTime = 0;
+        audioGame.dragon.volume = 0.8;
+        audioGame.dragon.play().catch(() => {});
+    }
+}
+function playUnicornEffectGlobal() {
+    console.log('🦄 Kích hoạt hiệu ứng Kỳ Lân (toàn cục)');
+    
+    document.querySelectorAll('.slot-p1 .p-avatar, .slot-p2 .p-avatar').forEach(el => {
+        if (el.textContent === '🦄') {
+            el.classList.add('skin-unicorn');
+        }
+    });
+    
+    showSkinEffectText(
+        '🦄 KỲ LÂN HIỆN THẾ',
+        '⚡ PHÉP MÀU CỔ TÍCH ⚡',
+        '#a855f7',
+        '#ec4899',
+        '🦄'
+    );
+    
+    const rainbowContainer = document.createElement('div');
+    rainbowContainer.style.cssText = `
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 99998;
+        background: radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.25) 0%, rgba(236, 72, 153, 0.15) 40%, rgba(251, 191, 36, 0.1) 60%, transparent 80%);
+        animation: unicornRainbow 2.5s ease-out forwards;
+    `;
+    document.body.appendChild(rainbowContainer);
+    setTimeout(() => {
+        if (rainbowContainer.parentNode) rainbowContainer.remove();
+    }, 2800);
+    
+    if (audioGame && audioGame.horse) {
+        audioGame.horse.currentTime = 0;
+        audioGame.horse.volume = 0.8;
+        audioGame.horse.play().catch(() => {});
+    }
+}
+// ===== LÔNG VŨ PHƯỢNG HOÀNG NÂNG CAO (THÊM MỚI) =====
+function createPhoenixFeathersAdvanced() {
+    const colors = ['#facc15', '#f97316', '#ef4444', '#fb923c', '#fcd34d', '#f87171'];
+    const board = document.getElementById('board');
+    if (!board) return;
+    
+    const featherCount = 40; // Tăng số lượng lông vũ
+    
+    for (let i = 0; i < featherCount; i++) {
+        const feather = document.createElement('div');
+        const size = Math.random() * 18 + 8;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const x = Math.random() * 100;
+        const y = Math.random() * 100;
+        const duration = Math.random() * 2 + 1.5;
+        const delay = Math.random() * 1.2;
+        const rotate = Math.random() * 360;
+        const tx = (Math.random() - 0.5) * 200;
+        const ty = Math.random() * 150 + 50;
+        
+        feather.style.cssText = `
+            position: absolute;
+            width: ${size}px;
+            height: ${size * 2.2}px;
+            background: ${color};
+            border-radius: 50% 50% 50% 0;
+            top: ${y}%;
+            left: ${x}%;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.9;
+            transform: rotate(${rotate}deg);
+            animation: featherFallAdvanced ${duration}s cubic-bezier(0.4, 0, 0.2, 1) ${delay}s forwards;
+            box-shadow: 0 0 20px ${color}66;
+            filter: blur(0.5px);
+        `;
+        feather.style.setProperty('--tx', tx + 'px');
+        feather.style.setProperty('--ty', ty + 'px');
+        board.appendChild(feather);
+        setTimeout(() => {
+            if (feather.parentNode) feather.remove();
+        }, (duration + delay) * 1000 + 500);
+    }
+}
+// ===== CẤU HÌNH HIỆU ỨNG SKIN VIP =====
+const VIP_SKIN_EFFECTS = {
+    'skin_dragon': {
+        title: '🐉 RỒNG THẦN XUẤT HIỆN',
+        subtitle: '⚡ UY LỰC VẠN CỔ ⚡',
+        color1: '#f97316',
+        color2: '#dc2626',
+        icon: '🐉',
+        sound: 'dragon',
+        class: 'skin-legendary'
+    },
+    'skin_phoenix': {
+        title: '🔥 PHƯỢNG HOÀNG GIÁNG THẾ',
+        subtitle: '⚡ BẤT TỬ CHI LỰC ⚡',
+        color1: '#facc15',
+        color2: '#ef4444',
+        icon: '🦅',
+        sound: 'phoenix',
+        class: 'skin-phoenix'
+    },
+    'skin_unicorn': {
+        title: '🦄 KỲ LÂN HIỆN THẾ',
+        subtitle: '⚡ PHÉP MÀU CỔ TÍCH ⚡',
+        color1: '#a855f7',
+        color2: '#ec4899',
+        icon: '🦄',
+        sound: 'horse',
+        class: 'skin-unicorn'
+    },
+};
+
+function playSkinEffectGlobal(skinId) {
+    const effect = VIP_SKIN_EFFECTS[skinId];
+    if (!effect) return;
+    
+    console.log(`✨ Kích hoạt hiệu ứng VIP cho ${skinId}`);
+    
+    // Thêm class cho avatar
+    document.querySelectorAll('.slot-p1 .p-avatar, .slot-p2 .p-avatar').forEach(el => {
+        if (el.textContent === effect.icon) {
+            el.classList.add(effect.class);
+        }
+    });
+    
+    // Hiệu ứng chữ
+    showSkinEffectText(
+        effect.title,
+        effect.subtitle,
+        effect.color1,
+        effect.color2,
+        effect.icon
+    );
+    
+    // Âm thanh
+    if (audioGame && audioGame[effect.sound]) {
+        audioGame[effect.sound].currentTime = 0;
+        audioGame[effect.sound].volume = 0.8;
+        audioGame[effect.sound].play().catch(() => {});
+    }
+    
+    // Hiệu ứng đặc biệt theo từng skin
+    if (skinId === 'skin_dragon') {
+        document.body.classList.add('dragon-shake');
+        setTimeout(() => {
+            document.body.classList.remove('dragon-shake');
+        }, 1800);
+        
+        const fireContainer = document.createElement('div');
+        fireContainer.style.cssText = `
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 99998;
+            background: radial-gradient(circle at 50% 50%, rgba(255, 100, 0, 0.35) 0%, rgba(200, 50, 0, 0.15) 40%, transparent 70%);
+            animation: dragonFire 2.5s ease-out forwards;
+        `;
+        document.body.appendChild(fireContainer);
+        setTimeout(() => {
+            if (fireContainer.parentNode) fireContainer.remove();
+        }, 2800);
+        
+    } else if (skinId === 'skin_phoenix') {
+        createPhoenixFeathersAdvanced();
+        
+        const flashContainer = document.createElement('div');
+        flashContainer.style.cssText = `
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 99998;
+            background: radial-gradient(circle at 50% 50%, rgba(250, 204, 21, 0.3) 0%, rgba(239, 68, 68, 0.15) 40%, transparent 70%);
+            animation: phoenixFlash 2.5s ease-out forwards;
+        `;
+        document.body.appendChild(flashContainer);
+        setTimeout(() => {
+            if (flashContainer.parentNode) flashContainer.remove();
+        }, 2800);
+    } else if (skinId === 'skin_unicorn') {
+        // 🆕 HIỆU ỨNG KỲ LÂN - CẦU VỒNG
+        // Hiệu ứng cầu vồng
+        const rainbowContainer = document.createElement('div');
+        rainbowContainer.style.cssText = `
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 99998;
+            background: radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.25) 0%, rgba(236, 72, 153, 0.15) 40%, rgba(251, 191, 36, 0.1) 60%, transparent 80%);
+            animation: unicornRainbow 2.5s ease-out forwards;
+        `;
+        document.body.appendChild(rainbowContainer);
+        setTimeout(() => {
+            if (rainbowContainer.parentNode) rainbowContainer.remove();
+        }, 2800);
+        
+        // Thêm class unicorn cho avatar
+        document.querySelectorAll('.slot-p1 .p-avatar, .slot-p2 .p-avatar').forEach(el => {
+            if (el.textContent === '🦄') {
+                el.classList.add('skin-unicorn');
+            }
+        });
+    }
+}
 // ===== ĐĂNG XUẤT =====
 function logout() {
     if (confirm('Bạn có chắc muốn đăng xuất?')) {
@@ -1911,4 +2305,44 @@ function handleBackToLobby() {
     // Không gọi socket.emit hay gameOver gì cả
     console.log("🔙 Quay về lobby - reload trang");
     location.reload();
+}
+// ===== KIỂM TRA VÀ KÍCH HOẠT HIỆU ỨNG SKIN VIP =====
+function checkAndPlaySkinEffects() {
+    const user = getShopUser();
+    if (!user) {
+        console.log("⚠️ Không có user để kiểm tra skin");
+        return;
+    }
+    
+    const skinId = user.skin || 'skin_default';
+    const skin = window.SKIN_LIST ? window.SKIN_LIST.find(s => s.id === skinId) : null;
+    
+    console.log(`🎯 Kiểm tra skin VIP: ${skinId}`);
+    
+    if (skin && skin.rarity === 'legendary') {
+        console.log(`✨ Kích hoạt hiệu ứng VIP cho ${skin.name}`);
+        
+        // Gửi hiệu ứng lên server
+        if (socket && socket.connected) {
+            socket.emit('trigger-skin-effect', {
+                skinId: skinId,
+                playerNumber: 1
+            });
+            console.log('📤 Đã gửi trigger-skin-effect lên server');
+        }
+        
+        // Hiển thị trên máy hiện tại
+        setTimeout(() => {
+            if (typeof playSkinEffectGlobal === 'function') {
+                playSkinEffectGlobal(skinId);
+            } else {
+                // Fallback cho các hàm cũ
+                if (skinId === 'skin_phoenix') {
+                    playPhoenixEffectGlobal();
+                } else if (skinId === 'skin_dragon') {
+                    playDragonEffectGlobal();
+                }
+            }
+        }, 800);
+    }
 }

@@ -95,7 +95,17 @@
         socket.currentChatRoom = null;
         socket.chatUserName = null;
         socket.chatUserId = null;
-
+        // Thêm vào server.js, trong io.on('connection')
+        socket.on('trigger-skin-effect', (data) => {
+            const roomId = socket.roomId;
+            if (!roomId) return;
+            
+            // Gửi hiệu ứng cho cả phòng
+            io.to(roomId).emit('skin-effect', {
+                skinId: data.skinId,
+                playerNumber: data.playerNumber
+            });
+        });
         // Tham gia phòng chat
         socket.on('join-chat-room', (data) => {
             const { roomId, roomName, userName, userId } = data;

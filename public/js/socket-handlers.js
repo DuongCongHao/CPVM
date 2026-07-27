@@ -114,6 +114,12 @@ if (typeof socket !== 'undefined' && socket) {
             console.log("🎯 Current turn:", window.currentTurn);
             console.log("👤 My player number:", window.myPlayerNumber);
         }
+        if (typeof checkAndPlaySkinEffects === 'function') {
+            setTimeout(function() {
+                checkAndPlaySkinEffects();
+                console.log("✅ Đã kiểm tra skin VIP");
+            }, 500);
+        }
     });
     // SERVER TRẢ VỀ: Khi có lỗi xảy ra (Sai ID phòng, phòng đầy, đối thủ out,...)
     socket.off('room-error').on('room-error', (data) => {
