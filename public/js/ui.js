@@ -37,13 +37,38 @@ function updateUI() {
         }
     }
 
-    // ===== CẬP NHẬT VỊ TRÍ QUÂN CỜ =====
     for(let i = 0; i < TOTAL_CELLS; i++) {
         const el = document.getElementById(`cell-${i}`);
         if (!el) continue;
 
-        el.classList.toggle('has-p1', players[1] && players[1].pos === i);
-        el.classList.toggle('has-p2', players[2] && players[2].pos === i);
+        // ===== KIỂM TRA TÀNG HÌNH TRÊN MÁY NÀY =====
+        let isInvisibleSlot = false;
+        if (window.isInvisible && window.invisiblePos === i) {
+            const slot = document.getElementById(`slot-p${window.invisiblePlayer}-${i}`);
+            // CHỈ ẨN NẾU SLOT NÀY ĐANG BỊ ẨN (display: none)
+            if (slot && slot.style.display === 'none') {
+                isInvisibleSlot = true;
+            }
+        }
+        
+        // ===== CẬP NHẬT CLASS =====
+        if (!isInvisibleSlot) {
+            if (players[1] && players[1].pos === i) {
+                el.classList.add('has-p1');
+            } else {
+                el.classList.remove('has-p1');
+            }
+            
+            if (players[2] && players[2].pos === i) {
+                el.classList.add('has-p2');
+            } else {
+                el.classList.remove('has-p2');
+            }
+        } else {
+            // Nếu là slot tàng hình, đảm bảo không có class
+            el.classList.remove('has-p1', 'has-p2');
+        }
+        
         el.classList.toggle('has-gift', cellsData[i] && cellsData[i].hasGift);
 
         if (i > 0) {
@@ -232,7 +257,12 @@ function handleDecision(isYes) {
         if (pendingCancelAction) {
             pendingCancelAction(); // Thực hiện gọi hàm hủy
         } else {
-            if (typeof endTurn === 'function') endTurn();
+            // 🔥 CHỈ GỌI ENDTURN NẾU KHÔNG PHẢI ĐANG XỬ LÝ HỘP QUÀ
+            if (!window.isProcessingGift) {
+                if (typeof endTurn === 'function') endTurn();
+            } else {
+                console.log("⏳ Đang xử lý hộp quà, không gọi endTurn() ngay!");
+            }
         }
     }
     
@@ -244,7 +274,6 @@ function handleDecision(isYes) {
 
     updateUI();
 }
-
 // --- HIỂN THỊ BẢNG TỔNG KẾT ---
 function showMatchSummary(exp, rankInfo, coins) {
     const expEl = document.getElementById('exp-gain');

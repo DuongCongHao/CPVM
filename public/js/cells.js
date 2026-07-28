@@ -150,16 +150,24 @@ function evaluateTargetCell() {
 
 // ===== XỬ LÝ HỘP QUÀ =====
 function triggerGiftAction() {
+    // 🔥 ĐÁNH DẤU ĐANG XỬ LÝ HỘP QUÀ
+    window.isProcessingGift = true;
+    
     let giftPlayer = window.isLuckyMove
         ? myPlayerNumber
         : currentTurn;
 
     let p = players[giftPlayer];
-
     let enemyId = giftPlayer === 1 ? 2 : 1;
     
     const actions = ["money_plus", "money_minus", "free_buy", "go_forward", "go_backward", "skip_turn"];
     const chosenAction = actions[Math.floor(Math.random() * actions.length)];
+
+    // Hàm callback chung để kết thúc xử lý hộp quà
+    const finishGift = (callback) => {
+        window.isProcessingGift = false;
+        if (callback) callback();
+    };
 
     if (chosenAction === "money_plus") {
         p.money += 200;
@@ -167,7 +175,7 @@ function triggerGiftAction() {
             addLog(`🎁 🎉 Quà tặng: <strong>${p.name}</strong> bốc trúng rương vàng nhận <strong>+200$</strong>.`);
             updateUI();
             if (typeof syncGameToRemote === 'function') syncGameToRemote();
-            endTurn(); 
+            finishGift(() => endTurn());
         });
     } 
     else if (chosenAction === "money_minus") {
@@ -178,9 +186,9 @@ function triggerGiftAction() {
             if (typeof syncGameToRemote === 'function') syncGameToRemote();
             
             if (p.money < 0) {
-                gameOver(enemyId);
+                finishGift(() => gameOver(enemyId));
             } else {
-                endTurn(); 
+                finishGift(() => endTurn());
             }
         });
     } 
@@ -198,12 +206,12 @@ function triggerGiftAction() {
                 addLog(`🎁 👑 Quà đặc quyền: <strong>${p.name}</strong> tước đoạt thành công Khu Đất số ${randomIdx} của đối thủ miễn phí.`);
                 updateUI();
                 if (typeof syncGameToRemote === 'function') syncGameToRemote();
-                endTurn();
+                finishGift(() => endTurn());
             });
         } else {
             showSingleNotification("🎁 HỘP QUÀ TRỐNG", `Bạn nhận được đặc quyền chiếm đất đối thủ, nhưng đối thủ chưa sở hữu mảnh đất nào cả! Tiếc quá!`, '#94a3b8', () => {
                 addLog(`🎁 💨 Quà hụt: Không có đất đối thủ để tịch thu.`);
-                endTurn();
+                finishGift(() => endTurn());
             });
         }
     } 
@@ -212,8 +220,13 @@ function triggerGiftAction() {
             addLog(`🎁 🚀 <strong>${p.name}</strong> được đẩy tiến thêm 2 ô.`);
             updateUI();
             if (typeof syncGameToRemote === 'function') syncGameToRemote();
+            
+            // 🔥 QUAN TRỌNG: Đánh dấu đã xử lý hộp quà trước khi di chuyển
+            window.isProcessingGift = false;
+            
             moveStepByStep(2, 0, 0, true, () => {
-                evaluateTargetCell(); 
+                // Sau khi di chuyển, xử lý ô đất
+                evaluateTargetCell();
             });
         });
     } 
@@ -222,9 +235,23 @@ function triggerGiftAction() {
             addLog(`🎁 ⏳ <strong>${p.name}</strong> bị kéo lùi về sau 2 ô.`);
             updateUI();
             if (typeof syncGameToRemote === 'function') syncGameToRemote();
+            
+            // 🔥 QUAN TRỌNG: Đánh dấu đã xử lý hộp quà trước khi di chuyển
+            window.isProcessingGift = false;
+            
             moveStepByStep(-2, 0, 0, true, () => {
-                evaluateTargetCell(); 
+                // Sau khi di chuyển, xử lý ô đất
+                evaluateTargetCell();
             });
         });
-    } 
+    }
+    // ===== THÊM TRƯỜNG HỢP SKIP_TURN =====
+    else if (chosenAction === "skip_turn") {
+        showSingleNotification("⏭️ MẤT LƯỢT", `Bạn đã mở hộp quà và bị mất lượt!`, '#ef4444', () => {
+            addLog(`🎁 ⏭️ <strong>${p.name}</strong> đã mở hộp quà và bị mất lượt!`);
+            updateUI();
+            if (typeof syncGameToRemote === 'function') syncGameToRemote();
+            finishGift(() => endTurn());
+        });
+    }
 }

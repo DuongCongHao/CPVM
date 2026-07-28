@@ -241,6 +241,35 @@
                 console.log(`💬 ${userName} đã rời phòng chat`);
             }
         });
+        // ============================================
+        // 🆕 RELAY TÀNG HÌNH - CHUYỂN TIẾP CHO ĐỐI THỦ
+        // ============================================
+
+        socket.on('syncInvisibleEffect', (data) => {
+            const roomId = socket.roomId;
+            if (!roomId) {
+                console.log('⚠️ Không tìm thấy roomId cho syncInvisibleEffect');
+                return;
+            }
+            
+            console.log(`📤 Server relay syncInvisibleEffect trong phòng ${roomId}:`, data);
+            
+            // Gửi đến TẤT CẢ người chơi trong phòng (bao gồm cả người gửi)
+            io.to(roomId).emit('syncInvisibleEffect', data);
+        });
+
+        socket.on('syncRemoveInvisible', (data) => {
+            const roomId = socket.roomId;
+            if (!roomId) {
+                console.log('⚠️ Không tìm thấy roomId cho syncRemoveInvisible');
+                return;
+            }
+            
+            console.log(`📤 Server relay syncRemoveInvisible trong phòng ${roomId}:`, data);
+            
+            // Gửi đến TẤT CẢ người chơi trong phòng
+            io.to(roomId).emit('syncRemoveInvisible', data);
+        });
         // 🌐 1. XỬ LÝ GHÉP TRẬN NGẪU NHIÊN (QUICK MATCH)
         socket.on('request-quick-match', async (data) => {
 

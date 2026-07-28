@@ -1,10 +1,20 @@
 // ===== QUAY XÚC XẮC 3D ONLINE =====
 function rollDice3D() {
+    // 🔥 KIỂM TRA GAME ĐÃ KẾT THÚC CHƯA
+    if (window.gameEnding) {
+        console.log("⛔ Game đã kết thúc, không thể tung xúc xắc!");
+        return;
+    }
+    
     // Nếu game chưa bắt đầu hoặc đang trong hiệu ứng di chuyển thì chặn bấm
-    if(!gameStarted || isMoving) return;
+    if(!gameStarted || isMoving) {
+        console.log("⏳ Game chưa bắt đầu hoặc đang di chuyển");
+        return;
+    }
     
     // KHÓA CỨNG: Chỉ có người chơi có lượt mới được gửi lệnh tung xúc xắc
     if (typeof myPlayerNumber !== 'undefined' && myPlayerNumber !== currentTurn) {
+        console.log("⛔ Không phải lượt của bạn!");
         return; 
     }
 
@@ -15,6 +25,22 @@ function rollDice3D() {
     // GỬI LỆNH LÊN SERVER: Yêu cầu tung xúc xắc
     socket.emit('requestRollDice');
 }
+
+// LẮNG NGHE KẾT QUẢ TỪ SERVER TRẢ VỀ (Dùng chung cho cả 2 máy người chơi)
+socket.off('diceRolledResult').on('diceRolledResult', (data) => {
+    // 🔥 KIỂM TRA GAME ĐÃ KẾT THÚC CHƯA
+    if (window.gameEnding) {
+        console.log("⛔ Game đã kết thúc, bỏ qua kết quả xúc xắc!");
+        return;
+    }
+    
+    // Cả 2 tab cùng khóa nút chặn bấm bậy bạ trong lúc đổ xúc xắc
+    isMoving = true;
+    document.getElementById('roll-btn').disabled = true;
+    playSFX(audioGame.dice);
+    // Chạy hiệu ứng xoay 3D
+    executeDiceAnimation(data.d1, data.d2);
+});
 
 // LẮNG NGHE KẾT QUẢ TỪ SERVER TRẢ VỀ (Dùng chung cho cả 2 máy người chơi)
 socket.off('diceRolledResult').on('diceRolledResult', (data) => {

@@ -1,6 +1,9 @@
 // ===== LẮNG NGHE ĐỒNG BỘ TỪ SERVER =====
 if (typeof socket !== 'undefined' && socket) {
-
+    // ===== ĐẦU FILE socket-handlers.js =====
+    if (typeof window.myPlayerNumber === 'undefined') {
+        window.myPlayerNumber = null;
+    }
     // =========================================================================
     // 🔥 HỆ THỐNG QUẢN LÝ PHÒNG (ROOM CHƠI TỰ DO)
     // =========================================================================
@@ -469,5 +472,139 @@ if (typeof socket !== 'undefined' && socket) {
     // ===== KẾT QUẢ KẾT THÚC TRÒ CHƠI =====
     socket.off("gameOverResult").on("gameOverResult", (data) => {
         gameOver(data.winnerId, data.reason);
+    });
+    // ===== ĐỒNG BỘ CẢNH BÁO BỐ HẢO =====
+    socket.on('syncHaoBossWarning', (data) => {
+        console.log('📢 Nhận đồng bộ cảnh báo Bố Hảo:', data);
+        
+        // ✅ THÊM LOG CHO CẢ 2 MÁY
+        if (typeof addLog === 'function') {
+            addLog(data.logMsg);
+        }
+        
+        // ✅ HIỂN THỊ CẢNH BÁO TRÊN CẢ 2 MÁY
+        if (typeof showHaoBossWarning === 'function') {
+            showHaoBossWarning();
+        }
+    });
+
+    // ===== ĐỒNG BỘ BỐ HẢO XUẤT HIỆN =====
+    socket.on('syncHaoBossSpawn', (data) => {
+        console.log('📢 Nhận đồng bộ Bố Hảo xuất hiện:', data);
+        
+        // ✅ THÊM LOG CHO CẢ 2 MÁY
+        if (typeof addLog === 'function') {
+            addLog(data.logMsg);
+        }
+        
+        // ✅ HIỂN THỊ BỐ HẢO TRÊN CẢ 2 MÁY
+        if (typeof spawnHaoBoss === 'function') {
+            spawnHaoBoss();
+        }
+        
+        // ✅ CHẠY QUÉT SAU 3 GIÂY TRÊN CẢ 2 MÁY
+        setTimeout(() => {
+            if (typeof haoBossSweep === 'function') {
+                haoBossSweep();
+            }
+        }, 3000);
+    });
+
+    // ===== ĐỒNG BỘ XÓA BỐ HẢO =====
+    socket.on('syncRemoveHaoBoss', (data) => {
+        console.log('📢 Nhận đồng bộ xóa Bố Hảo');
+        
+        if (typeof removeHaoBoss === 'function') {
+            removeHaoBoss();
+        }
+        
+        if (data.logMsg && typeof addLog === 'function') {
+            addLog(data.logMsg);
+        }
+    });
+    // ===== ĐỒNG BỘ TÀNG HÌNH =====
+    socket.on('syncInvisibleEffect', (data) => {
+        console.log('👻 Nhận đồng bộ tàng hình từ server:', data);
+        
+        const playerNum = data.playerNum;
+        const pos = data.pos;
+        const oldPos = data.oldPos;
+        
+        // 🔥 KIỂM TRA: NẾU LÀ MÌNH THÌ KHÔNG ẨN
+        if (myPlayerNumber !== null && playerNum === myPlayerNumber) {
+            console.log('👻 Đây là mình (P' + myPlayerNumber + '), không ẩn!');
+            // Vẫn cập nhật vị trí nhưng không ẩn
+            if (players[playerNum]) {
+                players[playerNum].pos = pos;
+            }
+            updateUI();
+            return;
+        }
+        
+        // ===== CHỈ ẨN KHI LÀ ĐỐI THỦ =====
+        console.log('👻 Đây là đối thủ, ẩn đi!');
+        
+        // Cập nhật vị trí
+        if (players[playerNum]) {
+            players[playerNum].pos = pos;
+        }
+        
+        // Ẩn ở vị trí cũ
+        if (oldPos !== undefined) {
+            let oldSlot = document.getElementById(`slot-p${playerNum}-${oldPos}`);
+            if (oldSlot) {
+                oldSlot.classList.remove('has-p1', 'has-p2');
+                oldSlot.style.display = 'none';
+                oldSlot.style.opacity = '0';
+            }
+        }
+        
+        // Ẩn ở vị trí mới
+        let newSlot = document.getElementById(`slot-p${playerNum}-${pos}`);
+        if (newSlot) {
+            newSlot.classList.remove('has-p1', 'has-p2');
+            newSlot.style.display = 'none';
+            newSlot.style.opacity = '0';
+        }
+        
+        window.isInvisible = true;
+        window.invisiblePlayer = playerNum;
+        window.invisiblePos = pos;
+        
+        updateUI();
+    });
+
+    // ===== ĐỒNG BỘ XÓA TÀNG HÌNH =====
+    socket.on('syncRemoveInvisible', (data) => {
+        console.log('👻 Nhận đồng bộ xóa tàng hình:', data);
+        
+        const playerNum = data.playerNum;
+        const pos = data.pos;
+        
+        // 🔥 NẾU LÀ MÌNH THÌ KHÔNG CẦN LÀM GÌ (vì mình vẫn thấy)
+        if (playerNum === myPlayerNumber) {
+            console.log('👻 Đây là mình, không cần hiện lại!');
+            return;
+        }
+        
+        // ===== HIỆN LẠI NHÂN VẬT CỦA ĐỐI THỦ =====
+        console.log('👻 Hiện lại nhân vật đối thủ!');
+        
+        let slot = document.getElementById(`slot-p${playerNum}-${pos}`);
+        if (slot) {
+            slot.style.display = '';
+            slot.style.opacity = '1';
+            if (playerNum === 1) {
+                slot.classList.add('has-p1');
+            } else {
+                slot.classList.add('has-p2');
+            }
+        }
+        
+        window.isInvisible = false;
+        window.invisiblePlayer = null;
+        window.invisiblePos = null;
+        
+        updateUI();
     });
 }

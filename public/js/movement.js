@@ -58,6 +58,27 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
                         return;
                     }
                     
+                    // ===== KIỂM TRA TÀNG HÌNH =====
+                    if (window.isInvisible && window.invisiblePlayer === movePlayer) {
+                        // ===== TRÊN MÁY MÌNH: KHÔNG CẦN LÀM GÌ =====
+                        // (Vì mình vẫn thấy)
+                        
+                        // ===== GỬI ĐỒNG BỘ HIỆN LẠI CHO ĐỐI THỦ =====
+                        if (socket && socket.connected) {
+                            socket.emit('syncRemoveInvisible', {
+                                playerNum: movePlayer,
+                                pos: 0
+                            });
+                            console.log('📤 Đã gửi syncRemoveInvisible cho đối thủ');
+                        }
+                        
+                        window.isInvisible = false;
+                        window.invisiblePlayer = null;
+                        window.invisiblePos = null;
+                        
+                        addLog(`👻 ${p.name} đã đến START, hiệu ứng tàng hình kết thúc! (Đối thủ đã thấy bạn)`);
+                    }
+                    
                     p.money += 300;
                     p.rounds += 1;
 
@@ -135,7 +156,6 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
     }
     step();
 }
-
 // ===== SINH HỘP QUÀ =====
 function checkSpawnGiftEvent() {
     // 🔥 NẾU GAME ĐANG KẾT THÚC, KHÔNG SINH QUÀ

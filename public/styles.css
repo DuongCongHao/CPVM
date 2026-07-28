@@ -2679,3 +2679,32 @@ body.hao-shake {
     0%, 100% { box-shadow: 0 0 5px rgba(250, 204, 21, 0.3); }
     50% { box-shadow: 0 0 15px rgba(250, 204, 21, 0.6); }
 }
+/* ===== HIỆU ỨNG TÀNG HÌNH ===== */
+.invisible-skill {
+    animation: invisibleGlow 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes invisibleGlow {
+    0% {
+        opacity: 0.5;
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1.1);
+        filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.8));
+    }
+}
+
+.invisible-skill .p-avatar {
+    animation: avatarFloat 1s ease-in-out infinite alternate;
+}
+
+@keyframes avatarFloat {
+    0% {
+        transform: translateY(0px);
+    }
+    100% {
+        transform: translateY(-8px);
+    }
+}

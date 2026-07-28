@@ -21,7 +21,10 @@
     // Kiểm tra xem trình duyệt có đang chạy ở môi trường localhost hay không
     const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
     const SOCKET_SERVER_URL = isLocalhost ? `http://localhost:${NODE_JS_PORT}` : window.location.origin;
-    
+    // ===== ĐẦU FILE main.js =====
+    if (typeof window.isProcessingGift === 'undefined') {
+        window.isProcessingGift = false;
+    }
     // Không dùng lại từ khóa "let" nếu config.js đã khai báo trước. Thay bằng gán đè an toàn.
     if (typeof socket === 'undefined' || socket === null) {
         if (typeof io !== 'undefined') {
@@ -409,47 +412,53 @@
         }
     }
     // ===============================
+    // ===============================
     // BỐ HẢO EVENT
     // ===============================
-    // Kiểm tra mỗi khi người chơi hoàn thành 1 vòng
     function checkHaoBossEvent(playerId){
-
         const p = players[playerId];
+        if (!p) return;
 
         // ===== VÒNG 4 : CHỈ CẢNH BÁO =====
-        if(
-            p.rounds >= 4 &&
-            !window.haoWarningPlayed
-        ){
-
+        if (p.rounds >= 4 && !window.haoWarningPlayed) {
             window.haoWarningPlayed = true;
-
-            addLog("🚨 BỐ HẢO SẮP XUẤT HIỆN!");
-
-            showHaoBossWarning();
-
+            
+            const logMsg = `🚨 BỐ HẢO SẮP XUẤT HIỆN! (${p.name} đã đến vòng 4)`;
+            
+            // 🔥 GỬI SOCKET ĐỂ CẢ 2 MÁY CÙNG HIỂN THỊ
+            if (socket && socket.connected) {
+                socket.emit('syncHaoBossWarning', {
+                    logMsg: logMsg,
+                    playerName: p.name
+                });
+            } else {
+                // Nếu không có socket (offline), chỉ hiển thị trên máy này
+                addLog(logMsg);
+                showHaoBossWarning();
+            }
         }
 
         // ===== VÒNG 5 : BOSS XUẤT HIỆN =====
-        if(
-            p.rounds >= 5 &&
-            !window.haoBossTriggered
-        ){
-
+        if (p.rounds >= 5 && !window.haoBossTriggered) {
             window.haoBossTriggered = true;
-
-            addLog("🔥 BỐ HẢO ĐÃ XUẤT HIỆN!");
-
-            spawnHaoBoss();
-
-            setTimeout(()=>{
-
-                haoBossSweep();
-
-            },3000);
-
+            
+            const logMsg = `🔥 BỐ HẢO ĐÃ XUẤT HIỆN! (${p.name} đã đến vòng 5)`;
+            
+            // 🔥 GỬI SOCKET ĐỂ CẢ 2 MÁY CÙNG HIỂN THỊ
+            if (socket && socket.connected) {
+                socket.emit('syncHaoBossSpawn', {
+                    logMsg: logMsg,
+                    playerName: p.name
+                });
+            } else {
+                // Nếu không có socket (offline)
+                addLog(logMsg);
+                spawnHaoBoss();
+                setTimeout(() => {
+                    haoBossSweep();
+                }, 3000);
+            }
         }
-
     }
 
 
@@ -457,81 +466,80 @@
     // BỐ HẢO QUÉT
     // ===============================
     function haoBossSweep(){
-
         addLog("🔥 BỐ HẢO BẮT ĐẦU CÀN QUÉT!");
 
-        for(let i=1;i<=2;i++){
+        let logMessages = [];
+        let hasPenalty = false;
 
+        for(let i=1; i<=2; i++){
             const p = players[i];
-
             const currentCell = cellsData[p.pos];
-
-            const safe =
-                p.pos===0 ||
-                (
-                    currentCell &&
-                    currentCell.owner===i
-                );
+            const safe = p.pos===0 || (currentCell && currentCell.owner===i);
 
             if(!safe){
+                p.money -= 500;
+                hasPenalty = true;
+                const msg = `🔥 <strong>${p.name}</strong> không đứng trên đất của mình. -500$`;
+                addLog(msg);
+                logMessages.push(msg);
 
-                p.money-=500;
-
-                addLog(
-                    `🔥 <strong>${p.name}</strong> không đứng trên đất của mình.<br>-500$`
-                );
-
-                if(p.money<0){
-
-                    const enemy=i===1?2:1;
-
+                if(p.money < 0){
+                    const enemy = i===1 ? 2 : 1;
                     removeHaoBoss();
-
-                    gameOver(enemy,"money");
-
+                    
+                    // 🔥 ĐỒNG BỘ XÓA BỐ HẢO
+                    if (socket && socket.connected) {
+                        socket.emit('syncRemoveHaoBoss', {
+                            logMsg: `💀 ${p.name} đã phá sản!`
+                        });
+                    }
+                    
+                    gameOver(enemy, "money");
                     return;
-
                 }
-
             }
             else{
-
-                addLog(
-                    `🏠 <strong>${p.name}</strong> đang ở nhà nên được an toàn.`
-                );
-
+                const msg = `🏠 <strong>${p.name}</strong> đang ở nhà nên được an toàn.`;
+                addLog(msg);
+                logMessages.push(msg);
             }
-
         }
 
         removeHaoBoss();
-
-        updateUI();
-
-        if(typeof syncGameToRemote==="function"){
-            syncGameToRemote();
+        
+        // 🔥 ĐỒNG BỘ XÓA BỐ HẢO CHO MÁY ĐỐI THỦ
+        if (socket && socket.connected) {
+            socket.emit('syncRemoveHaoBoss', {
+                logMsg: null
+            });
         }
 
+        updateUI();
+        if(typeof syncGameToRemote === "function"){
+            syncGameToRemote();
+        }
     }
 
 
 
     // ===============================
+    // ===============================
     // HIỆN CẢNH BÁO
     // ===============================
     function showHaoBossWarning(){
-
-        const warning=document.getElementById("hao-warning");
-
+        const warning = document.getElementById("hao-warning");
         if(!warning) return;
+
+        // 🔥 KIỂM TRA ĐÃ HIỂN THỊ CHƯA (TRÁNH LẶP TRÊN CÙNG MÁY)
+        if (warning.classList.contains('show')) {
+            console.log("⚠️ Cảnh báo đã hiển thị, bỏ qua!");
+            return;
+        }
 
         // phát âm thanh danger
         if(audioGame && audioGame.danger){
-
-            audioGame.danger.currentTime=0;
-
+            audioGame.danger.currentTime = 0;
             audioGame.danger.play().catch(()=>{});
-
         }
 
         // rung màn hình
@@ -539,44 +547,32 @@
 
         // reset animation
         warning.classList.remove("show");
-
         void warning.offsetWidth;
-
         warning.classList.add("show");
 
         setTimeout(()=>{
-
             warning.classList.remove("show");
-
             document.body.classList.remove("hao-shake");
-
-        },3000);
-
+        }, 3000);
     }
 
-
-
-    // ===============================
     // SINH BỐ HẢO
     // ===============================
     function spawnHaoBoss(){
-
-        const startCell=document.getElementById("cell-0");
-
+        const startCell = document.getElementById("cell-0");
         if(!startCell) return;
+        
+        // 🔥 KIỂM TRA ĐÃ CÓ BỐ HẢO CHƯA (TRÁNH LẶP TRÊN CÙNG MÁY)
+        if(document.getElementById("hao-boss")) {
+            console.log("⚠️ Bố Hảo đã tồn tại, bỏ qua!");
+            return;
+        }
 
-        if(document.getElementById("hao-boss")) return;
-
-        const boss=document.createElement("div");
-
-        boss.id="hao-boss";
-
-        boss.innerHTML="💀";
-
+        const boss = document.createElement("div");
+        boss.id = "hao-boss";
+        boss.innerHTML = "💀";
         startCell.appendChild(boss);
-
     }
-
 
 
     // ===============================
@@ -843,6 +839,12 @@
                 rollBtn.innerText = "⏳ ĐANG KẾT THÚC...";
             }
             
+            // Vô hiệu hóa nút skill
+            const skillBtn = document.getElementById('use-skill-btn');
+            if (skillBtn) {
+                skillBtn.disabled = true;
+            }
+            
             let p1Value = calculateTotalAsset(1);
             let p2Value = calculateTotalAsset(2);
             
@@ -866,11 +868,13 @@
 
         // 🔥 KIỂM TRA HẾT TIỀN
         if (players[1].money < 0) {
+            console.log("💀 P1 HẾT TIỀN!");
             window.gameEnding = true;
             gameOver(2, "money");
             return;
         }
         if (players[2].money < 0) {
+            console.log("💀 P2 HẾT TIỀN!");
             window.gameEnding = true;
             gameOver(1, "money");
             return;
@@ -1049,41 +1053,58 @@
         console.log("📊 Lý do:", reason);
         console.log("👤 myPlayerNumber:", myPlayerNumber);
         
-        // 🔥 NẾU LÀ NGƯỜI THUA - KHÔNG GỬI GAMEOVER LÊN SERVER (VẪN HIỂN THỊ POPUP TRỪ ĐIỂM)
+        // 🔥 ĐÁNH DẤU GAME ĐÃ KẾT THÚC - DỪNG MỌI HÀNH ĐỘNG
+        window.gameEnding = true;
+        window.gameStarted = false;
+        window.isMoving = true;  // Khóa mọi hành động
+        
+        // Ẩn nút rời trận
+        if (typeof hideLeaveButton === 'function') {
+            hideLeaveButton();
+        }
+        
+        // Vô hiệu hóa nút roll
+        const rollBtn = document.getElementById('roll-btn');
+        if (rollBtn) {
+            rollBtn.disabled = true;
+            rollBtn.innerText = "⏳ KẾT THÚC";
+        }
+        
+        // Vô hiệu hóa nút skill
+        const skillBtn = document.getElementById('use-skill-btn');
+        if (skillBtn) {
+            skillBtn.disabled = true;
+        }
+        
+        // Dừng nhạc nền
+        if (audioGame && audioGame.bgm) {
+            audioGame.bgm.pause();
+            audioGame.bgm.currentTime = 0;
+        }
+        
+        // Dừng âm thanh chạy
+        if (audioGame && audioGame.run) {
+            audioGame.run.pause();
+            audioGame.run.currentTime = 0;
+        }
+        
+        // 🔥 NẾU LÀ NGƯỜI THUA - KHÔNG GỬI GAMEOVER LÊN SERVER
         if (myPlayerNumber !== winnerId) {
             console.log("🚪 Bạn là người thua, không gửi gameOver lên server!");
             
-            // Ẩn nút rời trận
-            if (typeof hideLeaveButton === 'function') {
-                hideLeaveButton();
-            }
-            
-            // Đánh dấu game kết thúc
-            window.gameEnding = true;
-            
-            // Vô hiệu hóa nút roll
-            const rollBtn = document.getElementById('roll-btn');
-            if (rollBtn) {
-                rollBtn.disabled = true;
-                rollBtn.innerText = "⏳ KẾT THÚC";
-            }
-            
             // Lấy user từ localStorage
             const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-            console.log("👤 User từ localStorage:", currentUser);
-            
             if (!currentUser) {
                 console.error("❌ Không tìm thấy user!");
                 showSimpleGameOver(winnerId);
                 return;
             }
             
-            // 🔥 GỌI ANIMATION CHO NGƯỜI THUA (isWin = false) - VẪN CÓ HIỆU ỨNG TRỪ ĐIỂM
+            // Gọi animation cho người thua
             if (typeof showMatchResultAnimation === 'function') {
-                console.log("🎬 Gọi showMatchResultAnimation với isWin = false (trừ điểm)");
+                console.log("🎬 Gọi showMatchResultAnimation với isWin = false");
                 showMatchResultAnimation(false, currentUser);
             } else {
-                console.error("❌ Không tìm thấy hàm showMatchResultAnimation!");
                 showSimpleGameOver(winnerId);
             }
             return;
@@ -1096,21 +1117,6 @@
         }
         window._gameOverSent = true;
         
-        // Ẩn nút rời trận
-        if (typeof hideLeaveButton === 'function') {
-            hideLeaveButton();
-        }
-        
-        // Đánh dấu game đang kết thúc
-        window.gameEnding = true;
-        
-        // Vô hiệu hóa nút roll
-        const rollBtn = document.getElementById('roll-btn');
-        if (rollBtn) {
-            rollBtn.disabled = true;
-            rollBtn.innerText = "⏳ ĐANG KẾT THÚC...";
-        }
-        
         // GỬI SERVER: Trận đấu kết thúc (CHỈ 1 LẦN)
         if (socket && socket.connected) {
             socket.emit("gameOver", {
@@ -1122,8 +1128,6 @@
 
         // Lấy user từ localStorage
         const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-        console.log("👤 User từ localStorage:", currentUser);
-        
         if (!currentUser) {
             console.error("❌ Không tìm thấy user!");
             const fallbackUser = JSON.parse(localStorage.getItem("user"));
@@ -1151,12 +1155,11 @@
             }
         }
         
-        // Gọi animation (CHO CẢ THẮNG VÀ THUA)
+        // Gọi animation
         if (typeof showMatchResultAnimation === 'function') {
             console.log("🎬 Gọi showMatchResultAnimation với user:", currentUser);
             showMatchResultAnimation(isWin, currentUser);
         } else {
-            console.error("❌ Không tìm thấy hàm showMatchResultAnimation!");
             showSimpleGameOver(winnerId);
         }
     }
