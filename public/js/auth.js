@@ -820,18 +820,9 @@ async function loadLeaderboard() {
             html += `
                 <div style="display: flex; flex-direction: column; align-items: center; width: 80px; ${rank === 1 ? 'margin-bottom: 10px;' : ''}">
                     <div style="font-size: 32px; margin-bottom: 2px;">${medals[idx]}</div>
-                    <div style="
-                        width: 60px; 
-                        height: 60px; 
-                        border-radius: 50%; 
-                        border: 3px solid ${podiumColors[idx]};
-                        overflow: hidden;
-                        background: rgba(15, 23, 42, 0.5);
-                        box-shadow: 0 0 20px ${podiumColors[idx]}44;
-                        margin-bottom: 4px;
-                    ">
-                        <img src="assets/ranks/${player.rank_icon}" style="width: 100%; height: 100%; object-fit: cover;">
-                    </div>
+                    <div style="width: 60px; height: 60px; border-radius: 50%; overflow: hidden; margin: 0 auto 4px auto; border: 3px solid ${podiumColors[idx]}; background: #1e293b;">
+                    <img class="rank-img-big" src="assets/ranks/${player.rank_icon}" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                </div>
                     <div style="
                         font-size: 12px; 
                         font-weight: bold; 
@@ -906,7 +897,7 @@ async function loadLeaderboard() {
                             #${rank}
                         </div>
                         <div style="text-align: center;">
-                            <img src="assets/ranks/${player.rank_icon}" style="width: 22px; height: 22px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); object-fit: cover;">
+                            <img class="rank-img" src="assets/ranks/${player.rank_icon}" style="width: 22px; height: 22px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); object-fit: cover;">
                         </div>
                         <div style="font-weight: ${isCurrent ? 'bold' : 'normal'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px;">
                             ${player.display_name}

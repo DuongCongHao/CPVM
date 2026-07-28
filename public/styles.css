@@ -2727,21 +2727,11 @@ body.hao-shake {
     border-radius: 10px;
 }
 
-/* RESPONSIVE MOBILE */
-@media (max-width: 480px) {
-    #leaderboard-list div[style*="grid-template-columns"] {
-        grid-template-columns: 35px 30px 1fr 50px 40px 40px !important;
-        font-size: 10px !important;
-        padding: 6px 4px !important;
-        gap: 3px !important;
-    }
-    
-    #leaderboard-list img {
-        width: 20px !important;
-        height: 20px !important;
-    }
+/* ===== BẢNG XẾP HẠNG ===== */
+#leaderboard-content {
+    padding: 5px 0;
 }
-/* ===== BẢNG XẾP HẠNG - PODIUM ===== */
+
 #leaderboard-list {
     scrollbar-width: thin;
 }
@@ -2760,7 +2750,7 @@ body.hao-shake {
     border-radius: 10px;
 }
 
-/* Responsive mobile */
+/* RESPONSIVE MOBILE - GỘP 2 ĐOẠN THÀNH 1 */
 @media (max-width: 480px) {
     #leaderboard-list div[style*="grid-template-columns"] {
         grid-template-columns: 30px 25px 1fr 45px 35px 30px !important;
@@ -2785,5 +2775,31 @@ body.hao-shake {
     .podium-avatar {
         width: 40px !important;
         height: 40px !important;
+    }
+}
+/* ===== ẢNH RANK TO CHO TOP 3 TRÊN MOBILE ===== */
+@media (max-width: 768px) {
+    /* CHỈ ẢNH TRONG PODIUM (TOP 3) MỚI TO */
+    .podium-container img,
+    .podium-item img,
+    div[style*="flex-direction: column; align-items: center;"] img {
+        width: 56px !important;
+        height: 56px !important;
+        min-width: 56px !important;
+        min-height: 56px !important;
+        border-radius: 50% !important;
+        object-fit: cover !important;
+        display: block !important;
+        margin: 0 auto !important;
+        border: 3px solid rgba(255,255,255,0.1) !important;
+    }
+    
+    /* ẢNH TOP 4+ GIỮ NGUYÊN NHỎ */
+    #leaderboard-list > div > div > img:not(.rank-img-big) {
+        width: 22px !important;
+        height: 22px !important;
+        min-width: 22px !important;
+        min-height: 22px !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
     }
 }
