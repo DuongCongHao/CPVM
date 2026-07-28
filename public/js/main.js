@@ -1,5 +1,5 @@
     window.haoBossTriggered = false;
-    window.haoWarningPlayed=false;
+    window.haoWarningPlayed = false;
     // 🆕 THÊM SKIN_LIST VÀO WINDOW ĐỂ DÙNG CHUNG
     window.SKIN_LIST = [
         { id: 'skin_default', name: 'Mặc định', icon: '🏃‍♂️', price: 0, desc: 'Quân cờ cơ bản', rarity: 'common' },

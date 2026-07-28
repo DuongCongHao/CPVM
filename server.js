@@ -270,6 +270,29 @@
             // Gửi đến TẤT CẢ người chơi trong phòng
             io.to(roomId).emit('syncRemoveInvisible', data);
         });
+        // ============================================
+        // 🆕 THÊM VÀO ĐÂY - RELAY BỐ HẢO
+        // ============================================
+        socket.on('syncHaoBossWarning', (data) => {
+            const roomId = socket.roomId;
+            if (!roomId) return;
+            console.log(`📤 Server relay syncHaoBossWarning trong phòng ${roomId}:`, data);
+            io.to(roomId).emit('syncHaoBossWarning', data);
+        });
+
+        socket.on('syncHaoBossSpawn', (data) => {
+            const roomId = socket.roomId;
+            if (!roomId) return;
+            console.log(`📤 Server relay syncHaoBossSpawn trong phòng ${roomId}:`, data);
+            io.to(roomId).emit('syncHaoBossSpawn', data);
+        });
+
+        socket.on('syncRemoveHaoBoss', (data) => {
+            const roomId = socket.roomId;
+            if (!roomId) return;
+            console.log(`📤 Server relay syncRemoveHaoBoss trong phòng ${roomId}:`, data);
+            io.to(roomId).emit('syncRemoveHaoBoss', data);
+        });
         // 🌐 1. XỬ LÝ GHÉP TRẬN NGẪU NHIÊN (QUICK MATCH)
         socket.on('request-quick-match', async (data) => {
 
