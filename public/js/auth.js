@@ -732,6 +732,266 @@ function showUserInfo() {
         loadUserInfo();
     }
 }
+// ===== 🆕 BẢNG XẾP HẠNG =====
+function showLeaderboard() {
+    console.log("🏆 Mở bảng xếp hạng");
+    
+    // Ẩn grid
+    document.getElementById('lobby-grid').style.display = 'none';
+    
+    // Ẩn TẤT CẢ các content khác
+    document.getElementById('arena-content').style.display = 'none';
+    document.getElementById('shop-content').style.display = 'none';
+    document.getElementById('chat-content').style.display = 'none';
+    document.getElementById('equipment-content').style.display = 'none';
+    document.getElementById('userinfo-content').style.display = 'none';
+    
+    // Hiển thị bảng xếp hạng
+    document.getElementById('leaderboard-content').style.display = 'block';
+    
+    // Load dữ liệu
+    loadLeaderboard();
+}
+
+async function loadLeaderboard() {
+    const container = document.getElementById('leaderboard-list');
+    if (!container) return;
+    
+    container.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 20px;">⏳ Đang tải dữ liệu...</div>';
+    
+    try {
+        // 🔥 GIỚI HẠN 10 NGƯỜI
+        const response = await fetch('/api/leaderboard?limit=10');
+        const result = await response.json();
+        
+        if (!result.success) {
+            container.innerHTML = `<div style="text-align: center; color: #ef4444; padding: 20px;">❌ Lỗi: ${result.message}</div>`;
+            return;
+        }
+        
+        if (result.data.length === 0) {
+            container.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 20px;">📭 Chưa có người chơi nào!</div>';
+            return;
+        }
+        
+        // Lấy current user để highlight
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        let currentUserRank = null;
+        let currentUserData = null;
+        
+        // Tìm vị trí của current user trong toàn bộ dữ liệu (gọi API riêng để lấy rank thực tế)
+        try {
+            const allResponse = await fetch('/api/leaderboard?limit=100');
+            const allResult = await allResponse.json();
+            if (allResult.success) {
+                allResult.data.forEach((player, index) => {
+                    if (currentUser && (player.username === currentUser.username || player.id === currentUser.id)) {
+                        currentUserRank = index + 1;
+                        currentUserData = player;
+                    }
+                });
+            }
+        } catch (e) {
+            console.warn('Không thể lấy rank thực tế:', e);
+        }
+        
+        let html = '';
+        
+        // ============================================
+        // 🏆 PODIUM - TOP 3
+        // ============================================
+        const top3 = result.data.slice(0, 3);
+        const medals = ['🥇', '🥈', '🥉'];
+        const podiumColors = ['#facc15', '#94a3b8', '#cd7f32'];
+        const podiumHeights = ['120px', '90px', '60px'];
+        
+        html += `
+            <div style="display: flex; justify-content: center; align-items: flex-end; gap: 15px; padding: 20px 5px 10px 5px; margin-bottom: 15px; background: linear-gradient(180deg, rgba(30, 27, 75, 0.5), rgba(15, 23, 42, 0.3)); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);">
+        `;
+        
+        // Sắp xếp podium: 2nd - 1st - 3rd
+        const podiumOrder = [1, 0, 2];
+        podiumOrder.forEach((idx) => {
+            const player = top3[idx];
+            if (!player) return;
+            const rank = idx + 1;
+            const isCurrent = currentUser && (player.username === currentUser.username || player.id === currentUser.id);
+            
+            html += `
+                <div style="display: flex; flex-direction: column; align-items: center; width: 80px; ${rank === 1 ? 'margin-bottom: 10px;' : ''}">
+                    <div style="font-size: 32px; margin-bottom: 2px;">${medals[idx]}</div>
+                    <div style="
+                        width: 60px; 
+                        height: 60px; 
+                        border-radius: 50%; 
+                        border: 3px solid ${podiumColors[idx]};
+                        overflow: hidden;
+                        background: rgba(15, 23, 42, 0.5);
+                        box-shadow: 0 0 20px ${podiumColors[idx]}44;
+                        margin-bottom: 4px;
+                    ">
+                        <img src="assets/ranks/${player.rank_icon}" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <div style="
+                        font-size: 12px; 
+                        font-weight: bold; 
+                        color: #f8fafc; 
+                        text-align: center; 
+                        max-width: 70px; 
+                        overflow: hidden; 
+                        text-overflow: ellipsis; 
+                        white-space: nowrap;
+                        ${isCurrent ? 'color: #facc15;' : ''}
+                    ">
+                        ${player.display_name}
+                        ${isCurrent ? '👑' : ''}
+                    </div>
+                    <div style="font-size: 11px; color: ${podiumColors[idx]}; font-weight: bold;">${player.rank_name}</div>
+                    <div style="font-size: 13px; color: #facc15; font-weight: bold;">${player.points} RP</div>
+                    <div style="
+                        width: 60px; 
+                        height: ${podiumHeights[idx]}; 
+                        background: linear-gradient(180deg, ${podiumColors[idx]}55, ${podiumColors[idx]}22);
+                        border-radius: 6px 6px 0 0;
+                        margin-top: 4px;
+                        border: 1px solid ${podiumColors[idx]}33;
+                        display: flex;
+                        align-items: flex-end;
+                        justify-content: center;
+                        padding-bottom: 4px;
+                        font-size: 11px;
+                        color: #94a3b8;
+                    ">
+                        #${rank}
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
+            </div>
+        `;
+        
+        // ============================================
+        // 📋 DANH SÁCH CÁC VỊ TRÍ CÒN LẠI (TOP 4 - 10)
+        // ============================================
+        const remaining = result.data.slice(3);
+        
+        if (remaining.length > 0) {
+            html += `
+                <div style="max-height: 300px; overflow-y: auto; padding-right: 5px;">
+            `;
+            
+            remaining.forEach((player, index) => {
+                const rank = index + 4;
+                const isCurrent = currentUser && (player.username === currentUser.username || player.id === currentUser.id);
+                const bgColor = isCurrent ? 'rgba(250, 204, 21, 0.15)' : 'rgba(15, 23, 42, 0.2)';
+                const border = isCurrent ? '1px solid #facc15' : '1px solid rgba(255,255,255,0.05)';
+                
+                html += `
+                    <div style="
+                        display: grid; 
+                        grid-template-columns: 40px 35px 1fr 60px 50px 40px; 
+                        gap: 5px; 
+                        padding: 6px 10px; 
+                        background: ${bgColor}; 
+                        border-radius: 6px; 
+                        margin-bottom: 3px; 
+                        border: ${border}; 
+                        align-items: center; 
+                        font-size: 12px; 
+                        color: ${isCurrent ? '#f8fafc' : '#cbd5e1'};
+                    ">
+                        <div style="text-align: center; font-weight: bold; color: ${isCurrent ? '#facc15' : '#94a3b8'}; font-size: 11px;">
+                            #${rank}
+                        </div>
+                        <div style="text-align: center;">
+                            <img src="assets/ranks/${player.rank_icon}" style="width: 22px; height: 22px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); object-fit: cover;">
+                        </div>
+                        <div style="font-weight: ${isCurrent ? 'bold' : 'normal'}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px;">
+                            ${player.display_name}
+                            ${isCurrent ? ' 👑' : ''}
+                        </div>
+                        <div style="text-align: center; font-weight: bold; color: ${player.rank_name === 'Hali' ? '#facc15' : player.rank_name === 'Kim Cương' ? '#38bdf8' : '#94a3b8'}; font-size: 10px;">
+                            ${player.rank_name}
+                        </div>
+                        <div style="text-align: center; font-weight: bold; color: #facc15; font-size: 12px;">
+                            ${player.points}
+                        </div>
+                        <div style="text-align: center; color: #38bdf8; font-size: 11px;">
+                            ${player.level}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                </div>
+            `;
+        }
+        
+        // ============================================
+        // 👤 DÒNG RIÊNG CHO BẢN THÂN (NẾU KHÔNG CÓ TRONG TOP 10)
+        // ============================================
+        if (currentUserData && currentUserRank !== null && currentUserRank > 10) {
+            const player = currentUserData;
+            const rank = currentUserRank;
+            
+            html += `
+                <div style="margin-top: 12px; border-top: 2px solid rgba(250, 204, 21, 0.3); padding-top: 10px;">
+                    <div style="
+                        display: grid; 
+                        grid-template-columns: 40px 35px 1fr 60px 50px 40px; 
+                        gap: 5px; 
+                        padding: 10px 10px; 
+                        background: rgba(250, 204, 21, 0.2); 
+                        border-radius: 8px; 
+                        border: 2px solid #facc15; 
+                        align-items: center; 
+                        font-size: 13px; 
+                        color: #f8fafc;
+                        box-shadow: 0 0 20px rgba(250, 204, 21, 0.15);
+                    ">
+                        <div style="text-align: center; font-weight: bold; color: #facc15;">
+                            #${rank}
+                        </div>
+                        <div style="text-align: center;">
+                            <img src="assets/ranks/${player.rank_icon}" style="width: 28px; height: 28px; border-radius: 50%; border: 2px solid #facc15; object-fit: cover;">
+                        </div>
+                        <div style="font-weight: bold; color: #facc15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            ${player.display_name} 👑 (Bạn)
+                        </div>
+                        <div style="text-align: center; font-weight: bold; color: ${player.rank_name === 'Hali' ? '#facc15' : player.rank_name === 'Kim Cương' ? '#38bdf8' : '#94a3b8'}; font-size: 11px;">
+                            ${player.rank_name}
+                        </div>
+                        <div style="text-align: center; font-weight: bold; color: #facc15; font-size: 13px;">
+                            ${player.points}
+                        </div>
+                        <div style="text-align: center; color: #38bdf8; font-size: 12px;">
+                            ${player.level}
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (currentUserData && currentUserRank !== null && currentUserRank <= 10) {
+            // Nếu bản thân đã có trong top 10, thêm dòng thông báo nhỏ
+            html += `
+                <div style="margin-top: 12px; text-align: center; color: #94a3b8; font-size: 12px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">
+                    🏆 Bạn đang đứng ở vị trí <span style="color: #facc15; font-weight: bold;">#${currentUserRank}</span> trên bảng xếp hạng!
+                </div>
+            `;
+        }      
+        container.innerHTML = html;
+        
+    } catch (error) {
+        console.error('❌ Lỗi load bảng xếp hạng:', error);
+        container.innerHTML = `<div style="text-align: center; color: #ef4444; padding: 20px;">❌ Lỗi kết nối server!</div>`;
+    }
+}
+
+function refreshLeaderboard() {
+    loadLeaderboard();
+}
 
 function backToLobby() {
     console.log("🔙 Quay về lobby");
@@ -745,4 +1005,5 @@ function backToLobby() {
     document.getElementById('chat-content').style.display = 'none';
     document.getElementById('equipment-content').style.display = 'none';
     document.getElementById('userinfo-content').style.display = 'none';
+    document.getElementById('leaderboard-content').style.display = 'none';
 }

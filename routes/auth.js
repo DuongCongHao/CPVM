@@ -422,4 +422,66 @@ router.get("/user/:username", async (req, res) => {
         });
     }
 });
+// ========================
+// 6. 🆕 BẢNG XẾP HẠNG RANK
+// ========================
+router.get("/leaderboard", async (req, res) => {
+    try {
+        const { limit = 10 } = req.query; // Mặc định lấy top 10
+
+        console.log(`📊 Lấy bảng xếp hạng top ${limit}`);
+
+        const { data: users, error } = await supabase
+            .from("users")
+            .select("id, username, display_name, rank, points, level, exp, coin")
+            .order("points", { ascending: false })  // Sắp xếp theo điểm giảm dần
+            .limit(parseInt(limit));
+
+        if (error) {
+            console.error("❌ Lỗi lấy bảng xếp hạng:", error.message);
+            return res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+
+        // Thêm số thứ tự và rank icon
+        const rankIcons = {
+            "Bùn": "bun.jpg",
+            "Sắt": "sat.jpg",
+            "Đồng": "dong.jpg",
+            "Bạc": "bac.jpg",
+            "Vàng": "vang.jpg",
+            "Kim Cương": "kimcuong.jpg",
+            "Hali": "hali.jpg"
+        };
+
+        const leaderboard = users.map((user, index) => ({
+            rank: index + 1,
+            username: user.username,
+            display_name: user.display_name || user.username,
+            rank_name: user.rank || "Bùn",
+            rank_icon: rankIcons[user.rank] || "bun.jpg",
+            points: user.points || 0,
+            level: user.level || 1,
+            coin: user.coin || 0,
+            exp: user.exp || 0
+        }));
+
+        console.log(`✅ Đã lấy ${leaderboard.length} người chơi top đầu`);
+
+        res.json({
+            success: true,
+            data: leaderboard,
+            total: leaderboard.length
+        });
+
+    } catch (err) {
+        console.error("❌ Lỗi bảng xếp hạng:", err.message);
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
+    }
+});
 module.exports = router;

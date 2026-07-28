@@ -530,7 +530,7 @@
                 <p class="sub-title">Sẵn sàng chiến đấu!</p>
             </div>
 
-            <!-- ===== 4 NÚT CHỨC NĂNG ===== -->
+            <!-- ===== 6 NÚT CHỨC NĂNG ===== -->
             <div class="lobby-grid" id="lobby-grid">
                 <!-- 1. ĐẤU TRƯỜNG -->
                 <div class="lobby-card-item lobby-arena" onclick="showArena()">
@@ -565,6 +565,12 @@
                     <div class="lobby-item-icon">👤</div>
                     <div class="lobby-item-title">Thông tin</div>
                     <div class="lobby-item-desc">Xem hồ sơ</div>
+                </div>
+                <!-- 6. BẢNG XẾP HẠNG -->
+                <div class="lobby-card-item lobby-leaderboard" onclick="showLeaderboard()">
+                    <div class="lobby-item-icon">🏆</div>
+                    <div class="lobby-item-title">Bảng xếp hạng</div>
+                    <div class="lobby-item-desc">Xem top người chơi</div>
                 </div>
             </div>
 
@@ -673,6 +679,19 @@
                     </div>
                     <button class="back-btn" onclick="backToLobby()">⬅️ Quay lại</button>
                     <button class="logout-btn" onclick="logout()">🚪 Đăng xuất</button>
+                </div>
+                <!-- Bảng xếp hạng -->
+                <div id="leaderboard-content" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h3 style="color: #facc15; margin: 0;">🏆 BẢNG XẾP HẠNG</h3>
+                        <button onclick="refreshLeaderboard()" style="background: #3b82f6; border: none; color: white; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                            🔄 Làm mới
+                        </button>
+                    </div>
+                    <div id="leaderboard-list" style="max-height: 400px; overflow-y: auto; padding-right: 5px;">
+                        <div style="text-align: center; color: #94a3b8; padding: 20px;">⏳ Đang tải dữ liệu...</div>
+                    </div>
+                    <button class="back-btn" onclick="backToLobby()">⬅️ Quay lại</button>
                 </div>
             </div>
         </div>
