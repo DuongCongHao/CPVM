@@ -1,4 +1,3 @@
-// ===== CẬP NHẬT GIAO DIỆN =====
 function updateUI() {
     // ===== KIỂM TRA PLAYERS =====
     if (!players || !players[1] || !players[2]) {
@@ -113,6 +112,49 @@ function updateUI() {
                 skillBtn.innerText = "🎴 Đã dùng";
             }
         }
+    }
+
+    // ===== 🆕 HIỂN THỊ TRẠNG THÁI PHÓNG XẠ =====
+    // Player 1
+    let p1Rad = document.getElementById('p1-radiation');
+    if (players[1].radiationEffect && players[1].radiationEffect > 0) {
+        if (!p1Rad) {
+            const p1Card = document.querySelector('.p1-card');
+            if (p1Card) {
+                const radDiv = document.createElement('div');
+                radDiv.id = 'p1-radiation';
+                radDiv.style.cssText = 'color: #22d3ee; font-weight: bold; font-size: 12px; margin-top: 4px; animation: radPulse 0.5s infinite alternate;';
+                radDiv.textContent = `☢️ PHÓNG XẠ: ${players[1].radiationEffect} lượt`;
+                p1Card.appendChild(radDiv);
+                p1Rad = radDiv;
+            }
+        } else {
+            p1Rad.textContent = `☢️ PHÓNG XẠ: ${players[1].radiationEffect} lượt`;
+            p1Rad.style.display = 'block';
+        }
+    } else if (p1Rad) {
+        p1Rad.style.display = 'none';
+    }
+
+    // Player 2
+    let p2Rad = document.getElementById('p2-radiation');
+    if (players[2].radiationEffect && players[2].radiationEffect > 0) {
+        if (!p2Rad) {
+            const p2Card = document.querySelector('.p2-card');
+            if (p2Card) {
+                const radDiv = document.createElement('div');
+                radDiv.id = 'p2-radiation';
+                radDiv.style.cssText = 'color: #22d3ee; font-weight: bold; font-size: 12px; margin-top: 4px; animation: radPulse 0.5s infinite alternate;';
+                radDiv.textContent = `☢️ PHÓNG XẠ: ${players[2].radiationEffect} lượt`;
+                p2Card.appendChild(radDiv);
+                p2Rad = radDiv;
+            }
+        } else {
+            p2Rad.textContent = `☢️ PHÓNG XẠ: ${players[2].radiationEffect} lượt`;
+            p2Rad.style.display = 'block';
+        }
+    } else if (p2Rad) {
+        p2Rad.style.display = 'none';
     }
 }
 

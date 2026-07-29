@@ -1,5 +1,9 @@
     window.haoBossTriggered = false;
     window.haoWarningPlayed = false;
+    window.nuclearBombIndex = null;
+    window.nuclearBombDetonated = false;
+    players[1].radiationEffect = 0; // Số lượt còn lại của hiệu ứng phóng xạ
+    players[2].radiationEffect = 0;
     // 🆕 THÊM SKIN_LIST VÀO WINDOW ĐỂ DÙNG CHUNG
     window.SKIN_LIST = [
         { id: 'skin_default', name: 'Mặc định', icon: '🏃‍♂️', price: 0, desc: 'Quân cờ cơ bản', rarity: 'common' },
@@ -137,7 +141,13 @@
             lightningIndex = data.lightningIndex;
             window.lightningIndex = lightningIndex;
             window.disasterSpawnedThisGame = false;
+            
+            // 🆕 THÊM BOM HẠT NHÂN
+            window.nuclearBombIndex = data.nuclearBombIndex || null;
+            window.nuclearBombDetonated = data.nuclearBombDetonated || false;
+            
             console.log(`[SOCKET] Mạng nhện trận này được đặt tại ô: ${window.spiderWebIndex}`);
+            console.log(`[SOCKET] Bom hạt nhân đặt tại ô: ${window.nuclearBombIndex}`);
             initializeBoard();
         });
         socket.on('extraTurnResult',(data)=>{
@@ -468,10 +478,7 @@
             roomDisplayEl.innerHTML = `Mã Phòng: <strong style="color: #f59e0b;">${roomId}</strong>`;
         }
     }
-    // ===============================
-    // ===============================
     // BỐ HẢO EVENT
-    // ===============================
     function checkHaoBossEvent(playerId){
         const p = players[playerId];
         if (!p) return;
@@ -499,13 +506,30 @@
         if (p.rounds >= 5 && !window.haoBossTriggered) {
             window.haoBossTriggered = true;
             
+            // 🆕 XÓA TẤT CẢ Ô PHÓNG XẠ KHI BỐ HẢO XUẤT HIỆN
+            let clearedCount = 0;
+            cellsData.forEach((cell, index) => {
+                if (cell.isRadioactive) {
+                    cell.isRadioactive = false;
+                    cell.nuclearRadiationCount = 0;
+                    cell.price = 100;
+                    cell.owner = null;
+                    clearedCount++;
+                }
+            });
+            
+            if (clearedCount > 0) {
+                addLog(`☢️ BỐ HẢO ĐÃ XÓA SẠCH ${clearedCount} Ô PHÓNG XẠ!`);
+            }
+            
             const logMsg = `🔥 BỐ HẢO ĐÃ XUẤT HIỆN! (${p.name} đã đến vòng 5)`;
             
             // 🔥 GỬI SOCKET ĐỂ CẢ 2 MÁY CÙNG HIỂN THỊ
             if (socket && socket.connected) {
                 socket.emit('syncHaoBossSpawn', {
                     logMsg: logMsg,
-                    playerName: p.name
+                    playerName: p.name,
+                    clearRadiation: true  // 🆕 THÊM CỜ NÀY
                 });
             } else {
                 // Nếu không có socket (offline)
@@ -646,10 +670,93 @@
         }
 
     }
+    // ===== 💣 NỔ BOM HẠT NHÂN =====
+    function detonateNuclearBomb() {
+        if (window.nuclearBombDetonated) return;
+        window.nuclearBombDetonated = true;
+        
+        const bombPos = Number(window.nuclearBombIndex);
+        if (bombPos === 0 || bombPos === null) return;
+        
+        // 🆕 PHÁT ÂM THANH NỔ BOM
+        if (typeof playSFX === 'function' && audioGame && audioGame.bomb) {
+            playSFX(audioGame.bomb);
+        }
+        
+        addLog(`💣💥 BOM HẠT NHÂN PHÁT NỔ tại ô ${bombPos}!`);
+        addLog(`📢 Phạm vi ảnh hưởng: ô ${(bombPos - 1 + TOTAL_CELLS) % TOTAL_CELLS}, ${bombPos}, ${(bombPos + 1) % TOTAL_CELLS}`);
+        
+        // Lấy 3 ô: left, center, right
+        const leftPos = (bombPos - 1 + TOTAL_CELLS) % TOTAL_CELLS;
+        const rightPos = (bombPos + 1) % TOTAL_CELLS;
+        const affectedCells = [leftPos, bombPos, rightPos];
+        
+        let totalPenalty = 0;
+        let affectedOwners = [];
+        
+        // Xử lý từng ô
+        affectedCells.forEach(pos => {
+            if (pos === 0) return; // Bỏ qua ô START
+            
+            // 🔥 TRỪ 10% TIỀN CỦA CHỦ SỞ HỮU (NẾU CÓ)
+            if (cellsData[pos].owner) {
+                const owner = cellsData[pos].owner;
+                const penalty = Math.floor(players[owner].money * 0.1);
+                players[owner].money -= penalty;
+                totalPenalty += penalty;
+                affectedOwners.push({
+                    name: players[owner].name,
+                    penalty: penalty,
+                    pos: pos
+                });
+                
+                addLog(`💥 ${players[owner].name} mất <strong>${penalty}$</strong> (10% tiền) do bom nổ tại ô ${pos}!`);
+                
+                if (players[owner].money < 0) {
+                    const enemy = owner === 1 ? 2 : 1;
+                    addLog(`💀 ${players[owner].name} đã phá sản!`);
+                    gameOver(enemy, "money");
+                    return;
+                }
+            } else {
+                addLog(`💣 Ô ${pos} không có chủ sở hữu, chỉ bị nhiễm phóng xạ.`);
+            }
+            
+            // 🔥 CHUYỂN THÀNH Ô NHIỄM PHÓNG XẠ (MẤT CHỦ SỞ HỮU)
+            cellsData[pos].isRadioactive = true;
+            cellsData[pos].nuclearRadiationCount = 3;
+            cellsData[pos].owner = null;
+            cellsData[pos].price = 0;
+            cellsData[pos].hasGift = false;
+            addLog(`☢️ Ô ${pos} bị nhiễm phóng xạ! (Hiệu ứng kéo dài 3 lượt)`);
+        });
+        
+        // 🔥 THỐNG KÊ TỔNG THIỆT HẠI
+        if (affectedOwners.length > 0) {
+            let summary = affectedOwners.map(o => `${o.name}: -${o.penalty}$`).join(', ');
+            addLog(`📊 Tổng thiệt hại: ${summary}`);
+        }
+        addLog(`💣 Tổng cộng ${affectedCells.filter(p => p !== 0).length} ô bị ảnh hưởng!`);
+        
+        // Đồng bộ
+        if (socket && socket.connected) {
+            socket.emit('syncNuclearBomb', {
+                nuclearBombDetonated: true,
+                affectedCells: affectedCells,
+                players: players,
+                cellsData: cellsData
+            });
+        }
+        
+        initializeBoard();
+        updateUI();
+    }
     // ===== KHỞI TẠO BÀN CỜ VẼ LƯỚI MA TRẬN =====
     function initializeBoard() {
         console.log("========== DRAW BOARD ==========");
         console.log("window.lightningIndex =", window.lightningIndex);
+        console.log("window.nuclearBombIndex =", window.nuclearBombIndex);
+        console.log("window.nuclearBombDetonated =", window.nuclearBombDetonated);
         const boardEl = document.getElementById('board');
         if (!boardEl) return;
         
@@ -660,8 +767,10 @@
             const cellEl = document.createElement('div');
             const isWeb = (index === Number(spiderWebIndex));
             const isLightning = (index === Number(window.lightningIndex));
+            const isNuclearBomb = (index === Number(window.nuclearBombIndex) && !window.nuclearBombDetonated);
+            const isRadioactive = cell.isRadioactive || false;
             
-            cellEl.className = `cell ${index === 0 ? 'start-cell' : ''} ${isWeb ? 'has-spider-web' : ''} ${isLightning ? 'has-lightning' : ''}`;
+            cellEl.className = `cell ${index === 0 ? 'start-cell' : ''} ${isWeb ? 'has-spider-web' : ''} ${isLightning ? 'has-lightning' : ''} ${isNuclearBomb ? 'has-nuclear-bomb' : ''} ${isRadioactive ? 'is-radioactive' : ''}`;
             cellEl.id = `cell-${index}`;
             cellEl.style.gridRow = mapCoords[index].r;
             cellEl.style.gridColumn = mapCoords[index].c;
@@ -685,6 +794,22 @@
                 lightningIcon.className = 'lightning-icon'; lightningIcon.innerText = '⚡';
                 lightningIcon.style.position = 'absolute'; lightningIcon.style.fontSize = '26px'; lightningIcon.style.top = '5px';
                 cellEl.appendChild(lightningIcon);
+            } else if (isNuclearBomb) {
+                // 🆕 BOM HẠT NHÂN - CHƯA NỔ
+                cellEl.innerHTML = `<span class="cell-title" style="color:#ef4444; font-weight:900;">💣 BOM HẠT NHÂN</span><span class="cell-price" id="price-${index}">☢️ NGUY HIỂM</span>`;
+                const bombIcon = document.createElement('div');
+                bombIcon.className = 'nuclear-icon'; bombIcon.innerText = '💣';
+                bombIcon.style.position = 'absolute'; bombIcon.style.fontSize = '30px'; bombIcon.style.top = '5px';
+                bombIcon.style.animation = 'bombPulse 1s infinite alternate';
+                cellEl.appendChild(bombIcon);
+            } else if (isRadioactive) {
+                // 🆕 NHIỄM PHÓNG XẠ
+                cellEl.innerHTML = `<span class="cell-title" style="color:#22d3ee; font-weight:900;">☢️ PHÓNG XẠ</span><span class="cell-price" id="price-${index}">⚠️ -50$/lượt</span>`;
+                const radIcon = document.createElement('div');
+                radIcon.className = 'radioactive-icon'; radIcon.innerText = '☢️';
+                radIcon.style.position = 'absolute'; radIcon.style.fontSize = '26px'; radIcon.style.top = '5px';
+                radIcon.style.animation = 'radioactiveGlow 0.8s infinite alternate';
+                cellEl.appendChild(radIcon);
             } else {
                 // Giữ nguyên tiêu đề "Khu Đất {index}" bất kể đất đã thuộc về ai hay vừa được mua lại
                 cellEl.innerHTML = `<span class="cell-title">Khu Đất ${index}</span><span class="cell-price" id="price-${index}">${cell.price}$</span>`;
@@ -692,7 +817,8 @@
             
             const giftEl = document.createElement('div');
             giftEl.className = 'gift-box'; giftEl.innerText = '🎁';
-            if (index === 0 || isWeb || isLightning) {
+            // 🆕 KHÔNG SINH HỘP QUÀ Ở Ô BOM VÀ PHÓNG XẠ
+            if (index === 0 || isWeb || isLightning || isNuclearBomb || isRadioactive) {
                 giftEl.style.display = 'none'; cellsData[index].hasGift = false;
             }
             cellEl.appendChild(giftEl);
@@ -718,7 +844,6 @@
             }, 150);
         }
     }
-
     function syncGameToRemote() {
 
         if(socket && myPlayerNumber === currentTurn){
@@ -776,7 +901,7 @@
         if (baseComboUpgraded && socket) syncGameToRemote();
     }
 
-    // =========================================================================
+// =========================================================================
     // 🎯 HÀM CẬP NHẬT: LOGIC HẠ CÁNH VÀO Ô ĐẶC BIỆT BẪY ĐỒNG BỘ 100%
     // =========================================================================
     function handleLandOnCell(cellIndex) {
@@ -788,13 +913,15 @@
         console.log("cellIndex =", cellIndex);
         console.log("window.lightningIndex =", window.lightningIndex);
         console.log("lightningIndex =", lightningIndex);
+        console.log("window.nuclearBombIndex =", window.nuclearBombIndex);
         console.log("targetIndex =", Number(cellIndex));
         console.log("target == lightning ?", Number(cellIndex) === Number(lightningIndex));
         console.log("target == window.lightning ?", Number(cellIndex) === Number(window.lightningIndex));
+        console.log("target == nuclearBomb ?", Number(cellIndex) === Number(window.nuclearBombIndex));
         const targetIndex = Number(cellIndex);
         console.log(`🎯 Quân cờ hạ cánh tại ô số: ${targetIndex}`);
 
-        if (targetIndex === Number(window.spiderWebIndex) || targetIndex === Number(window.lightningIndex) || targetIndex === 0) {
+        if (targetIndex === Number(window.spiderWebIndex) || targetIndex === Number(window.lightningIndex) || targetIndex === Number(window.nuclearBombIndex) || targetIndex === 0) {
             if (typeof hideBuyModal === 'function') hideBuyModal(); 
             if (typeof closeBuyModal === 'function') closeBuyModal();
         }
@@ -844,7 +971,7 @@
             let wipedNames = [];
 
             [leftCell, rightCell].forEach(idx => {
-                if (idx !== 0 && idx !== Number(spiderWebIndex)) {
+                if (idx !== 0 && idx !== Number(spiderWebIndex) && idx !== Number(window.nuclearBombIndex)) {
                     cellsData[idx].owner = null; cellsData[idx].level = 1;
                     cellsData[idx].price = 100; cellsData[idx].isUpgraded = false;
                     wipedNames.push(`Ô số ${idx}`);
@@ -858,7 +985,37 @@
             return; 
         }
 
-        // 🟢 TRƯỜNG HỢP 3: Ô ĐẤT THƯỜNG
+        // 💣 TRƯỜNG HỢP 3: SA VÀO BOM HẠT NHÂN (CHƯA NỔ)
+        if (
+            window.nuclearBombIndex !== null &&
+            !window.nuclearBombDetonated &&
+            targetIndex === Number(window.nuclearBombIndex)
+        ) {
+            console.log("💣 ĐÃ VÀO NHÁNH BOM HẠT NHÂN!");
+            window.isMoving = true;
+            playSFX(audioGame.lightning);
+            
+            // KÍCH NỔ BOM NGAY LẬP TỨC
+            if (typeof detonateNuclearBomb === 'function') {
+                detonateNuclearBomb();
+            }
+            
+            // Không cần endTurn vì detonateNuclearBomb đã gọi initializeBoard và updateUI
+            // Nhưng vẫn cần chuyển lượt
+            setTimeout(() => {
+                if (!window.gameEnding) {
+                    const nextTurn = currentTurn === 1 ? 2 : 1;
+                    currentTurn = nextTurn;
+                    if (socket && socket.connected) {
+                        socket.emit('syncEndTurn', { nextTurn: nextTurn });
+                    }
+                    checkMyTurnControl();
+                }
+            }, 500);
+            return;
+        }
+
+        // 🟢 TRƯỜNG HỢP 5: Ô ĐẤT THƯỜNG
         if (targetIndex !== 0 && myPlayerNumber === currentTurn) {
             if (typeof showBuyModal === 'function') showBuyModal(targetIndex);
         }
@@ -1066,6 +1223,58 @@
     function checkMyTurnControl() {
         const rollBtn = document.getElementById('roll-btn');
         if(!rollBtn) return;
+
+        // ===== 🆕 KIỂM TRA HIỆU ỨNG PHÓNG XẠ TRƯỚC KHI CHO XÚC XẮC =====
+        if (myPlayerNumber === currentTurn && gameStarted) {
+            const player = players[myPlayerNumber];
+            if (player.radiationEffect > 0) {
+                // Trừ 25$ mỗi lượt xúc xắc
+                player.money -= 25;
+                player.radiationEffect -= 1;
+                
+                addLog(`☢️ ${player.name} bị ảnh hưởng phóng xạ! Mất 25$. Còn ${player.radiationEffect} lượt.`);
+                
+                // 🔥 KIỂM TRA HẾT TIỀN - GỌI GAMEOVER NGAY
+                if (player.money < 0) {
+                    const enemy = myPlayerNumber === 1 ? 2 : 1;
+                    addLog(`💀 ${player.name} đã phá sản do nhiễm phóng xạ!`);
+                    
+                    // Gọi gameOver (sẽ tự động gửi lên server và hiển thị popup)
+                    gameOver(enemy, "money");
+                    
+                    // Cập nhật UI
+                    updateUI();
+                    
+                    // Đồng bộ phóng xạ
+                    if (socket && socket.connected) {
+                        socket.emit('syncRadiationEffect', {
+                            players: {
+                                1: { radiationEffect: players[1].radiationEffect || 0 },
+                                2: { radiationEffect: players[2].radiationEffect || 0 }
+                            }
+                        });
+                    }
+                    return;
+                }
+                
+                if (player.radiationEffect <= 0) {
+                    addLog(`✅ ${player.name} đã hết hiệu ứng phóng xạ!`);
+                }
+                
+                // Đồng bộ phóng xạ
+                if (typeof syncGameToRemote === 'function') syncGameToRemote();
+                if (socket && socket.connected) {
+                    socket.emit('syncRadiationEffect', {
+                        players: {
+                            1: { radiationEffect: players[1].radiationEffect || 0 },
+                            2: { radiationEffect: players[2].radiationEffect || 0 }
+                        }
+                    });
+                }
+                
+                updateUI();
+            }
+        }
 
         if (typeof gameStarted !== 'undefined' && gameStarted && currentTurn !== null) {
             rollBtn.onclick = () => {

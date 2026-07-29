@@ -101,6 +101,14 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
                     if (!window.gameEnding) {
                         checkHaoBossEvent(movePlayer);
                     }
+
+                    // ===== 🆕 KIỂM TRA BOM HẠT NHÂN =====
+                    if (!window.gameEnding && !window.nuclearBombDetonated && 
+                        players[1].rounds >= 3 && players[2].rounds >= 3) {  // ✅ CẢ 2 MỚI NỔ
+                        if (typeof detonateNuclearBomb === 'function') {
+                            detonateNuclearBomb();
+                        }
+                    }
                 }
             } else {
                 p.pos = (p.pos - 1 + TOTAL_CELLS) % TOTAL_CELLS;
@@ -180,7 +188,14 @@ function spawnRandomGift() {
     
     let pool = [];
     for (let i = 1; i < TOTAL_CELLS; i++) {
-        if (!cellsData[i].hasGift) pool.push(i);
+        // 🆕 KHÔNG SINH QUÀ Ở: MẠNG NHỆN, THIÊN TAI, BOM HẠT NHÂN, PHÓNG XẠ
+        if (!cellsData[i].hasGift && 
+            i !== Number(spiderWebIndex) && 
+            i !== Number(window.lightningIndex) && 
+            i !== Number(window.nuclearBombIndex) &&
+            !cellsData[i].isRadioactive) {
+            pool.push(i);
+        }
     }
     if (pool.length > 0) {
         let randIdx = pool[Math.floor(Math.random() * pool.length)];

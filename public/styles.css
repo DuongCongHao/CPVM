@@ -2803,3 +2803,73 @@ body.hao-shake {
         border: 1px solid rgba(255,255,255,0.1) !important;
     }
 }
+/* ===== BOM HẠT NHÂN ===== */
+.has-nuclear-bomb {
+    background: radial-gradient(circle at center, #450a0a 0%, #7f1d1d 50%, #1a1a2e 100%) !important;
+    border: 2px solid #ef4444 !important;
+    animation: bombPulse 1s infinite alternate;
+    color: #ffffff !important;
+}
+
+@keyframes bombPulse {
+    0% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.3); }
+    100% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.7), 0 0 60px rgba(239, 68, 68, 0.3); }
+}
+
+.nuclear-icon {
+    animation: bombFloat 1s infinite alternate;
+}
+
+@keyframes bombFloat {
+    0% { transform: translateY(0px); }
+    100% { transform: translateY(-8px); }
+}
+
+/* ===== NHIỄM PHÓNG XẠ ===== */
+.is-radioactive {
+    background: radial-gradient(circle at center, #064e3b 0%, #022c22 50%, #1a1a2e 100%) !important;
+    border: 2px solid #22d3ee !important;
+    animation: radioactiveGlow 0.8s infinite alternate;
+    color: #ffffff !important;
+}
+
+@keyframes radioactiveGlow {
+    0% { box-shadow: 0 0 5px rgba(34, 211, 238, 0.2); }
+    100% { box-shadow: 0 0 25px rgba(34, 211, 238, 0.5), 0 0 50px rgba(34, 211, 238, 0.2); }
+}
+
+.radioactive-icon {
+    animation: radFloat 0.6s infinite alternate;
+}
+
+@keyframes radFloat {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.15); }
+}
+/* ===== HIỆU ỨNG PHÓNG XẠ ===== */
+@keyframes radPulse {
+    0% { opacity: 0.5; text-shadow: 0 0 5px #22d3ee; }
+    100% { opacity: 1; text-shadow: 0 0 20px #22d3ee, 0 0 40px #22d3ee; }
+}
+/* ===== HIỆU ỨNG PHÓNG XẠ BIẾN MẤT ===== */
+.is-radioactive.clearing {
+    animation: radDisappear 0.5s ease-out forwards;
+}
+
+@keyframes radDisappear {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 0 0 30px rgba(34, 211, 238, 0.5);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scale(1.1);
+        box-shadow: 0 0 60px rgba(34, 211, 238, 0.8);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.8);
+        box-shadow: 0 0 0px rgba(34, 211, 238, 0);
+    }
+}

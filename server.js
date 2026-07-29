@@ -293,13 +293,29 @@
             console.log(`📤 Server relay syncRemoveHaoBoss trong phòng ${roomId}:`, data);
             io.to(roomId).emit('syncRemoveHaoBoss', data);
         });
+        // ============================================
+        // 🆕 RELAY BOM HẠT NHÂN
+        // ============================================
+        socket.on('syncNuclearBomb', (data) => {
+            const roomId = socket.roomId;
+            if (!roomId) return;
+            console.log(`💣 Server relay syncNuclearBomb trong phòng ${roomId}:`, data);
+            io.to(roomId).emit('syncNuclearBomb', data);
+        });
+
+        socket.on('syncNuclearRadiation', (data) => {
+            const roomId = socket.roomId;
+            if (!roomId) return;
+            console.log(`☢️ Server relay syncNuclearRadiation trong phòng ${roomId}:`, data);
+            io.to(roomId).emit('syncNuclearRadiation', data);
+        });
         // 🌐 1. XỬ LÝ GHÉP TRẬN NGẪU NHIÊN (QUICK MATCH)
         socket.on('request-quick-match', async (data) => {
 
             socket.username = data.name || "Vô danh";
 
             socket.userId = data.userId;
-            socket.skin = data.skin || 'skin_default'; // ✅ THÊM DÒNG NÀY
+            socket.skin = data.skin || 'skin_default';
             socket.rank = 'Bùn';
             // Lọc bỏ các socket đã đứt kết nối hoặc chính socket này để tránh tự ghép với mình
             // ===== 🆕 LẤY RANK =====
@@ -318,7 +334,7 @@
             
             // Nếu có người đang xếp hàng đợi hợp lệ
             if (quickMatchQueue.length > 0) {
-                let opponentSocket = quickMatchQueue.shift(); // Lấy người đầu tiên ra khỏi hàng đợi
+                let opponentSocket = quickMatchQueue.shift();
                 
                 // Sinh mã phòng ngẫu nhiên cho trận đấu nhanh
                 let roomId = 'QM_' + Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -331,65 +347,77 @@
 
                 // Khởi tạo trạng thái game cho phòng này
                 const skills = randomSkills();
+                
+                // ===== SINH VỊ TRÍ MẠNG NHỆN =====
+                const spiderWebIdx = Math.floor(Math.random() * 19) + 1;
+                
+                // ===== 🆕 SINH BOM HẠT NHÂN (khác với mạng nhện và ô START) =====
+                let bombIdx;
+                do {
+                    bombIdx = Math.floor(Math.random() * 19) + 1;
+                } while (bombIdx === spiderWebIdx);
+                
+                console.log(`💣 Bom hạt nhân đặt tại ô: ${bombIdx}`);
+                
                 rooms[roomId] = {
                     players: [
-
-                    {
-                        id: opponentSocket.id,
-                        userId: opponentSocket.userId,
-                        name: opponentSocket.username,
-                        playerNumber:1,
-                        rounds:0,
-                        skillUsed:false,
-                        skin: opponentSocket.skin || 'skin_default', // ✅ THÊM DÒNG NÀY
-                        rank: opponentSocket.rank || 'Bùn'
-                    },
-
-                    {
-                        id: socket.id,
-                        userId: socket.userId,
-                        name: socket.username,
-                        playerNumber:2,
-                        rounds:0,
-                        skillUsed:false,
-                        skin: socket.skin || 'skin_default', // ✅ THÊM DÒNG NÀY
-                        rank: socket.rank || 'Bùn'
-                    }
-
+                        {
+                            id: opponentSocket.id,
+                            userId: opponentSocket.userId,
+                            name: opponentSocket.username,
+                            playerNumber: 1,
+                            rounds: 0,
+                            skillUsed: false,
+                            skin: opponentSocket.skin || 'skin_default',
+                            rank: opponentSocket.rank || 'Bùn'
+                        },
+                        {
+                            id: socket.id,
+                            userId: socket.userId,
+                            name: socket.username,
+                            playerNumber: 2,
+                            rounds: 0,
+                            skillUsed: false,
+                            skin: socket.skin || 'skin_default',
+                            rank: socket.rank || 'Bùn'
+                        }
                     ],
                     currentTurn: null,
-                    spiderWebIndex: Math.floor(Math.random() * 19) + 1,
+                    spiderWebIndex: spiderWebIdx,
                     lightningIndex: null,
                     lightningTriggered: false,
                     status: 'playing',
                     timer: null,
-                    skills: skills
+                    skills: skills,
+                    // 🆕 BOM HẠT NHÂN
+                    nuclearBombIndex: bombIdx,
+                    nuclearBombDetonated: false
                 };
-                // ✅ THÊM LOG ĐỂ DEBUG
+                
                 console.log(`🎨 Skin P1: ${rooms[roomId].players[0].skin}, P2: ${rooms[roomId].players[1].skin}`);
-                // ✅ THÊM MỚI: Tạo mảng players để gửi cho client
+                
                 const playersData = rooms[roomId].players.map(p => ({
                     id: p.userId || p.id,
                     name: p.name,
                     socketId: p.id,
                     playerNumber: p.playerNumber,
-                    skin: p.skin || 'skin_default', // ✅ ĐÚNG: dùng p.skin của từng player
+                    skin: p.skin || 'skin_default',
                     rank: p.rank || 'Bùn'
                 }));
-                // ✅ THÊM ĐOẠN NÀY: GỬI SKIN CHO CẢ 2 CLIENT
+                
                 io.to(roomId).emit('player-skins', {
                     player1: rooms[roomId].players[0].skin || 'skin_default',
                     player2: rooms[roomId].players[1].skin || 'skin_default'
                 });
-                // ✅ SỬA: Báo thông tin phòng về cho client (THÊM players)
+                
                 opponentSocket.emit('room-joined', { 
                     roomId: roomId,
-                    players: playersData  // ✅ THÊM DÒNG NÀY
+                    players: playersData
                 });
                 
                 socket.emit('room-joined', { 
                     roomId: roomId,
-                    players: playersData  // ✅ THÊM DÒNG NÀY
+                    players: playersData
                 });
 
                 opponentSocket.emit('playerAssigned', { playerNumber: 1 });
@@ -397,17 +425,22 @@
 
                 io.to(roomId).emit('update-lobby-players', rooms[roomId].players);
                 
-                // Gửi vị trí mạng nhện đồng bộ đầu trận thông qua sự kiện init-traps
+                // 🆕 GỬI BOM HẠT NHÂN CÙNG VỚI init-traps
                 io.to(roomId).emit('init-traps', { 
                     spiderWebIndex: rooms[roomId].spiderWebIndex,
-                    lightningIndex: rooms[roomId].lightningIndex 
+                    lightningIndex: rooms[roomId].lightningIndex,
+                    nuclearBombIndex: rooms[roomId].nuclearBombIndex,
+                    nuclearBombDetonated: rooms[roomId].nuclearBombDetonated
                 });
                 
-                // Ép cả phòng vào màn hình chơi game
-                io.to(roomId).emit('startGame', { spiderWebIndex: rooms[roomId].spiderWebIndex, skills: rooms[roomId].skills });
+                io.to(roomId).emit('startGame', { 
+                    spiderWebIndex: rooms[roomId].spiderWebIndex, 
+                    skills: rooms[roomId].skills,
+                    nuclearBombIndex: rooms[roomId].nuclearBombIndex  // 🆕 THÊM
+                });
+                
                 console.log(`🎮 Trận đấu ngẫu nhiên bắt đầu tại phòng: ${roomId} (${opponentSocket.username} VS ${socket.username})`);
             } else {
-                // Chưa có ai thì cho vào hàng đợi nằm chờ
                 quickMatchQueue.push(socket);
                 console.log(`👥 ${socket.username} (${socket.id}) đang nằm chờ trong hàng đợi ghép trận...`);
             }
@@ -432,9 +465,10 @@
         socket.on('request-create-room', async (data) => {
             socket.username = data.name || "Chủ phòng";
             socket.userId = data.userId;
-            socket.skin = data.skin || 'skin_default'; // ✅ THÊM DÒNG NÀY
+            socket.skin = data.skin || 'skin_default';
             socket.rank = 'Bùn';
-            let roomId = 'ROOM_' + Math.floor(1000 + Math.random() * 9000); // Mã 4 chữ số ngẫu nhiên
+            let roomId = 'ROOM_' + Math.floor(1000 + Math.random() * 9000);
+            
             if (data.userId) {
                 try {
                     const response = await axios.get(`http://localhost:${PORT}/api/user/${data.userId}`);
@@ -446,20 +480,26 @@
                     console.error(`❌ Lỗi lấy rank cho ${data.userId}:`, err.message);
                 }
             }
+            
             socket.join(roomId);
             socket.roomId = roomId;
             const skills = randomSkills();
+            
+            // 🆕 SINH BOM HẠT NHÂN CHO PHÒNG RIÊNG
+            let bombIdx = Math.floor(Math.random() * 19) + 1;
+            console.log(`💣 Bom hạt nhân đặt tại ô: ${bombIdx} (phòng riêng)`);
+            
             rooms[roomId] = {
                 players: [
                     {
-                    id:socket.id,
-                    userId:socket.userId,
-                    name:socket.username,
-                    playerNumber:1,
-                    rounds:0,
-                    skillUsed:false,
-                    skin: socket.skin || 'skin_default', // ✅ THÊM DÒNG NÀY
-                    rank: socket.rank || 'Bùn'
+                        id: socket.id,
+                        userId: socket.userId,
+                        name: socket.username,
+                        playerNumber: 1,
+                        rounds: 0,
+                        skillUsed: false,
+                        skin: socket.skin || 'skin_default',
+                        rank: socket.rank || 'Bùn'
                     }
                 ],
                 currentTurn: null,
@@ -468,7 +508,10 @@
                 lightningTriggered: false,
                 status: 'waiting',
                 timer: null,
-                skills: skills
+                skills: skills,
+                // 🆕 BOM HẠT NHÂN
+                nuclearBombIndex: bombIdx,
+                nuclearBombDetonated: false
             };
 
             socket.emit('room-created', { roomId: roomId });
@@ -480,9 +523,10 @@
         socket.on('request-join-room', async (data) => {
             let roomId = data.roomId;
             socket.userId = data.userId;
-            socket.skin = data.skin || 'skin_default'; // ✅ THÊM DÒNG NÀY
+            socket.skin = data.skin || 'skin_default';
             socket.username = data.name || "Khách";
             socket.rank = 'Bùn';
+            
             if (data.userId) {
                 try {
                     const response = await axios.get(`http://localhost:${PORT}/api/user/${data.userId}`);
@@ -494,6 +538,7 @@
                     console.error(`❌ Lỗi lấy rank cho ${data.userId}:`, err.message);
                 }
             }
+            
             if (!rooms[roomId]) {
                 return socket.emit('room-error', { message: "Mã phòng không tồn tại! Vui lòng kiểm tra lại." });
             }
@@ -505,59 +550,71 @@
             socket.roomId = roomId;
 
             rooms[roomId].players.push({
-
-            id:socket.id,
-
-            userId:socket.userId,
-
-            name:socket.username,
-
-            playerNumber:2,
-
-            rounds:0,
-
-            skillUsed:false,
-            skin: socket.skin || 'skin_default', // ✅ THÊM DÒNG NÀY
-            rank: socket.rank || 'Bùn'
+                id: socket.id,
+                userId: socket.userId,
+                name: socket.username,
+                playerNumber: 2,
+                rounds: 0,
+                skillUsed: false,
+                skin: socket.skin || 'skin_default',
+                rank: socket.rank || 'Bùn'
             });
+            
             rooms[roomId].status = 'playing';
-            // ✅ THÊM ĐOẠN NÀY: GỬI SKIN CHO CẢ 2 CLIENT
+            
+            // 🆕 NẾU CHƯA CÓ BOM THÌ SINH (PHÒNG RIÊNG TƯ DO CHỦ TẠO)
+            if (rooms[roomId].nuclearBombIndex === undefined || rooms[roomId].nuclearBombIndex === null) {
+                let bombIdx;
+                do {
+                    bombIdx = Math.floor(Math.random() * 19) + 1;
+                } while (bombIdx === rooms[roomId].spiderWebIndex);
+                rooms[roomId].nuclearBombIndex = bombIdx;
+                rooms[roomId].nuclearBombDetonated = false;
+                console.log(`💣 Bom hạt nhân đặt tại ô: ${bombIdx} (phòng riêng)`);
+            }
+            
             io.to(roomId).emit('player-skins', {
                 player1: rooms[roomId].players[0].skin || 'skin_default',
                 player2: rooms[roomId].players[1].skin || 'skin_default'
             });
 
-            // ✅ THÊM MỚI: Tạo mảng players để gửi cho client
             const playersData = rooms[roomId].players.map(p => ({
                 id: p.userId || p.id,
                 name: p.name,
                 socketId: p.id,
                 playerNumber: p.playerNumber,
-                skin: p.skin || 'skin_default', // ✅ THÊM DÒNG NÀY
+                skin: p.skin || 'skin_default',
                 rank: p.rank || 'Bùn'
             }));
 
-            // ✅ SỬA: Thêm players vào room-joined
             socket.emit('room-joined', { 
                 roomId: roomId,
-                players: playersData  // ✅ THÊM DÒNG NÀY
+                players: playersData
             });
             
             socket.emit('playerAssigned', { playerNumber: 2 });
 
             io.to(roomId).emit('update-lobby-players', rooms[roomId].players);
 
-            // Sinh vị trí bẫy mạng nhện cho phòng riêng tư
-            rooms[roomId].spiderWebIndex = Math.floor(Math.random() * 19) + 1;
+            // Sinh vị trí bẫy mạng nhện cho phòng riêng tư (nếu chưa có)
+            if (rooms[roomId].spiderWebIndex === null || rooms[roomId].spiderWebIndex === undefined) {
+                rooms[roomId].spiderWebIndex = Math.floor(Math.random() * 19) + 1;
+            }
             
-            // Gửi thông tin bẫy đầu trận
+            // 🆕 GỬI BOM HẠT NHÂN CÙNG VỚI init-traps
             io.to(roomId).emit('init-traps', { 
                 spiderWebIndex: rooms[roomId].spiderWebIndex,
-                lightningIndex: rooms[roomId].lightningIndex 
+                lightningIndex: rooms[roomId].lightningIndex,
+                nuclearBombIndex: rooms[roomId].nuclearBombIndex,
+                nuclearBombDetonated: rooms[roomId].nuclearBombDetonated || false
             });
 
-            // Kích hoạt trận đấu cho cả phòng riêng tư
-            io.to(roomId).emit('startGame', { spiderWebIndex: rooms[roomId].spiderWebIndex, skills: rooms[roomId].skills });
+            io.to(roomId).emit('startGame', { 
+                spiderWebIndex: rooms[roomId].spiderWebIndex, 
+                skills: rooms[roomId].skills,
+                nuclearBombIndex: rooms[roomId].nuclearBombIndex,  // 🆕 THÊM
+                nuclearBombDetonated: rooms[roomId].nuclearBombDetonated
+            });
         });
 
         // =========================================================================

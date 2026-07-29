@@ -228,6 +228,10 @@ if (typeof socket !== 'undefined' && socket) {
 
         spiderWebIndex = data.spiderWebIndex;
         lightningIndex = data.lightningIndex || null;
+        
+        // 🆕 THÊM BOM HẠT NHÂN
+        window.nuclearBombIndex = data.nuclearBombIndex || null;
+        window.nuclearBombDetonated = data.nuclearBombDetonated || false;
 
         // ===== ĐỒNG BỘ KỸ NĂNG =====
         gameStarted = true;
@@ -252,8 +256,6 @@ if (typeof socket !== 'undefined' && socket) {
         // ===== KHỞI TẠO BÀN CỜ =====
         initializeBoard();
         
-        
-        
         // ===== ĐỢI 1 GIÂY ĐỂ RANK VỀ RỒI MỚI PHÂN ĐỊNH LƯỢT =====
         setTimeout(() => {
             // Cập nhật rank lần cuối
@@ -267,6 +269,7 @@ if (typeof socket !== 'undefined' && socket) {
             }
             
             console.log("✅ Đã hoàn tất khởi tạo game!");
+            console.log(`💣 Bom hạt nhân tại ô: ${window.nuclearBombIndex}`);
         }, 1000);
     });
     // ===== THIÊN TAI XUẤT HIỆN =====
@@ -497,6 +500,29 @@ if (typeof socket !== 'undefined' && socket) {
             addLog(data.logMsg);
         }
         
+        // 🆕 XÓA TẤT CẢ Ô PHÓNG XẠ KHI BỐ HẢO XUẤT HIỆN
+        if (data.clearRadiation) {
+            let clearedCount = 0;
+            cellsData.forEach((cell, index) => {
+                if (cell.isRadioactive) {
+                    cell.isRadioactive = false;
+                    cell.nuclearRadiationCount = 0;
+                    cell.price = 100;
+                    cell.owner = null;
+                    clearedCount++;
+                }
+            });
+            
+            if (clearedCount > 0 && typeof addLog === 'function') {
+                addLog(`☢️ BỐ HẢO ĐÃ XÓA SẠCH ${clearedCount} Ô PHÓNG XẠ!`);
+            }
+            
+            // Vẽ lại bàn cờ
+            if (typeof initializeBoard === 'function') {
+                initializeBoard();
+            }
+        }
+        
         // ✅ HIỂN THỊ BỐ HẢO TRÊN CẢ 2 MÁY
         if (typeof spawnHaoBoss === 'function') {
             spawnHaoBoss();
@@ -509,7 +535,6 @@ if (typeof socket !== 'undefined' && socket) {
             }
         }, 3000);
     });
-
     // ===== ĐỒNG BỘ XÓA BỐ HẢO =====
     socket.on('syncRemoveHaoBoss', (data) => {
         console.log('📢 Nhận đồng bộ xóa Bố Hảo');
@@ -606,5 +631,78 @@ if (typeof socket !== 'undefined' && socket) {
         window.invisiblePos = null;
         
         updateUI();
+    });
+    // ===== ĐỒNG BỘ BOM HẠT NHÂN =====
+    socket.on('syncNuclearBomb', (data) => {
+        console.log('💣 Nhận đồng bộ bom hạt nhân:', data);
+        
+        // 🆕 PHÁT ÂM THANH NỔ BOM CHO MÁY ĐỐI THỦ
+        if (typeof playSFX === 'function' && audioGame && audioGame.bomb) {
+            playSFX(audioGame.bomb);
+        }
+        
+        window.nuclearBombDetonated = true;
+        
+        // Cập nhật dữ liệu
+        if (data.players) {
+            for (let i = 1; i <= 2; i++) {
+                if (data.players[i]) {
+                    players[i].money = data.players[i].money;
+                    players[i].pos = data.players[i].pos;
+                    players[i].rounds = data.players[i].rounds;
+                }
+            }
+        }
+        
+        if (data.cellsData) {
+            cellsData = data.cellsData;
+        }
+        
+        // Vẽ lại bàn cờ
+        initializeBoard();
+        updateUI();
+        
+        addLog(`💣💥 BOM HẠT NHÂN ĐÃ PHÁT NỔ!`);
+        
+        // Kiểm tra game over
+        if (players[1].money < 0) {
+            gameOver(2, "money");
+            return;
+        }
+        if (players[2].money < 0) {
+            gameOver(1, "money");
+            return;
+        }
+    });
+
+    // ===== ĐỒNG BỘ PHÓNG XẠ =====
+    socket.on('syncNuclearRadiation', (data) => {
+        console.log('☢️ Nhận đồng bộ phóng xạ:', data);
+        
+        if (data.cellsData) {
+            cellsData = data.cellsData;
+            initializeBoard();
+            updateUI();
+        }
+        
+        // 🔥 THÊM LOG ĐỂ DEBUG
+        cellsData.forEach((cell, idx) => {
+            if (cell.isRadioactive) {
+                console.log(`☢️ Ô ${idx} nhiễm phóng xạ, còn ${cell.nuclearRadiationCount} lượt`);
+            }
+        });
+    });
+    // ===== ĐỒNG BỘ PHÓNG XẠ =====
+    socket.on('syncRadiationEffect', (data) => {
+        console.log('☢️ Nhận đồng bộ phóng xạ:', data);
+        
+        if (data.players) {
+            for (let i = 1; i <= 2; i++) {
+                if (data.players[i]) {
+                    players[i].radiationEffect = data.players[i].radiationEffect || 0;
+                }
+            }
+            updateUI();
+        }
     });
 }

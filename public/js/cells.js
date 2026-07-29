@@ -6,6 +6,38 @@ function evaluateTargetCell() {
     let p = players[targetPlayer];
     let targetCell = cellsData[p.pos];
 
+    // 🆕 KIỂM TRA Ô BOM HẠT NHÂN (CHƯA NỔ) - NỔ KHI ĐI VÀO
+    if (p.pos === Number(window.nuclearBombIndex) && !window.nuclearBombDetonated) {
+        addLog(`💣 ${p.name} đã dẫm vào bom hạt nhân! BOM PHÁT NỔ NGAY LẬP TỨC!`);
+        if (typeof detonateNuclearBomb === 'function') {
+            detonateNuclearBomb();
+        }
+        endTurn();
+        return;
+    }
+
+    // 🆕 KIỂM TRA Ô NHIỄM PHÓNG XẠ - DÍNH HIỆU ỨNG LÊN NGƯỜI CHƠI
+    if (cellsData[p.pos]?.isRadioactive) {
+        // Dính hiệu ứng phóng xạ 3 lượt lên người chơi
+        players[targetPlayer].radiationEffect = 3;
+        addLog(`☢️ ${p.name} dính hiệu ứng phóng xạ! Mỗi lượt xúc xắc sẽ mất 25$, kéo dài 3 lượt.`);
+        
+        // Đồng bộ phóng xạ
+        if (typeof syncGameToRemote === 'function') syncGameToRemote();
+        if (socket && socket.connected) {
+            socket.emit('syncRadiationEffect', {
+                players: {
+                    1: { radiationEffect: players[1].radiationEffect || 0 },
+                    2: { radiationEffect: players[2].radiationEffect || 0 }
+                }
+            });
+        }
+        
+        updateUI();
+        endTurn();
+        return;
+    }
+
     // 🔥 FIX CHÍNH: KIỂM TRA MẠNG NHỆN TRƯỚC TIÊN
     if (p.pos === spiderWebIndex) {
         addLog(`🕷️ <strong>${p.name}</strong> dẫm vào Mạng Nhện! Mất lượt xúc xắc ở vòng kế tiếp!`);
@@ -26,7 +58,7 @@ function evaluateTargetCell() {
     // 🔥 KIỂM TRA DÙNG SKILL - NẾU CÓ THÌ BỎ QUA MUA ĐẤT VÀ CHUYỂN LƯỢT
     if (skillUsedThisTurn) {
         addLog(`⏭️ <strong>${p.name}</strong> đã dùng kỹ năng, bỏ qua cơ hội mua đất lần này!`);
-        skillUsedThisTurn = false; // Reset lại flag
+        skillUsedThisTurn = false;
         endTurn();
         return;
     }
@@ -57,13 +89,12 @@ function evaluateTargetCell() {
 
     if (p.pos === 0) {
         endTurn();
-    } else if (targetCell.owner === null) 
+    } else if (targetCell.owner === null) {
         if (p.money >= targetCell.price) {
-            // 🔥 FIX: Lưu player ID ngay bây giờ, vì targetPlayer có thể bị đổi trước khi callback chạy
             const buyerPlayerId = targetPlayer;
             showNotification("💰 Mua Đất Trống", `Khu Đất số ${p.pos} chưa thuộc về ai. Bạn muốn chi <strong>${targetCell.price}$</strong> để sở hữu ô này?`, '#10b981', () => {
                 players[buyerPlayerId].money -= targetCell.price;
-                targetCell.owner = buyerPlayerId; // Dùng giá trị lưu, không dùng targetPlayer
+                targetCell.owner = buyerPlayerId;
                 
                 addLog(`🏠 <strong>${players[buyerPlayerId].name}</strong> mua thành công Khu Đất ${p.pos} (${targetCell.price}$)`);
                 
@@ -74,13 +105,12 @@ function evaluateTargetCell() {
                 addLog(`⏭️ <strong>${p.name}</strong> quyết định không mua Khu Đất ${p.pos}.`);
                 endTurn();
             });
-                } else {
-                    addLog(`💸 Không đủ tài chính đầu tư Khu Đất ${p.pos}.`);
-                    endTurn();
-        
+        } else {
+            addLog(`💸 Không đủ tài chính đầu tư Khu Đất ${p.pos}.`);
+            endTurn();
+        }
     } else if (targetCell.owner === targetPlayer) {
         if (p.money >= 100) {
-            // 🔥 FIX: Lưu player ID
             const upgraderPlayerId = targetPlayer;
             showNotification("📈 Nâng Cấp Bất Động Sản", `Bạn đang đứng ở Khu Đất số ${p.pos} của chính mình. Bỏ ra <strong>100$</strong> để nâng cấp giá trị đất lên gấp đôi không?`, '#eab308', () => {
                 players[upgraderPlayerId].money -= 100;
@@ -125,7 +155,6 @@ function evaluateTargetCell() {
         }
 
         if (p.money >= fine) {
-            // 🔥 FIX: Lưu player ID
             const forceBuyerPlayerId = targetPlayer;
             showNotification("🔥 Mua Đứt Tài Sản", `Chi thêm <strong>${fine}$</strong> để cưỡng chế mua đứt lại Khu Đất ${p.pos} từ đối thủ?`, '#ef4444', () => {
                 players[forceBuyerPlayerId].money -= fine;
@@ -147,7 +176,6 @@ function evaluateTargetCell() {
         }
     }
 }
-
 // ===== XỬ LÝ HỘP QUÀ =====
 function triggerGiftAction() {
     // 🔥 ĐÁNH DẤU ĐANG XỬ LÝ HỘP QUÀ

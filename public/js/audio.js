@@ -9,7 +9,8 @@ const audioGame = {
     lightning: new Audio('audio/thunder.mp3'),
     dragon: new Audio('audio/dragon.mp3'),
     phoenix: new Audio('audio/phoenix.mp3'),
-    horse: new Audio('audio/horse.mp3')
+    horse: new Audio('audio/horse.mp3'),
+    bomb: new Audio('audio/bom.mp3')
 };
 
 // ===== CẤU HÌNH ÂM LƯỢNG =====
@@ -20,7 +21,8 @@ audioGame.dice.volume = 0.8;
 audioGame.run.volume = 0.6; 
 audioGame.buyLand.volume = 0.9;
 audioGame.loseMoney.volume = 0.8;
-audioGame.lightning.volume = 1.0; 
+audioGame.lightning.volume = 1.0;
+audioGame.bomb.volume = 1.0;
 
 // ===== PRE-LOAD ÂM THANH =====
 Object.values(audioGame).forEach(track => { 

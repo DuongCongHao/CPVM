@@ -12,7 +12,9 @@ let cellsData = Array(TOTAL_CELLS).fill(null).map((_, i) => ({
     id: i,
     owner: null,
     price: i === 0 ? 0 : 100,
-    hasGift: false
+    hasGift: false,
+    isRadioactive: false,     // 🆕 Nhiễm phóng xạ
+    nuclearRadiationCount: 0 
 }));
 
 // ===== THÔNG TIN NGƯỜI CHƠI =====
@@ -34,6 +36,9 @@ let determineTurnData = { p1Roll: null, p2Roll: null, currentPlayer: 1 };
 // ===== KHỞI TẠO CÁC Ô ĐẶC BIỆT =====
 let spiderWebIndex = 15; // Mạng nhện ở ô số 15 (được cập nhật từ Server)
 let lightningIndex = null; // Thiên tai (sẽ được cập nhật từ Server)
+let nuclearBombIndex = null;        // 🆕 Vị trí bom hạt nhân
+let nuclearBombDetonated = false;   // 🆕 Đã nổ chưa?
+
 
 // 🔥 TRẠNG THÁI SKILL: Theo dõi khi nào skill được dùng
 let skillUsedThisTurn = false; // Flag này sẽ được reset khi chuyển lượt
