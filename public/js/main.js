@@ -934,18 +934,18 @@
             console.log("myPlayerNumber =", myPlayerNumber);
             console.log("opponentTurn =", opponentTurn);
             // Cấp 2 lượt cho đối thủ
-            window.isMoving = false; // Giải phóng nút ngay lập tức
+            window.isMoving = false;
 
             const logMsg = `🕸️ BẪY MẠNG NHỆN! ${players[currentTurn].name} bị khóa chân. Đối thủ ${players[opponentTurn].name} được đi 2 lượt!`;
 
             if (socket && socket.connected) {
                 window.extraTurns = 2;
                 socket.emit('playerHitSpiderWebSync', {
-                logMsg: logMsg,
-                nextTurn: opponentTurn,
-                extraTurns: 2,
-                playersUpdate: players
-            });
+                    logMsg: logMsg,
+                    nextTurn: opponentTurn,
+                    extraTurns: 2,
+                    playersUpdate: players
+                });
             } else {
                 addLog(logMsg);
                 window.currentTurn = opponentTurn;
@@ -954,7 +954,7 @@
             return; 
         }
 
-        // ⚡ TRƯỜNG HỢP 2: SA VÀO THIÊN TAI (Giữ nguyên logic của bạn)
+        // ⚡ TRƯỜNG HỢP 2: SA VÀO THIÊN TAI
         if (
             window.lightningIndex !== null &&
             targetIndex === Number(window.lightningIndex)
@@ -970,10 +970,16 @@
             let rightCell = (targetIndex + 1) % TOTAL_CELLS;
             let wipedNames = [];
 
+            // 🆕 KHÔNG XÓA ĐẤT Ở: START, MẠNG NHỆN, BOM HẠT NHÂN, PHÓNG XẠ
             [leftCell, rightCell].forEach(idx => {
-                if (idx !== 0 && idx !== Number(spiderWebIndex) && idx !== Number(window.nuclearBombIndex)) {
-                    cellsData[idx].owner = null; cellsData[idx].level = 1;
-                    cellsData[idx].price = 100; cellsData[idx].isUpgraded = false;
+                if (idx !== 0 && 
+                    idx !== Number(spiderWebIndex) && 
+                    idx !== Number(window.nuclearBombIndex) &&
+                    !cellsData[idx]?.isRadioactive) {
+                    cellsData[idx].owner = null;
+                    cellsData[idx].level = 1;
+                    cellsData[idx].price = 100;
+                    cellsData[idx].isUpgraded = false;
                     wipedNames.push(`Ô số ${idx}`);
                 }
             });
@@ -995,13 +1001,10 @@
             window.isMoving = true;
             playSFX(audioGame.lightning);
             
-            // KÍCH NỔ BOM NGAY LẬP TỨC
             if (typeof detonateNuclearBomb === 'function') {
                 detonateNuclearBomb();
             }
             
-            // Không cần endTurn vì detonateNuclearBomb đã gọi initializeBoard và updateUI
-            // Nhưng vẫn cần chuyển lượt
             setTimeout(() => {
                 if (!window.gameEnding) {
                     const nextTurn = currentTurn === 1 ? 2 : 1;
@@ -1015,7 +1018,7 @@
             return;
         }
 
-        // 🟢 TRƯỜNG HỢP 5: Ô ĐẤT THƯỜNG
+        // 🟢 TRƯỜNG HỢP 4: Ô ĐẤT THƯỜNG
         if (targetIndex !== 0 && myPlayerNumber === currentTurn) {
             if (typeof showBuyModal === 'function') showBuyModal(targetIndex);
         }
@@ -1197,9 +1200,58 @@
 
             const TOTAL_CELLS = cellsData.length;
             let randomDisasterIdx;
-            do {
+            let attempts = 0;
+            const maxAttempts = 50;
+            let found = false;
+            
+            // ===== 🆕 LỌC CÁC Ô HỢP LỆ =====
+            while (!found && attempts < maxAttempts) {
                 randomDisasterIdx = Math.floor(Math.random() * (TOTAL_CELLS - 1)) + 1;
-            } while (randomDisasterIdx === Number(spiderWebIndex));
+                attempts++;
+                
+                // Kiểm tra ô có hợp lệ không
+                const isWeb = (randomDisasterIdx === Number(spiderWebIndex));
+                const isBomb = (randomDisasterIdx === Number(window.nuclearBombIndex));
+                const isRadioactive = cellsData[randomDisasterIdx]?.isRadioactive || false;
+                const isOwned = cellsData[randomDisasterIdx]?.owner !== null && cellsData[randomDisasterIdx]?.owner !== undefined;
+                const isStart = (randomDisasterIdx === 0);
+                
+                // 🔥 KIỂM TRA CÁCH BOM HẠT NHÂN 1 Ô
+                const isNearBomb = (
+                    randomDisasterIdx === Number(window.nuclearBombIndex) - 1 ||
+                    randomDisasterIdx === Number(window.nuclearBombIndex) + 1 ||
+                    randomDisasterIdx === (Number(window.nuclearBombIndex) - 1 + TOTAL_CELLS) % TOTAL_CELLS ||
+                    randomDisasterIdx === (Number(window.nuclearBombIndex) + 1) % TOTAL_CELLS
+                );
+                
+                // ===== ĐIỀU KIỆN HỢP LỆ =====
+                if (!isWeb && !isBomb && !isRadioactive && !isOwned && !isStart && !isNearBomb) {
+                    found = true;
+                    console.log(`✅ Tìm thấy ô thiên tai hợp lệ: ${randomDisasterIdx}`);
+                }
+            }
+            
+            // Nếu không tìm thấy ô hợp lệ, dùng fallback
+            if (!found) {
+                // Thử tìm ô trống bất kỳ (không phải web, bomb, start)
+                for (let i = 1; i < TOTAL_CELLS; i++) {
+                    if (i !== Number(spiderWebIndex) && 
+                        i !== Number(window.nuclearBombIndex) && 
+                        !cellsData[i]?.isRadioactive && 
+                        cellsData[i]?.owner === null) {
+                        randomDisasterIdx = i;
+                        found = true;
+                        console.log(`⚠️ Fallback: Chọn ô ${randomDisasterIdx} cho thiên tai`);
+                        break;
+                    }
+                }
+            }
+            
+            // Nếu vẫn không tìm thấy, bỏ qua thiên tai
+            if (!found) {
+                console.log("⚠️ Không tìm thấy ô hợp lệ cho thiên tai, bỏ qua!");
+                return;
+            }
 
             console.log("⚡ Random thiên tai =", randomDisasterIdx);
 

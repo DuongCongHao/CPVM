@@ -175,22 +175,18 @@ function useSkill(){
             let randomPos = Math.floor(Math.random() * (TOTAL_CELLS - 1)) + 1;
             let oldPos2 = players[myPlayerNumber].pos;
             
-            // ===== KHÔNG ẨN TRÊN MÁY CỦA MÌNH =====
-            // Chỉ cập nhật vị trí, không ẩn
+            // ===== CẬP NHẬT VỊ TRÍ =====
             players[myPlayerNumber].pos = randomPos;
+            
+            // ===== TRÊN MÁY MÌNH: VẪN HIỂN THỊ =====
+            // Không ẩn gì cả
             
             // ===== ĐÁNH DẤU TÀNG HÌNH =====
             window.isInvisible = true;
             window.invisiblePlayer = myPlayerNumber;
             window.invisiblePos = randomPos;
             
-            addLog(
-                "👻 " + players[myPlayerNumber].name +
-                " tàng hình và dịch chuyển đến ô " + randomPos +
-                "! (Đối thủ không nhìn thấy bạn)"
-            );
-            
-            // 🔥 GỬI ĐỒNG BỘ CHO ĐỐI THỦ
+            // ===== GỬI ĐỒNG BỘ CHO ĐỐI THỦ =====
             if (socket && socket.connected) {
                 socket.emit('syncInvisibleEffect', {
                     playerNum: myPlayerNumber,
@@ -200,6 +196,12 @@ function useSkill(){
                 });
                 console.log('📤 Đã gửi syncInvisibleEffect cho đối thủ');
             }
+            
+            addLog(
+                "👻 " + players[myPlayerNumber].name +
+                " tàng hình và dịch chuyển đến ô " + randomPos +
+                "! (Đối thủ không nhìn thấy bạn)"
+            );
             
             updateUI();
             shouldEndTurn = true;

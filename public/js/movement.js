@@ -60,8 +60,8 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
                     
                     // ===== KIỂM TRA TÀNG HÌNH =====
                     if (window.isInvisible && window.invisiblePlayer === movePlayer) {
-                        // ===== TRÊN MÁY MÌNH: KHÔNG CẦN LÀM GÌ =====
-                        // (Vì mình vẫn thấy)
+                        // ===== XÓA TÀNG HÌNH TRÊN MÁY MÌNH =====
+                        // Không cần làm gì vì máy mình vẫn thấy
                         
                         // ===== GỬI ĐỒNG BỘ HIỆN LẠI CHO ĐỐI THỦ =====
                         if (socket && socket.connected) {

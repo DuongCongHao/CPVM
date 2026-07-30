@@ -14,7 +14,6 @@ function updateUI() {
     const p2Skip = document.getElementById('p2-skip');
     const turnTxt = document.getElementById('turn-txt');
     
-    // 🔥 NẾU KHÔNG TÌM THẤY ELEMENT -> THOÁT
     if (!p1Money || !p2Money || !p1Round || !p2Round) {
         console.warn("⚠️ UI elements chưa được render!");
         return;
@@ -36,36 +35,47 @@ function updateUI() {
         }
     }
 
+    // ===== CẬP NHẬT VỊ TRÍ QUÂN CỜ =====
     for(let i = 0; i < TOTAL_CELLS; i++) {
         const el = document.getElementById(`cell-${i}`);
         if (!el) continue;
 
-        // ===== KIỂM TRA TÀNG HÌNH TRÊN MÁY NÀY =====
-        let isInvisibleSlot = false;
-        if (window.isInvisible && window.invisiblePos === i) {
-            const slot = document.getElementById(`slot-p${window.invisiblePlayer}-${i}`);
-            // CHỈ ẨN NẾU SLOT NÀY ĐANG BỊ ẨN (display: none)
-            if (slot && slot.style.display === 'none') {
-                isInvisibleSlot = true;
+        // ===== XÓA TẤT CẢ CLASS CŨ =====
+        el.classList.remove('has-p1', 'has-p2');
+        
+        // ===== KIỂM TRA TÀNG HÌNH - DÙNG BIẾN TOÀN CỤC =====
+        // ===== THÊM CLASS CHO P1 =====
+        if (
+            players[1] &&
+            players[1].pos !== undefined &&
+            players[1].pos !== null &&
+            players[1].pos === i
+        ) {
+            // Chỉ ẩn P1 nếu đây là ĐỐI THỦ
+            if (
+                !(window.isInvisible &&
+                window.invisiblePlayer === 1 &&
+                myPlayerNumber !== 1)
+            ) {
+                el.classList.add('has-p1');
             }
         }
-        
-        // ===== CẬP NHẬT CLASS =====
-        if (!isInvisibleSlot) {
-            if (players[1] && players[1].pos === i) {
-                el.classList.add('has-p1');
-            } else {
-                el.classList.remove('has-p1');
-            }
-            
-            if (players[2] && players[2].pos === i) {
+
+        // ===== THÊM CLASS CHO P2 =====
+        if (
+            players[2] &&
+            players[2].pos !== undefined &&
+            players[2].pos !== null &&
+            players[2].pos === i
+        ) {
+            // Chỉ ẩn P2 nếu đây là ĐỐI THỦ
+            if (
+                !(window.isInvisible &&
+                window.invisiblePlayer === 2 &&
+                myPlayerNumber !== 2)
+            ) {
                 el.classList.add('has-p2');
-            } else {
-                el.classList.remove('has-p2');
             }
-        } else {
-            // Nếu là slot tàng hình, đảm bảo không có class
-            el.classList.remove('has-p1', 'has-p2');
         }
         
         el.classList.toggle('has-gift', cellsData[i] && cellsData[i].hasGift);
@@ -114,8 +124,7 @@ function updateUI() {
         }
     }
 
-    // ===== 🆕 HIỂN THỊ TRẠNG THÁI PHÓNG XẠ =====
-    // Player 1
+    // ===== HIỂN THỊ TRẠNG THÁI PHÓNG XẠ =====
     let p1Rad = document.getElementById('p1-radiation');
     if (players[1].radiationEffect && players[1].radiationEffect > 0) {
         if (!p1Rad) {
@@ -136,7 +145,6 @@ function updateUI() {
         p1Rad.style.display = 'none';
     }
 
-    // Player 2
     let p2Rad = document.getElementById('p2-radiation');
     if (players[2].radiationEffect && players[2].radiationEffect > 0) {
         if (!p2Rad) {
@@ -157,7 +165,6 @@ function updateUI() {
         p2Rad.style.display = 'none';
     }
 }
-
 // ===== NHẬT KÝ TRẬN ĐẤU =====
 function addLog(text) {
     const logBox = document.getElementById('log');

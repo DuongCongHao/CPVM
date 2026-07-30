@@ -555,10 +555,9 @@ if (typeof socket !== 'undefined' && socket) {
         const pos = data.pos;
         const oldPos = data.oldPos;
         
-        // 🔥 KIỂM TRA: NẾU LÀ MÌNH THÌ KHÔNG ẨN
+        // 🔥 NẾU LÀ MÌNH THÌ KHÔNG ẨN
         if (myPlayerNumber !== null && playerNum === myPlayerNumber) {
-            console.log('👻 Đây là mình (P' + myPlayerNumber + '), không ẩn!');
-            // Vẫn cập nhật vị trí nhưng không ẩn
+            console.log('👻 Đây là mình, không ẩn!');
             if (players[playerNum]) {
                 players[playerNum].pos = pos;
             }
@@ -569,7 +568,6 @@ if (typeof socket !== 'undefined' && socket) {
         // ===== CHỈ ẨN KHI LÀ ĐỐI THỦ =====
         console.log('👻 Đây là đối thủ, ẩn đi!');
         
-        // Cập nhật vị trí
         if (players[playerNum]) {
             players[playerNum].pos = pos;
         }
@@ -578,18 +576,20 @@ if (typeof socket !== 'undefined' && socket) {
         if (oldPos !== undefined) {
             let oldSlot = document.getElementById(`slot-p${playerNum}-${oldPos}`);
             if (oldSlot) {
-                oldSlot.classList.remove('has-p1', 'has-p2');
                 oldSlot.style.display = 'none';
                 oldSlot.style.opacity = '0';
+                oldSlot.classList.remove('has-p1', 'has-p2');
+                oldSlot.dataset.invisible = 'true';
             }
         }
         
         // Ẩn ở vị trí mới
         let newSlot = document.getElementById(`slot-p${playerNum}-${pos}`);
         if (newSlot) {
-            newSlot.classList.remove('has-p1', 'has-p2');
             newSlot.style.display = 'none';
             newSlot.style.opacity = '0';
+            newSlot.classList.remove('has-p1', 'has-p2');
+            newSlot.dataset.invisible = 'true';
         }
         
         window.isInvisible = true;
@@ -606,7 +606,7 @@ if (typeof socket !== 'undefined' && socket) {
         const playerNum = data.playerNum;
         const pos = data.pos;
         
-        // 🔥 NẾU LÀ MÌNH THÌ KHÔNG CẦN LÀM GÌ (vì mình vẫn thấy)
+        // 🔥 NẾU LÀ MÌNH THÌ KHÔNG CẦN LÀM GÌ
         if (playerNum === myPlayerNumber) {
             console.log('👻 Đây là mình, không cần hiện lại!');
             return;
@@ -615,6 +615,23 @@ if (typeof socket !== 'undefined' && socket) {
         // ===== HIỆN LẠI NHÂN VẬT CỦA ĐỐI THỦ =====
         console.log('👻 Hiện lại nhân vật đối thủ!');
         
+        // Xóa tất cả dataset.invisible của player này
+        for (let i = 0; i < TOTAL_CELLS; i++) {
+            let slot = document.getElementById(`slot-p${playerNum}-${i}`);
+            if (slot) {
+                slot.dataset.invisible = 'false';
+                slot.style.display = '';
+                slot.style.opacity = '1';
+                slot.classList.remove('invisible-skill');
+                const avatar = slot.querySelector('.p-avatar');
+                if (avatar) {
+                    avatar.style.textShadow = '';
+                    avatar.style.filter = '';
+                }
+            }
+        }
+        
+        // Hiện lại ở vị trí START
         let slot = document.getElementById(`slot-p${playerNum}-${pos}`);
         if (slot) {
             slot.style.display = '';
