@@ -109,7 +109,51 @@ function validateExp(exp) {
            exp >= 0 && 
            exp <= MAX_EXP_PER_MATCH;
 }
+// ============================================
+// 🏆 TÍNH TOÁN PHẦN THƯỞNG TRÊN SERVER (KHÔNG BONUS)
+// ============================================
 
+function calculateRewards(isWin, currentData) {
+    // ===== PHẦN THƯỞNG CƠ BẢN (KHÔNG BONUS) =====
+    let expGained = isWin ? 150 : 75;
+    let coinsGained = isWin ? 50 : 25;
+    let pointsGained = isWin ? 25 : -20;
+    
+    // Giới hạn an toàn
+    const MAX_EXP_PER_MATCH = 300;
+    const MAX_COINS_PER_MATCH = 100;
+    const MAX_POINTS_PER_MATCH = 25;
+    
+    expGained = Math.min(expGained, MAX_EXP_PER_MATCH);
+    coinsGained = Math.min(coinsGained, MAX_COINS_PER_MATCH);
+    pointsGained = Math.max(-MAX_POINTS_PER_MATCH, Math.min(pointsGained, MAX_POINTS_PER_MATCH));
+    
+    // Tính toán dữ liệu mới
+    const newExp = (currentData.exp || 0) + expGained;
+    const newLevel = Math.floor(newExp / 1000) + 1;
+    const newPoints = Math.max(0, (currentData.points || 0) + pointsGained);
+    const newCoins = (currentData.coin || 0) + coinsGained;
+    
+    // Xác định rank mới
+    let newRank = "Bùn";
+    if (newPoints >= 600) newRank = "Hali";
+    else if (newPoints >= 500) newRank = "Kim Cương";
+    else if (newPoints >= 400) newRank = "Vàng";
+    else if (newPoints >= 300) newRank = "Bạc";
+    else if (newPoints >= 200) newRank = "Đồng";
+    else if (newPoints >= 100) newRank = "Sắt";
+    
+    return {
+        level: newLevel,
+        exp: newExp,
+        points: newPoints,
+        rank: newRank,
+        coin: newCoins,
+        expGained: expGained,
+        coinsGained: coinsGained,
+        pointsGained: pointsGained
+    };
+}
 // Cấu hình CORS để nhận mọi kết nối từ các thiết bị khác nhau
 const { Server } = require("socket.io");
 const io = new Server(server, {
@@ -1071,28 +1115,98 @@ io.on('connection', (socket) => {
         if (rooms[roomId].timer) clearInterval(rooms[roomId].timer);
 
         const winner = rooms[roomId].players.find(p => p.playerNumber === data.winnerId);
-        if (winner) {
-            const winnerSocket = io.sockets.sockets.get(winner.id);
-            if (winnerSocket) {
-                winnerSocket.emit("gameOver", {
-                    winnerId: data.winnerId,
-                    reason: data.reason,
-                    message: `🎉 Bạn đã chiến thắng!`
-                });
-            }
+        const loser = rooms[roomId].players.find(p => p.playerNumber !== data.winnerId);
+        
+        if (!winner || !loser) {
+            console.log(`⚠️ Không tìm thấy người chơi hợp lệ!`);
+            return;
         }
 
-        const loser = rooms[roomId].players.find(p => p.playerNumber !== data.winnerId);
-        if (loser) {
+        const totalRounds = Math.max(winner.rounds || 0, loser.rounds || 0);
+        
+        console.log(`📊 Kết quả trận đấu: ${winner.name} thắng, ${loser.name} thua, ${totalRounds} vòng`);
+
+        // ===== 🏆 LƯU VÀO DATABASE =====
+        try {
+            // Lấy dữ liệu hiện tại của người thắng
+            const winnerUserResponse = await axios.get(`http://localhost:${PORT}/api/user/${winner.userId}`);
+            const winnerCurrentData = winnerUserResponse.data;
+            
+            const winnerReward = calculateRewards(true, winnerCurrentData);
+            console.log(`🏆 ${winner.name}: +${winnerReward.expGained} EXP, +${winnerReward.coinsGained} Coin, +${winnerReward.pointsGained} RP`);
+            
+            await axios.post(`${process.env.API_URL}/api/update-result`, {
+                id: winner.userId,
+                level: winnerReward.level,
+                exp: winnerReward.exp,
+                points: winnerReward.points,
+                rank: winnerReward.rank,
+                coins: winnerReward.coin
+            });
+            console.log(`✅ Đã lưu phần thưởng cho ${winner.name}`);
+
+            // Lấy dữ liệu hiện tại của người thua
+            const loserUserResponse = await axios.get(`http://localhost:${PORT}/api/user/${loser.userId}`);
+            const loserCurrentData = loserUserResponse.data;
+            
+            const loserReward = calculateRewards(false, loserCurrentData);
+            console.log(`💀 ${loser.name}: +${loserReward.expGained} EXP, +${loserReward.coinsGained} Coin, ${loserReward.pointsGained} RP`);
+            
+            await axios.post(`${process.env.API_URL}/api/update-result`, {
+                id: loser.userId,
+                level: loserReward.level,
+                exp: loserReward.exp,
+                points: loserReward.points,
+                rank: loserReward.rank,
+                coins: loserReward.coin
+            });
+            console.log(`✅ Đã lưu phần thưởng cho ${loser.name}`);
+
+            // ===== 🆕 GỬI matchResult CHO CẢ 2 MÁY =====
+            const matchResult = {
+                winnerId: data.winnerId,
+                winnerName: winner.name,
+                reason: data.reason,
+                totalRounds: totalRounds,
+                reward: {
+                    winner: {
+                        exp: winnerReward.expGained,
+                        coins: winnerReward.coinsGained,
+                        points: winnerReward.pointsGained
+                    },
+                    loser: {
+                        exp: loserReward.expGained,
+                        coins: loserReward.coinsGained,
+                        points: loserReward.pointsGained
+                    }
+                }
+            };
+
+            const winnerSocket = io.sockets.sockets.get(winner.id);
             const loserSocket = io.sockets.sockets.get(loser.id);
-            if (loserSocket) {
-                loserSocket.emit("gameOver", {
-                    winnerId: data.winnerId,
-                    reason: data.reason,
-                    message: `💀 Bạn đã thua cuộc!`,
-                    isLoser: true
+
+            // 🔥 GỬI CHO NGƯỜI THẮNG
+            if (winnerSocket) {
+                winnerSocket.emit("matchResult", {
+                    ...matchResult,
+                    isWinner: true,
+                    message: `🎉 Bạn đã chiến thắng! (+${winnerReward.pointsGained} RP, +${winnerReward.expGained} EXP)`
                 });
+                console.log(`📤 Đã gửi matchResult cho ${winner.name}`);
             }
+
+            // 🔥 GỬI CHO NGƯỜI THUA
+            if (loserSocket) {
+                loserSocket.emit("matchResult", {
+                    ...matchResult,
+                    isWinner: false,
+                    message: `💀 Bạn đã thua cuộc! (${loserReward.pointsGained} RP, +${loserReward.expGained} EXP)`
+                });
+                console.log(`📤 Đã gửi matchResult cho ${loser.name}`);
+            }
+
+        } catch (err) {
+            console.error(`❌ Lỗi khi lưu phần thưởng:`, err.message);
         }
     });
     // =========================================================================

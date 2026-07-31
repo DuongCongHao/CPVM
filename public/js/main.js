@@ -1048,6 +1048,7 @@
             
             // Đánh dấu game đang kết thúc
             window.gameEnding = true;
+            window.isMoving = true;
             
             // Vô hiệu hóa nút roll ngay lập tức
             const rollBtn = document.getElementById('roll-btn');
@@ -1060,6 +1061,19 @@
             const skillBtn = document.getElementById('use-skill-btn');
             if (skillBtn) {
                 skillBtn.disabled = true;
+            }
+            
+            // Ẩn thông báo mua đất nếu đang hiển thị
+            if (typeof hideNotification === 'function') {
+                hideNotification();
+            }
+            
+            // Ngăn chặn bất kỳ hành động nào khác
+            if (typeof closeBuyModal === 'function') {
+                closeBuyModal();
+            }
+            if (typeof hideBuyModal === 'function') {
+                hideBuyModal();
             }
             
             let p1Value = calculateTotalAsset(1);
@@ -1078,12 +1092,12 @@
                 winnerId = players[1].money >= players[2].money ? 1 : 2;
             }
             
-            // Gọi gameOver và THOÁT NGAY
+            // 🔥 GỌI GAMEOVER VÀ THOÁT NGAY (KHÔNG GỬI SYNCACTIONDATA)
             gameOver(winnerId, "value_compare");
             return;
         }
 
-        // 🔥 KIỂM TRA HẾT TIỀN - CHỈ GỌI 1 LẦN
+        // 🔥 KIỂM TRA HẾT TIỀN
         if (players[1].money < 0) {
             console.log("💀 P1 HẾT TIỀN!");
             if (!window.gameEnding) {
@@ -1129,48 +1143,14 @@
         isMoving = false; 
 
         if (socket && socket.connected) {
-            // Đồng bộ dữ liệu tiền vàng, đất đai hiện tại
-            socket.emit('syncActionData', { players: players, cellsData: cellsData });
-            
-            // 🔥 CHỈ KIỂM TRA THIÊN TAI NẾU GAME CHƯA KẾT THÚC
+            // 🔥 KIỂM TRA LẠI GAME CHƯA KẾT THÚC TRƯỚC KHI GỬI
             if (!window.gameEnding) {
-                console.log("========== KIỂM TRA THIÊN TAI ==========");
-                console.log("disasterSpawnedThisGame =", window.disasterSpawnedThisGame);
-                console.log("P1 rounds =", players[1].rounds);
-                console.log("P2 rounds =", players[2].rounds);
-
-                if (
-                    !window.disasterSpawnedThisGame &&
-                    players[1].rounds >= 1 &&
-                    players[2].rounds >= 1
-                ) {
-                    console.log("✅ Điều kiện xuất hiện thiên tai đạt.");
-
-                    const TOTAL_CELLS = cellsData.length;
-                    let randomDisasterIdx;
-
-                    do {
-                        randomDisasterIdx = Math.floor(Math.random() * (TOTAL_CELLS - 1)) + 1;
-                    } while (randomDisasterIdx === Number(spiderWebIndex));
-
-                    console.log("⚡ Random thiên tai =", randomDisasterIdx);
-
-                    const alertDisasterMsg = `🚨 THIÊN TAI XUẤT HIỆN tại ô ${randomDisasterIdx}`;
-
-                    if (socket && socket.connected) {
-                        console.log("📡 Gửi triggerDisasterSpawn lên Server");
-                        try {
-                            socket.emit("triggerDisasterSpawn", {
-                                lightningIndex: randomDisasterIdx,
-                                logMsg: alertDisasterMsg
-                            });
-                            console.log("✅ Đã gửi triggerDisasterSpawn");
-                        } catch(err) {
-                            console.error("❌ triggerDisasterSpawn lỗi:", err);
-                        }
-                    } else {
-                        console.error("❌ Socket chưa kết nối.");
-                    }
+                // Đồng bộ dữ liệu tiền vàng, đất đai hiện tại
+                socket.emit('syncActionData', { players: players, cellsData: cellsData });
+                
+                // Chỉ kiểm tra thiên tai nếu game chưa kết thúc
+                if (!window.gameEnding) {
+                    checkAndSpawnDisaster();
                 }
             }
 
@@ -1375,6 +1355,14 @@
         console.log("📊 Lý do:", reason);
         console.log("👤 myPlayerNumber:", myPlayerNumber);
         
+        // ===== 🛡️ CHỐNG HACK TỪ CONSOLE =====
+        const stack = new Error().stack;
+        if (stack && stack.includes('console')) {
+            console.warn('🚨 PHÁT HIỆN GỌI gameOver TỪ CONSOLE!');
+            alert('⚠️ Hành vi không được phép!');
+            return;
+        }
+        
         // 🔥 KIỂM TRA ĐÃ XỬ LÝ GAMEOVER CHƯA (CHỐNG GỌI 2 LẦN)
         if (window._gameOverProcessing) {
             console.log("⛔ Đang xử lý gameOver, bỏ qua!");
@@ -1385,7 +1373,7 @@
         // 🔥 ĐÁNH DẤU GAME ĐÃ KẾT THÚC - DỪNG MỌI HÀNH ĐỘNG
         window.gameEnding = true;
         window.gameStarted = false;
-        window.isMoving = true;  // Khóa mọi hành động
+        window.isMoving = true;
         
         // Ẩn nút rời trận
         if (typeof hideLeaveButton === 'function') {
@@ -1403,6 +1391,17 @@
         const skillBtn = document.getElementById('use-skill-btn');
         if (skillBtn) {
             skillBtn.disabled = true;
+        }
+        
+        // Ẩn thông báo mua đất
+        if (typeof hideNotification === 'function') {
+            hideNotification();
+        }
+        if (typeof closeBuyModal === 'function') {
+            closeBuyModal();
+        }
+        if (typeof hideBuyModal === 'function') {
+            hideBuyModal();
         }
         
         // Dừng nhạc nền
@@ -1427,16 +1426,14 @@
         }
         
         const isWin = (myPlayerNumber === winnerId);
-        console.log("🏆 Bạn có thắng không?", isWin);
+        console.log(`🏆 Bạn có thắng không? ${isWin}`);
         
-        // 🔥 CHỈ NGƯỜI THẮNG GỬI GAMEOVER LÊN SERVER
+        // ===== 🔥 CHỈ NGƯỜI THẮNG GỬI GAMEOVER LÊN SERVER =====
         if (isWin) {
-            // 🔥 NẾU LÀ NGƯỜI THẮNG - KIỂM TRA ĐÃ GỬI GAMEOVER CHƯA
             if (window._gameOverSent) {
                 console.log("⛔ Đã gửi gameOver rồi, bỏ qua!");
             } else {
                 window._gameOverSent = true;
-                // GỬI SERVER: Trận đấu kết thúc (CHỈ 1 LẦN)
                 if (socket && socket.connected) {
                     socket.emit("gameOver", {
                         winnerId: winnerId,
@@ -1449,18 +1446,10 @@
             console.log("🚪 Bạn là người thua, không gửi gameOver lên server!");
         }
         
-        // Hiển thị thông báo đặc biệt nếu đối thủ rời
-        if (reason === 'disconnect' || reason === 'leave') {
-            console.log(`📢 Đối thủ đã ${reason === 'disconnect' ? 'mất kết nối' : 'rời trận'}`);
-            if (typeof addLog === 'function') {
-                addLog(`🏆 ${isWin ? 'Bạn được xử thắng!' : 'Đối thủ đã rời trận.'}`);
-            }
-        }
-        
-        // Gọi animation cho cả thắng và thua
+        // ===== GỌI ANIMATION =====
         if (typeof showMatchResultAnimation === 'function') {
             console.log(`🎬 Gọi showMatchResultAnimation với isWin = ${isWin}`);
-            showMatchResultAnimation(isWin, currentUser);
+            showMatchResultAnimation(isWin, currentUser, null);
         } else {
             showSimpleGameOver(winnerId);
         }
@@ -1577,44 +1566,50 @@
     }
 
     // 2. Hàm chạy animation
-    async function showMatchResultAnimation(isWin, currentUserData) {
+    // ===== HÀM CHẠY ANIMATION =====
+    async function showMatchResultAnimation(isWin, currentUserData, matchData) {
         console.log("🎬 ===== BẮT ĐẦU ANIMATION =====");
         console.log("📊 isWin:", isWin);
-        console.log("📊 currentUserData:", currentUserData);
+        console.log("📊 matchData:", matchData);
         
-        // 🔥 BẬT POPUP KẾT THÚC TRẬN ĐẤU
+        // 🔥 BẬT POPUP
         const gameOverOverlay = document.getElementById("game-over-overlay");
         if (gameOverOverlay) {
             gameOverOverlay.style.display = "flex";
-            console.log("✅ Đã hiển thị overlay");
         } else {
             console.error("❌ Không tìm thấy game-over-overlay!");
             return;
         }
 
-        // 🔥 TÍNH TOÁN PHẦN THƯỞNG
-        const expGained = isWin ? 150 : 75;
-        const coinsGained = isWin ? 50 : 25;
-        const pointsGained = isWin ? 25 : -20;
+        // ===== LẤY PHẦN THƯỞNG TỪ SERVER =====
+        let expGained = 0;
+        let coinsGained = 0;
+        let pointsGained = 0;
         
-        console.log("📊 Phần thưởng:");
-        console.log("  - EXP:", expGained);
-        console.log("  - Coins:", coinsGained);
-        console.log("  - Points:", pointsGained);
+        if (matchData && matchData.reward) {
+            if (isWin) {
+                expGained = matchData.reward.winner?.exp || 0;
+                coinsGained = matchData.reward.winner?.coins || 0;
+                pointsGained = matchData.reward.winner?.points || 0;
+            } else {
+                expGained = matchData.reward.loser?.exp || 0;
+                coinsGained = matchData.reward.loser?.coins || 0;
+                pointsGained = matchData.reward.loser?.points || 0;
+            }
+        } else {
+            console.warn("⚠️ Không nhận được reward từ server, dùng giá trị mặc định");
+            expGained = isWin ? 150 : 75;
+            coinsGained = isWin ? 50 : 25;
+            pointsGained = isWin ? 25 : -20;
+        }
+        
+        console.log("📊 Phần thưởng:", { expGained, coinsGained, pointsGained });
 
         // 🔥 LẤY DỮ LIỆU USER
         let currentPts = currentUserData?.points || 0;
         let totalExp = currentUserData?.exp || 0;
         let currentCoins = currentUserData?.coin || currentUserData?.coins || 0;
         let playerName = currentUserData?.display_name || currentUserData?.username || "Bạn";
-        let userId = currentUserData?.id;
-        
-        console.log("📊 Dữ liệu user hiện tại:");
-        console.log("  - Points:", currentPts);
-        console.log("  - EXP:", totalExp);
-        console.log("  - Coins:", currentCoins);
-        console.log("  - Name:", playerName);
-        console.log("  - User ID:", userId);
 
         // 🔥 LẤY CÁC ELEMENT
         const titleEl = document.getElementById("match-status-title");
@@ -1627,17 +1622,6 @@
         const expBarEl = document.getElementById("exp-bar-fill");
         const coinRewardEl = document.getElementById("coin-reward");
 
-        console.log("📌 Kiểm tra elements:");
-        console.log("  - match-status-title:", !!titleEl);
-        console.log("  - winner-text:", !!winnerTextEl);
-        console.log("  - rank-icon:", !!rankIconEl);
-        console.log("  - rank-pts:", !!rankPtsEl);
-        console.log("  - rank-delta:", !!rankDeltaEl);
-        console.log("  - level-badge:", !!levelBadgeEl);
-        console.log("  - exp-text:", !!expTextEl);
-        console.log("  - exp-bar:", !!expBarEl);
-        console.log("  - coin-reward:", !!coinRewardEl);
-
         // ===== A. TIÊU ĐỀ =====
         if (titleEl) {
             titleEl.innerText = isWin ? "🏆 VICTORY!" : "💀 DEFEAT!";
@@ -1646,8 +1630,8 @@
         
         if (winnerTextEl) {
             winnerTextEl.innerText = isWin ? 
-                `🎉 ${playerName} đã chiến thắng!` : 
-                `💀 ${playerName} đã thất bại!`;
+                `🎉 ${playerName} đã chiến thắng! (${matchData?.totalRounds || 0} vòng)` : 
+                `💀 ${playerName} đã thất bại! (${matchData?.totalRounds || 0} vòng)`;
         }
 
         // ===== B. RANK ICON =====
@@ -1655,7 +1639,6 @@
         if (rankIconEl) {
             rankIconEl.src = initialRank.icon;
             rankIconEl.alt = initialRank.name;
-            console.log("🖼️ Rank icon:", initialRank.icon);
         }
         if (rankPtsEl) rankPtsEl.innerText = currentPts;
         if (coinRewardEl) coinRewardEl.innerText = `+${coinsGained} Coin`;
@@ -1670,13 +1653,9 @@
         let ptsStep = pointsGained > 0 ? 1 : -1;
         let lastRankName = initialRank.name;
 
-        console.log("🎯 Target Points:", targetPts);
-
-        // Chạy animation điểm
         let ptsInterval = setInterval(() => {
             if (currentPts === targetPts) {
                 clearInterval(ptsInterval);
-                console.log("✅ Animation Points hoàn thành!");
             } else {
                 currentPts += ptsStep;
                 if (rankPtsEl) rankPtsEl.innerText = currentPts;
@@ -1689,7 +1668,6 @@
                         rankIconEl.classList.remove("rank-up-anim");
                         void rankIconEl.offsetWidth;
                         rankIconEl.classList.add("rank-up-anim");
-                        console.log("⭐ Thăng rank lên:", updatedRank.name);
                     }
                 }
             }
@@ -1700,22 +1678,15 @@
         let currentLevelExp = totalExp % 1000;
         let remainingExpToAdd = expGained;
 
-        console.log("📊 EXP hiện tại:", totalExp);
-        console.log("📊 Level hiện tại:", level);
-        console.log("📊 EXP trong level:", currentLevelExp);
-        console.log("📊 EXP cần thêm:", remainingExpToAdd);
-
         if (levelBadgeEl) levelBadgeEl.innerText = level;
         if (expBarEl) expBarEl.style.width = `${(currentLevelExp / 1000) * 100}%`;
         if (expTextEl) expTextEl.innerText = `${currentLevelExp} / 1000 EXP`;
 
         await new Promise(r => setTimeout(r, 400));
 
-        // Chạy animation EXP
         let expInterval = setInterval(() => {
             if (remainingExpToAdd <= 0) {
                 clearInterval(expInterval);
-                console.log("✅ Animation EXP hoàn thành!");
                 return;
             }
 
@@ -1731,7 +1702,6 @@
                         levelBadgeEl.parentElement.classList.add("level-up-flash");
                         setTimeout(() => levelBadgeEl.parentElement.classList.remove("level-up-flash"), 1000);
                     }
-                    console.log("⭐ Lên cấp! Level mới:", level);
                 }
             }
 
@@ -1739,22 +1709,16 @@
             if (expTextEl) expTextEl.innerText = `${currentLevelExp} / 1000 EXP`;
         }, 20);
 
-        // ===== E. CẬP NHẬT DATABASE =====
+        // ===== E. CẬP NHẬT LOCALSTORAGE =====
         const finalTotalExp = totalExp + expGained;
         const finalPoints = targetPts;
         const finalRank = getRankInfo(finalPoints).name;
         const finalCoins = currentCoins + coinsGained;
         const finalLevel = Math.floor(finalTotalExp / 1000) + 1;
 
-        // Lấy user từ localStorage để cập nhật
-        const localUser = JSON.parse(localStorage.getItem("currentUser")) || 
-                        JSON.parse(localStorage.getItem("user")) || {};
-        const finalUserId = userId || localUser.id;
-
-        // Cập nhật dữ liệu
+        const localUser = JSON.parse(localStorage.getItem("currentUser")) || {};
         const updatedUserData = {
             ...localUser,
-            id: finalUserId,
             level: finalLevel,
             exp: finalTotalExp,
             points: finalPoints,
@@ -1763,36 +1727,9 @@
             coins: finalCoins
         };
 
-        console.log("📊 Dữ liệu mới:", updatedUserData);
-
-        // ✅ LƯU CẢ 2 KEY
         localStorage.setItem("currentUser", JSON.stringify(updatedUserData));
         localStorage.setItem("user", JSON.stringify(updatedUserData));
 
-        // Gửi lên server
-        if (finalUserId) {
-            console.log("🚀 Đang gửi dữ liệu lên Database...");
-            try {
-                const response = await fetch("/api/update-result", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        id: finalUserId,
-                        level: finalLevel,
-                        exp: finalTotalExp,
-                        points: finalPoints,
-                        rank: finalRank,
-                        coins: finalCoins
-                    })
-                });
-                const data = await response.json();
-                console.log("✅ Đã cập nhật Supabase thành công:", data);
-            } catch (err) {
-                console.error("❌ Lỗi Fetch Update:", err);
-            }
-        }
-
-        // Cập nhật UI lobby
         if (typeof updateLobbyUI === "function") {
             updateLobbyUI(updatedUserData);
         }

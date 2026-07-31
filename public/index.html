@@ -822,35 +822,49 @@
             <!-- BẢNG ĐIỀU KHIỂN & ĐIỂM SỐ -->
             <div class="side-panel">
                 <div class="status-card">
+                  <!-- P1 -->
                     <div class="player-info p1-card">
-                    <div class="player-top">   
-                        <span>
-                            <!-- 🆕 THAY 🔴 BẰNG ẢNH RANK -->
-                            <img id="p1-rank-icon" src="assets/ranks/bun.jpg" alt="Rank" style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #ef4444; object-fit: cover; vertical-align: middle;">
-                            <span id="p1-name-display">Người chơi 1</span>
-                            <span class="player-round" id="p1-round">Vòng: 0</span>
-                        </span>
-                        <span class="player-money">
-                            <span id="p1-money">1000</span>$
-                        </span>
+                        <div class="player-top">   
+                            <span style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;">
+                                <img id="p1-rank-icon" src="assets/ranks/bun.jpg" alt="Rank" style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #ef4444; object-fit: cover; vertical-align: middle; flex-shrink: 0;">
+                                <span id="p1-name-display" style="font-weight: 700; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Người chơi 1</span>
+                                <span class="player-round" id="p1-round" style="flex-shrink: 0;">Vòng: 0</span>
+                            </span>
+                            
+                            <!-- 🆕 TIỀN MẶT + GIÁ TRỊ ĐẤT NGANG HÀNG, GÓC PHẢI -->
+                            <span style="display: flex; align-items: center; gap: 8px; flex-shrink: 0; font-size: 13px; font-weight: 700;">
+                                <span style="color: #f8fafc;">
+                                    💰<span id="p1-money">1000</span>
+                                </span>
+                                <span style="color: #34d399;">
+                                    🏠<span id="p1-land-value">0</span>
+                                </span>
+                            </span>
+                        </div>
+                        <div id="p1-skill" class="skill-tag">🎴 Chưa có thẻ</div>
                     </div>
-                    <div id="p1-skill" class="skill-tag">🎴 Chưa có thẻ</div>
-                </div>
 
-                <div class="player-info p2-card"> 
-                    <div class="player-top">   
-                        <span>
-                            <!-- 🆕 THAY 🔵 BẰNG ẢNH RANK -->
-                            <img id="p2-rank-icon" src="assets/ranks/bun.jpg" alt="Rank" style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #3b82f6; object-fit: cover; vertical-align: middle;">
-                            <span id="p2-name-display">Người chơi 2</span> 
-                            <span class="player-round" id="p2-round">Vòng: 0</span> 
-                        </span>
-                        <span class="player-money">
-                            <span id="p2-money">1000</span>$ 
-                        </span>
+                    <!-- P2 -->
+                    <div class="player-info p2-card"> 
+                        <div class="player-top">   
+                            <span style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;">
+                                <img id="p2-rank-icon" src="assets/ranks/bun.jpg" alt="Rank" style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #3b82f6; object-fit: cover; vertical-align: middle; flex-shrink: 0;">
+                                <span id="p2-name-display" style="font-weight: 700; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Người chơi 2</span> 
+                                <span class="player-round" id="p2-round" style="flex-shrink: 0;">Vòng: 0</span> 
+                            </span>
+                            
+                            <!-- 🆕 TIỀN MẶT + GIÁ TRỊ ĐẤT NGANG HÀNG, GÓC PHẢI -->
+                            <span style="display: flex; align-items: center; gap: 8px; flex-shrink: 0; font-size: 13px; font-weight: 700;">
+                                <span style="color: #f8fafc;">
+                                    💰<span id="p2-money">1000</span>
+                                </span>
+                                <span style="color: #34d399;">
+                                    🏠<span id="p2-land-value">0</span>
+                                </span>
+                            </span>
+                        </div>
+                        <div id="p2-skill" class="skill-tag">🎴 Chưa có thẻ</div>
                     </div>
-                    <div id="p2-skill" class="skill-tag">🎴 Chưa có thẻ</div>
-                </div>
                 </div>
                 <div class="status-card">
                     <h3 style="margin: 0 0 8px 0; font-size: 13px; text-transform: uppercase; color: #94a3b8;">Nhật ký trận đấu</h3>

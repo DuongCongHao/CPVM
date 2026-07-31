@@ -1,5 +1,12 @@
 // ===== ĐÁNH GIÁ Ô ĐẤT =====
 function evaluateTargetCell() {
+    // 🔥 NẾU GAME ĐANG KẾT THÚC, KHÔNG CHO MUA ĐẤT
+    if (window.gameEnding) {
+        console.log("⛔ Game đang kết thúc, bỏ qua mua đất!");
+        endTurn();
+        return;
+    }
+    
     let targetPlayer = window.isLuckyMove 
         ? myPlayerNumber 
         : currentTurn;
@@ -87,12 +94,19 @@ function evaluateTargetCell() {
         return;
     }
 
+    // 🔥 CHỈ CHO MUA ĐẤT NẾU GAME CHƯA KẾT THÚC
     if (p.pos === 0) {
         endTurn();
     } else if (targetCell.owner === null) {
         if (p.money >= targetCell.price) {
             const buyerPlayerId = targetPlayer;
             showNotification("💰 Mua Đất Trống", `Khu Đất số ${p.pos} chưa thuộc về ai. Bạn muốn chi <strong>${targetCell.price}$</strong> để sở hữu ô này?`, '#10b981', () => {
+                // 🔥 KIỂM TRA LẠI GAME CHƯA KẾT THÚC
+                if (window.gameEnding) {
+                    console.log("⛔ Game đã kết thúc, hủy mua đất!");
+                    endTurn();
+                    return;
+                }
                 players[buyerPlayerId].money -= targetCell.price;
                 targetCell.owner = buyerPlayerId;
                 
@@ -102,6 +116,11 @@ function evaluateTargetCell() {
                 if (typeof syncGameToRemote === 'function') syncGameToRemote();
                 endTurn(); 
             }, true, () => {
+                if (window.gameEnding) {
+                    console.log("⛔ Game đã kết thúc, hủy mua đất!");
+                    endTurn();
+                    return;
+                }
                 addLog(`⏭️ <strong>${p.name}</strong> quyết định không mua Khu Đất ${p.pos}.`);
                 endTurn();
             });
@@ -113,6 +132,12 @@ function evaluateTargetCell() {
         if (p.money >= 100) {
             const upgraderPlayerId = targetPlayer;
             showNotification("📈 Nâng Cấp Bất Động Sản", `Bạn đang đứng ở Khu Đất số ${p.pos} của chính mình. Bỏ ra <strong>100$</strong> để nâng cấp giá trị đất lên gấp đôi không?`, '#eab308', () => {
+                // 🔥 KIỂM TRA LẠI GAME CHƯA KẾT THÚC
+                if (window.gameEnding) {
+                    console.log("⛔ Game đã kết thúc, hủy nâng cấp!");
+                    endTurn();
+                    return;
+                }
                 players[upgraderPlayerId].money -= 100;
                 targetCell.price *= 2;
                 
@@ -122,6 +147,11 @@ function evaluateTargetCell() {
                 if (typeof syncGameToRemote === 'function') syncGameToRemote();
                 endTurn(); 
             }, true, () => {
+                if (window.gameEnding) {
+                    console.log("⛔ Game đã kết thúc, hủy nâng cấp!");
+                    endTurn();
+                    return;
+                }
                 addLog(`⏭️ <strong>${p.name}</strong> bỏ qua cơ hội nâng cấp Khu Đất ${p.pos}.`);
                 endTurn();
             });
@@ -150,13 +180,18 @@ function evaluateTargetCell() {
                 winnerId: enemyId,
                 reason: "money"
             });
-
             return;
         }
 
         if (p.money >= fine) {
             const forceBuyerPlayerId = targetPlayer;
             showNotification("🔥 Mua Đứt Tài Sản", `Chi thêm <strong>${fine}$</strong> để cưỡng chế mua đứt lại Khu Đất ${p.pos} từ đối thủ?`, '#ef4444', () => {
+                // 🔥 KIỂM TRA LẠI GAME CHƯA KẾT THÚC
+                if (window.gameEnding) {
+                    console.log("⛔ Game đã kết thúc, hủy mua đứt!");
+                    endTurn();
+                    return;
+                }
                 players[forceBuyerPlayerId].money -= fine;
                 targetCell.owner = forceBuyerPlayerId;
                 targetCell.price = fine; 
@@ -167,6 +202,11 @@ function evaluateTargetCell() {
                 if (typeof syncGameToRemote === 'function') syncGameToRemote();
                 endTurn(); 
             }, true, () => {
+                if (window.gameEnding) {
+                    console.log("⛔ Game đã kết thúc, hủy mua đứt!");
+                    endTurn();
+                    return;
+                }
                 addLog(`⏭️ <strong>${p.name}</strong> chấp nhận nộp phạt chứ không mua đứt ô đất.`);
                 endTurn();
             });

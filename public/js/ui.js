@@ -8,6 +8,8 @@ function updateUI() {
     // ===== KIỂM TRA ELEMENT TỒN TẠI =====
     const p1Money = document.getElementById('p1-money');
     const p2Money = document.getElementById('p2-money');
+    const p1Land = document.getElementById('p1-land-value');
+    const p2Land = document.getElementById('p2-land-value');
     const p1Round = document.getElementById('p1-round');
     const p2Round = document.getElementById('p2-round');
     const p1Skip = document.getElementById('p1-skip');
@@ -19,8 +21,26 @@ function updateUI() {
         return;
     }
     
+    // ===== TÍNH GIÁ TRỊ ĐẤT =====
+    const p1LandValue = calculateTotalLandValue(1);
+    const p2LandValue = calculateTotalLandValue(2);
+    
+    // ===== CẬP NHẬT TIỀN MẶT =====
     p1Money.innerText = players[1].money;
     p2Money.innerText = players[2].money;
+    
+    // ===== 🆕 CẬP NHẬT GIÁ TRỊ ĐẤT =====
+    if (p1Land) {
+        p1Land.innerText = p1LandValue;
+        p1Land.style.color = '#34d399';
+        p1Land.style.fontWeight = 'bold';
+    }
+    if (p2Land) {
+        p2Land.innerText = p2LandValue;
+        p2Land.style.color = '#34d399';
+        p2Land.style.fontWeight = 'bold';
+    }
+    
     p1Round.innerText = `Vòng: ${players[1].rounds}`;
     p2Round.innerText = `Vòng: ${players[2].rounds}`;
     
@@ -43,39 +63,31 @@ function updateUI() {
         // ===== XÓA TẤT CẢ CLASS CŨ =====
         el.classList.remove('has-p1', 'has-p2');
         
-        // ===== KIỂM TRA TÀNG HÌNH - DÙNG BIẾN TOÀN CỤC =====
-        // ===== THÊM CLASS CHO P1 =====
-        if (
-            players[1] &&
-            players[1].pos !== undefined &&
-            players[1].pos !== null &&
-            players[1].pos === i
-        ) {
-            // Chỉ ẩn P1 nếu đây là ĐỐI THỦ
-            if (
-                !(window.isInvisible &&
-                window.invisiblePlayer === 1 &&
-                myPlayerNumber !== 1)
-            ) {
-                el.classList.add('has-p1');
+        // ===== KIỂM TRA TÀNG HÌNH =====
+        let hideP1 = false;
+        let hideP2 = false;
+
+        // Nếu đang có người tàng hình
+        if (window.isInvisible) {
+
+            // Chỉ đối thủ mới bị ẩn.
+            // Máy của chính người dùng skill vẫn luôn nhìn thấy mình.
+            if (window.invisiblePlayer === 1 && myPlayerNumber !== 1) {
+                hideP1 = true;
+            }
+
+            if (window.invisiblePlayer === 2 && myPlayerNumber !== 2) {
+                hideP2 = true;
             }
         }
 
-        // ===== THÊM CLASS CHO P2 =====
-        if (
-            players[2] &&
-            players[2].pos !== undefined &&
-            players[2].pos !== null &&
-            players[2].pos === i
-        ) {
-            // Chỉ ẩn P2 nếu đây là ĐỐI THỦ
-            if (
-                !(window.isInvisible &&
-                window.invisiblePlayer === 2 &&
-                myPlayerNumber !== 2)
-            ) {
-                el.classList.add('has-p2');
-            }
+        // ===== CẬP NHẬT CLASS =====
+        if (players[1] && players[1].pos === i && !hideP1) {
+            el.classList.add("has-p1");
+        }
+
+        if (players[2] && players[2].pos === i && !hideP2) {
+            el.classList.add("has-p2");
         }
         
         el.classList.toggle('has-gift', cellsData[i] && cellsData[i].hasGift);
@@ -87,6 +99,10 @@ function updateUI() {
                     priceEl.innerText = "KHOÁ LƯỢT";
                 } else if (typeof lightningIndex !== 'undefined' && i === lightningIndex) {
                     priceEl.innerText = "⚡ SẤM SÉT";
+                } else if (i === Number(window.nuclearBombIndex) && !window.nuclearBombDetonated) {
+                    priceEl.innerText = "💣 BOM";
+                } else if (cellsData[i]?.isRadioactive) {
+                    priceEl.innerText = "☢️ PHÓNG XẠ";
                 } else {
                     priceEl.innerText = `${cellsData[i].price}$`;
                 }

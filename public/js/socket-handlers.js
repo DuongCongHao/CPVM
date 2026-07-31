@@ -439,7 +439,54 @@ if (typeof socket !== 'undefined' && socket) {
 
     });
     
-
+    // ===== NHẬN KẾT QUẢ TRẬN ĐẤU TỪ SERVER =====
+    socket.on('matchResult', (data) => {
+        console.log('🏆 NHẬN KẾT QUẢ TRẬN ĐẤU:', data);
+        
+        // Ẩn nút rời trận
+        if (typeof hideLeaveButton === 'function') {
+            hideLeaveButton();
+        }
+        
+        // Đánh dấu game kết thúc
+        window.gameEnding = true;
+        window.gameStarted = false;
+        
+        // Vô hiệu hóa nút roll
+        const rollBtn = document.getElementById('roll-btn');
+        if (rollBtn) {
+            rollBtn.disabled = true;
+            rollBtn.innerText = "⏳ KẾT THÚC";
+        }
+        
+        // Vô hiệu hóa nút skill
+        const skillBtn = document.getElementById('use-skill-btn');
+        if (skillBtn) {
+            skillBtn.disabled = true;
+        }
+        
+        // Dừng nhạc nền
+        if (audioGame && audioGame.bgm) {
+            audioGame.bgm.pause();
+            audioGame.bgm.currentTime = 0;
+        }
+        
+        // Lấy user từ localStorage
+        const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+        if (!currentUser) {
+            console.error("❌ Không tìm thấy user!");
+            showSimpleGameOver(data.winnerId);
+            return;
+        }
+        
+        // 🔥 GỌI ANIMATION CHO CẢ THẮNG VÀ THUA
+        if (typeof showMatchResultAnimation === 'function') {
+            console.log(`🎬 Gọi showMatchResultAnimation với isWin = ${data.isWinner}`);
+            showMatchResultAnimation(data.isWinner, currentUser, data);
+        } else {
+            showSimpleGameOver(data.winnerId);
+        }
+    });
     // ===============================
     // NHẬN KẾT QUẢ DÙNG KỸ NĂNG
     // ===============================
