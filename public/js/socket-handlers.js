@@ -606,6 +606,9 @@ if (typeof socket !== 'undefined' && socket) {
     socket.on('matchResult', (data) => {
         console.log('🏆 NHẬN KẾT QUẢ TRẬN ĐẤU:', data);
         
+        // Đánh dấu đã nhận matchResult
+        window._gameOverReceived = true;
+        
         // Ẩn nút rời trận
         if (typeof hideLeaveButton === 'function') {
             hideLeaveButton();
@@ -634,6 +637,12 @@ if (typeof socket !== 'undefined' && socket) {
             audioGame.bgm.currentTime = 0;
         }
         
+        // Dừng âm thanh chạy
+        if (audioGame && audioGame.run) {
+            audioGame.run.pause();
+            audioGame.run.currentTime = 0;
+        }
+        
         // Lấy user từ localStorage
         const currentUser = JSON.parse(localStorage.getItem("currentUser"));
         if (!currentUser) {
@@ -648,6 +657,20 @@ if (typeof socket !== 'undefined' && socket) {
             showMatchResultAnimation(data.isWinner, currentUser, data);
         } else {
             showSimpleGameOver(data.winnerId);
+        }
+    });
+
+    // ===== LỖI PHÒNG =====
+    socket.on('room-error', (data) => {
+        console.log('❌ LỖI PHÒNG:', data);
+        alert(data.message);
+        
+        const lobbyStatus = document.getElementById('lobby-status');
+        if (lobbyStatus) {
+            lobbyStatus.innerText = `Thất bại: ${data.message}`;
+        }
+        if (typeof enableLobbyButtons === 'function') {
+            enableLobbyButtons();
         }
     });
     // ===============================
