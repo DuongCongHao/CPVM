@@ -185,6 +185,29 @@ function useSkill(){
         case "dieuHuong":
             playSFX(audioGame.run);
             
+            // ===== KIỂM TRA NẾU ĐÃ TÀNG HÌNH TRƯỚC ĐÓ THÌ XÓA =====
+            if (window.isInvisible) {
+                // Reset tất cả slot của player này
+                for (let i = 0; i < TOTAL_CELLS; i++) {
+                    const slot = document.getElementById(`slot-p${myPlayerNumber}-${i}`);
+                    if (slot) {
+                        slot.style.display = '';
+                        slot.style.opacity = '1';
+                        slot.classList.remove('invisible-skill');
+                        slot.dataset.invisible = 'false';
+                        const avatar = slot.querySelector('.p-avatar');
+                        if (avatar) {
+                            avatar.style.textShadow = '';
+                            avatar.style.filter = '';
+                            avatar.style.opacity = '1';
+                        }
+                    }
+                }
+                window.isInvisible = false;
+                window.invisiblePlayer = null;
+                window.invisiblePos = null;
+            }
+            
             let randomPos = Math.floor(Math.random() * (TOTAL_CELLS - 1)) + 1;
             let oldPos2 = players[myPlayerNumber].pos;
             
@@ -219,14 +242,15 @@ function useSkill(){
             updateUI();
             shouldEndTurn = true;
             break;
+
         // ===== KỸ NĂNG: HẮC ÁM TRUY SÁT (THAY THẾ ĐỔI VẬN MAY) =====
         case "hacAmTruySat": 
             const player = players[myPlayerNumber];
             const enemyId = myPlayerNumber === 1 ? 2 : 1;
-            const enemy = players[enemyId];
+            const enemy2 = players[enemyId];  // ✅ ĐỔI TÊN THÀNH enemy2 ĐỂ KHÔNG XUNG ĐỘT VỚI BIẾN enemy Ở ĐẦU HÀM
             
             // Lưu vị trí của đối thủ
-            const enemyPos = enemy.pos;
+            const enemyPos = enemy2.pos;
             
             // Tính vị trí bản thể hắc ám: phía sau đối thủ 5 ô (ngược chiều)
             const darkPos = (enemyPos - 5 + TOTAL_CELLS) % TOTAL_CELLS;
@@ -239,6 +263,7 @@ function useSkill(){
             window.darkChaseTargetPos = enemyPos;
             window.darkChaseTurns = 3;
             window.darkChaseStarted = false;
+            window.darkChaseCaught = false;
             
             // 🆕 HIỂN THỊ 🌑 TRÊN CẢ 2 MÁY
             renderDarkChaser(darkPos, myPlayerNumber);
@@ -261,9 +286,9 @@ function useSkill(){
             
             // 📝 LOG - HIỂN THỊ TRÊN CẢ 2 MÁY
             addLog(`🌑 ${player.name} triệu hồi BẢN THỂ HẮC ÁM!`);
-            addLog(`📍 Bản thể xuất hiện tại ô ${darkPos}, phía sau ${enemy.name} 5 ô!`);
+            addLog(`📍 Bản thể xuất hiện tại ô ${darkPos}, phía sau ${enemy2.name} 5 ô!`);
             addLog(`⏳ Có 3 lượt để truy đuổi!`);
-            addLog(`🎯 Nếu đuổi kịp: ${enemy.name} mất 10% tiền và 1 ô đất!`);
+            addLog(`🎯 Nếu đuổi kịp: ${enemy2.name} mất 10% tiền và 1 ô đất!`);
             
             // 🆕 GỬI ĐỒNG BỘ CHO ĐỐI THỦ
             if (socket && socket.connected) {
@@ -274,7 +299,7 @@ function useSkill(){
                     targetPos: enemyPos,
                     turns: 3,
                     playerName: player.name,
-                    targetName: enemy.name
+                    targetName: enemy2.name
                 });
             }
             
@@ -288,7 +313,7 @@ function useSkill(){
             
             shouldEndTurn = true;
             break;
-        }
+    }
 
     // ===== XÓA KỸ NĂNG SAU KHI DÙNG =====
     players[myPlayerNumber].skill = null;
@@ -325,7 +350,6 @@ function useSkill(){
 
     updateUI();
 }
-
 function updateSkillUI(){
     console.log("===== updateSkillUI =====");
     console.log(players[myPlayerNumber]);
