@@ -2958,3 +2958,68 @@ body.hao-shake {
         padding: 1px 3px !important;
     }
 }
+/* ===== HẮC ÁM TRUY SÁT - ICON QUỶ ===== */
+
+/* 💀 Hiệu ứng nhấp nháy cho icon quỷ */
+@keyframes darkChaserPulse {
+    0% {
+        transform: scale(0.85) rotate(-5deg);
+        filter: drop-shadow(0 0 20px #ef4444) drop-shadow(0 0 40px #8b5cf6);
+    }
+    50% {
+        transform: scale(1.15) rotate(5deg);
+        filter: drop-shadow(0 0 40px #ef4444) drop-shadow(0 0 80px #8b5cf6);
+    }
+    100% {
+        transform: scale(0.95) rotate(-3deg);
+        filter: drop-shadow(0 0 30px #8b5cf6) drop-shadow(0 0 60px #ef4444);
+    }
+}
+
+/* 💜 Hiệu ứng glow tím xung quanh */
+@keyframes darkGlowPulse {
+    0% {
+        opacity: 0.4;
+        transform: scale(0.95);
+        background: radial-gradient(circle, rgba(139,92,246,0.3), rgba(239,68,68,0.1) 50%, transparent 80%);
+    }
+    100% {
+        opacity: 0.9;
+        transform: scale(1.05);
+        background: radial-gradient(circle, rgba(239,68,68,0.3), rgba(139,92,246,0.1) 50%, transparent 80%);
+    }
+}
+
+/* ⚡ Hiệu ứng tia lửa điện */
+@keyframes darkChaserEffect {
+    0% {
+        border-color: rgba(239, 68, 68, 0.2);
+        box-shadow: inset 0 0 20px rgba(239, 68, 68, 0.05);
+        transform: scale(1);
+    }
+    100% {
+        border-color: rgba(139, 92, 246, 0.4);
+        box-shadow: inset 0 0 50px rgba(139, 92, 246, 0.15);
+        transform: scale(1.02);
+    }
+}
+
+/* 💀 Hiệu ứng rung cho ô có quỷ */
+.cell:has(.dark-chaser-icon) {
+    animation: cellQuake 0.5s infinite alternate !important;
+}
+
+@keyframes cellQuake {
+    0% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+    25% {
+        transform: translate(-1px, 1px) rotate(-0.5deg);
+    }
+    75% {
+        transform: translate(1px, -1px) rotate(0.5deg);
+    }
+    100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+}

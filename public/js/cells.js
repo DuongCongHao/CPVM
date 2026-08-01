@@ -1,4 +1,3 @@
-// ===== ĐÁNH GIÁ Ô ĐẤT =====
 function evaluateTargetCell() {
     // 🔥 NẾU GAME ĐANG KẾT THÚC, KHÔNG CHO MUA ĐẤT
     if (window.gameEnding) {
@@ -85,6 +84,27 @@ function evaluateTargetCell() {
         handleLandOnCell(p.pos);
         return;
     }
+
+    // ================================================================
+    // 🆕 KIỂM TRA BẢN THỂ HẮC ÁM - CHỈ KHI ĐANG ACTIVE
+    // ================================================================
+    if (window.darkChaseActive && p.pos === window.darkChasePos) {
+        // ⚠️ QUAN TRỌNG: Chỉ xử lý khi bản thể hắc ám còn tồn tại
+        // Và chỉ xử lý khi người chơi dừng đúng ô có bản thể hắc ám
+        
+        // Nếu đây là đối thủ (người bị truy đuổi) thì xử lý bắt
+        if (targetPlayer === window.darkChaseTarget) {
+            addLog(`💀 ${p.name} đã dừng vào ô có Bản thể Hắc Ám và bị bắt!`);
+            executeDarkChaseCatch();
+            return;
+        }
+        
+        // Nếu đây là chủ nhân thì chỉ thông báo
+        if (targetPlayer === window.darkChaseOwner) {
+            addLog(`👹 ${p.name} đang đứng trên Bản thể Hắc Ám của mình.`);
+            // Không làm gì thêm, tiếp tục xử lý ô đất
+        }
+    }
     
     if (targetCell.hasGift) {
         targetCell.hasGift = false;
@@ -96,6 +116,13 @@ function evaluateTargetCell() {
 
     // 🔥 CHỈ CHO MUA ĐẤT NẾU GAME CHƯA KẾT THÚC
     if (p.pos === 0) {
+        // 🆕 KIỂM TRA BẢN THỂ HẮC ÁM VẪN CÒN HIỆU LỰC KHI Ở START
+        if (window.darkChaseActive && window.darkChaseOwner === targetPlayer) {
+            // Chủ nhân đang ở START, bản thể vẫn đang truy đuổi
+            // Render lại để đảm bảo icon hiển thị
+            renderDarkChaser(window.darkChasePos, targetPlayer);
+            addLog(`👹 Bản thể Hắc Ám vẫn đang truy đuổi tại ô ${window.darkChasePos}! (Còn ${window.darkChaseTurns} lượt)`);
+        }
         endTurn();
     } else if (targetCell.owner === null) {
         if (p.money >= targetCell.price) {

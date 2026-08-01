@@ -51,7 +51,6 @@ socket.off('diceRolledResult').on('diceRolledResult', (data) => {
     // Chạy hiệu ứng xoay 3D
     executeDiceAnimation(data.d1, data.d2);
 });
-
 // HÀM XỬ LÝ HIỆU ỨNG QUAY 3D
 function executeDiceAnimation(d1, d2) {
     const cube1 = document.getElementById('cube1');
@@ -79,6 +78,65 @@ function executeDiceAnimation(d1, d2) {
         lastDiceResult = d1 + d2;
         // Đợi hiệu ứng dừng hẳn (0.5 giây) rồi xử lý logic di chuyển
         setTimeout(() => {
+            // ================================================================
+            // 🆕 KIỂM TRA HẮC ÁM TRUY SÁT - CHỈ KHI CHỦ NHÂN TUNG XÚC XẮC
+            // ================================================================
+            const totalSteps = d1 + d2;
+            let isChaseCaught = false;
+            
+            // ✅ CHỈ CHẠY KHI NGƯỜI TUNG XÚC XẮC LÀ CHỦ NHÂN CỦA BẢN THỂ HẮC ÁM
+            if (window.darkChaseActive && currentTurn === window.darkChaseOwner) {
+                // Người chơi đang có Hắc Ám Truy Sát đang hoạt động VÀ đang tới lượt của họ
+                isChaseCaught = updateDarkChase(totalSteps);
+                
+                if (isChaseCaught) {
+                    // ✅ ĐÃ BẮT ĐƯỢC ĐỐI THỦ
+                    // Dừng xử lý, không di chuyển nữa
+                    isMoving = false;
+                    document.getElementById('roll-btn').disabled = false;
+                    
+                    // Kiểm tra game over
+                    if (players[1].money < 0) {
+                        gameOver(2, "money");
+                        return;
+                    }
+                    if (players[2].money < 0) {
+                        gameOver(1, "money");
+                        return;
+                    }
+                    
+                    // Reset trạng thái skill
+                    skillUsedThisTurn = false;
+                    endTurn();
+                    return;
+                }
+            } else if (window.darkChaseActive && currentTurn !== window.darkChaseOwner) {
+                // 🆕 ĐỐI THỦ ĐANG TUNG XÚC XẮC - KHÔNG DI CHUYỂN BẢN THỂ
+                // Nhưng vẫn hiển thị log để đối thủ biết mình đang bị truy đuổi
+                if (myPlayerNumber === window.darkChaseTarget) {
+                    // Đây là máy của đối thủ (người bị truy đuổi)
+                    const distance = Math.abs(window.darkChasePos - players[window.darkChaseTarget].pos);
+                    const minDist = Math.min(distance, TOTAL_CELLS - distance);
+                    addLog(`🚨 ${players[window.darkChaseTarget].name} đang bị truy đuổi! Khoảng cách: ${minDist} ô (còn ${window.darkChaseTurns} lượt)`);
+                    
+                    // Cảnh báo khi đến gần
+                    if (minDist <= 2) {
+                        const turnTxt = document.getElementById('turn-txt');
+                        if (turnTxt) {
+                            turnTxt.style.background = '#ef4444';
+                            turnTxt.style.animation = 'chaserWarning 0.3s infinite alternate';
+                            turnTxt.innerHTML = `🚨 CẢNH BÁO! HẮC ÁM CÁCH BẠN ${minDist} Ô!`;
+                        }
+                        if (audioGame && audioGame.danger) {
+                            playSFX(audioGame.danger);
+                        }
+                    }
+                }
+            }
+
+            // ================================================================
+            // CODE CŨ (GIỮ NGUYÊN)
+            // ================================================================
             if ((d1 === 1 && d2 === 1) || (d1 === 6 && d2 === 6)) {
                 players[currentTurn].money += 100;
                 extraTurnGranted = true;
@@ -90,10 +148,13 @@ function executeDiceAnimation(d1, d2) {
             // Chỉ có tab đang tới lượt của mình mới được chạy hàm di chuyển
             // Tab đối thủ chỉ ngồi đợi dữ liệu vị trí chốt được bắn qua từ hàm syncActionData
             if (currentTurn === myPlayerNumber) {
-                // Lưu vị trí trước khi tung xúc xắc
-                lastPositionBeforeRoll = players[currentTurn].pos;
+                // 🆕 KIỂM TRA NẾU ĐÃ BẮT ĐƯỢC THÌ KHÔNG DI CHUYỂN NỮA
+                if (!isChaseCaught) {
+                    // Lưu vị trí trước khi tung xúc xắc
+                    lastPositionBeforeRoll = players[currentTurn].pos;
 
-                moveStepByStep(d1 + d2, d1, d2);
+                    moveStepByStep(d1 + d2, d1, d2);
+                }
             } else {
                 addLog(`🎲 <strong>${players[currentTurn].name}</strong> di chuyển <strong>${d1 + d2} ô</strong>...`);
             }

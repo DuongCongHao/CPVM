@@ -186,90 +186,131 @@ loginBtn.onclick = async ()=>{
 };
 function initLobby(user){
     console.log("🔧 Init Lobby với user:", user);
-    // ===== 🆕 LÀM SẠCH SKIN =====
-    if (user.skin && typeof user.skin === 'string') {
-        user.skin = user.skin.replace(/^['"]|['"]$/g, '');
-    }
-    // ===== CẬP NHẬT THÔNG TIN =====
-    const rankMap = {
-        "Bùn": "bun.jpg",
-        "Sắt": "sat.jpg",
-        "Đồng": "dong.jpg",
-        "Bạc": "bac.jpg",
-        "Vàng": "vang.jpg",
-        "Kim Cương": "kimcuong.jpg",
-        "Hali": "hali.jpg"
-    };
     
-    const rankIcon = document.getElementById('lobby-rank-icon');
-    if (rankIcon) {
-        rankIcon.src = "assets/ranks/" + (rankMap[user.rank] || "bun.jpg");
-    }
-    
-    const nameEl = document.getElementById('lobby-user-name');
-    if (nameEl) {
-        nameEl.textContent = user.display_name || user.username || "Người chơi";
-    }
-    
-    const levelEl = document.getElementById('lobby-user-level');
-    if (levelEl) {
-        levelEl.textContent = user.level || 1;
-    }
-    
-    const coinEl = document.getElementById('lobby-user-coin');
-    if (coinEl) {
-        coinEl.textContent = user.coin || user.coins || 0;
-    }
-
-    // Cập nhật input username
-    const usernameInput = document.getElementById("username-input");
-    if (usernameInput) {
-        usernameInput.value = user.display_name || user.username || "Người chơi";
-        usernameInput.disabled = true;
-    }
-
-    // ===== KIỂM TRA VÀ KHỞI TẠO ownedSkins =====
-    if (!user.ownedSkins) {
-        user.ownedSkins = ['skin_default'];
-        localStorage.setItem('currentUser', JSON.stringify(user));
-        localStorage.setItem('user', JSON.stringify(user));
-    }
-
-    // ===== 🆕 THÊM: CẬP NHẬT SKIN KHI VÀO LOBBY =====
-    // Cập nhật skin hiển thị trong lobby (nếu có hàm)
-    if (typeof updatePlayerSkin === 'function') {
-        // Đợi DOM load xong mới áp dụng
-        setTimeout(() => {
-            updatePlayerSkin();
-            console.log("✅ Đã áp dụng skin trong lobby");
-        }, 500);
-    }
-
-    // ===== HIỂN THỊ SẢNH =====
+    // ===== HIỂN THỊ LOBBY NGAY =====
     document.getElementById("login-screen").style.display = "none";
     document.getElementById("lobby-screen").style.display = "flex";
     
-    // 🔥 HIỂN THỊ 4 NÚT, ẨN TẤT CẢ NỘI DUNG
-    document.getElementById('lobby-grid').style.display = 'grid';
-    document.getElementById('arena-content').style.display = 'none';
-    document.getElementById('shop-content').style.display = 'none';
-    document.getElementById('chat-content').style.display = 'none';
-    document.getElementById('equipment-content').style.display = 'none';
-    document.getElementById('userinfo-content').style.display = 'none';
+    // ===== HIỂN THỊ NGAY DỮ LIỆU CŨ (ĐỂ KHÔNG BỊ TRẮNG) =====
+    renderLobbyUI(user);
     
-    console.log("✅ Đã khởi tạo sảnh thành công!");
-    console.log("👤 User:", user);
-    console.log("🎨 Owned skins:", user.ownedSkins);
-    console.log("🎨 Current skin:", user.skin || 'skin_default');
-}
+    // ===== GỌI API ĐỂ LẤY DỮ LIỆU MỚI NHẤT =====
+    fetch(`/api/user/${user.username}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.success !== false) {
+                // Cập nhật dữ liệu mới từ database
+                const updatedUser = {
+                    ...user,
+                    id: data.id || user.id,
+                    username: data.username || user.username,
+                    display_name: data.display_name || user.display_name,
+                    level: data.level || 1,
+                    exp: data.exp || 0,
+                    points: data.points || 0,
+                    rank: data.rank || "Bùn",
+                    coin: data.coin || 0,
+                    avatar: data.avatar || "default",
+                    ownedSkins: data.owned_skins || ['skin_default'],
+                    skin: data.current_skin || 'skin_default',
+                    ownedDice: data.owned_dice || [],
+                    ownedBoard: data.owned_board || []
+                };
+                
+                // Lưu lại localStorage với dữ liệu mới
+                localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+                localStorage.setItem('user', JSON.stringify(updatedUser));
+                
+                // Cập nhật UI với dữ liệu mới
+                renderLobbyUI(updatedUser);
+                console.log("✅ Đã cập nhật dữ liệu từ database:", updatedUser);
+            } else {
+                console.log("⚠️ Không lấy được dữ liệu từ database, giữ dữ liệu cũ");
+            }
+        })
+        .catch(err => {
+            console.error('❌ Lỗi lấy dữ liệu user:', err);
+            // Giữ dữ liệu cũ, không làm gì
+        });
+    
+    // ===== RENDER UI LOBBY =====
+    function renderLobbyUI(userData) {
+        // ===== 🆕 LÀM SẠCH SKIN =====
+        if (userData.skin && typeof userData.skin === 'string') {
+            userData.skin = userData.skin.replace(/^['"]|['"]$/g, '');
+        }
+        
+        // ===== CẬP NHẬT THÔNG TIN =====
+        const rankMap = {
+            "Bùn": "bun.jpg",
+            "Sắt": "sat.jpg",
+            "Đồng": "dong.jpg",
+            "Bạc": "bac.jpg",
+            "Vàng": "vang.jpg",
+            "Kim Cương": "kimcuong.jpg",
+            "Hali": "hali.jpg"
+        };
+        
+        const rankIcon = document.getElementById('lobby-rank-icon');
+        if (rankIcon) {
+            rankIcon.src = "assets/ranks/" + (rankMap[userData.rank] || "bun.jpg");
+        }
+        
+        const nameEl = document.getElementById('lobby-user-name');
+        if (nameEl) {
+            nameEl.textContent = userData.display_name || userData.username || "Người chơi";
+        }
+        
+        const levelEl = document.getElementById('lobby-user-level');
+        if (levelEl) {
+            levelEl.textContent = userData.level || 1;
+        }
+        
+        const coinEl = document.getElementById('lobby-user-coin');
+        if (coinEl) {
+            coinEl.textContent = userData.coin || userData.coins || 0;
+        }
 
-window.onload = function() {
-    const user = localStorage.getItem("currentUser");
-    if (user) {
-        const u = JSON.parse(user);
-        initLobby(u);
+        // Cập nhật input username
+        const usernameInput = document.getElementById("username-input");
+        if (usernameInput) {
+            usernameInput.value = userData.display_name || userData.username || "Người chơi";
+            usernameInput.disabled = true;
+        }
+
+        // ===== KIỂM TRA VÀ KHỞI TẠO ownedSkins =====
+        if (!userData.ownedSkins) {
+            userData.ownedSkins = ['skin_default'];
+            localStorage.setItem('currentUser', JSON.stringify(userData));
+            localStorage.setItem('user', JSON.stringify(userData));
+        }
+
+        // ===== 🆕 THÊM: CẬP NHẬT SKIN KHI VÀO LOBBY =====
+        if (typeof updatePlayerSkin === 'function') {
+            setTimeout(() => {
+                updatePlayerSkin();
+                console.log("✅ Đã áp dụng skin trong lobby");
+            }, 500);
+        }
+
+        // ===== HIỂN THỊ SẢNH =====
+        // Đã hiển thị ở đầu hàm initLobby
+        
+        // 🔥 HIỂN THỊ 4 NÚT, ẨN TẤT CẢ NỘI DUNG
+        document.getElementById('lobby-grid').style.display = 'grid';
+        document.getElementById('arena-content').style.display = 'none';
+        document.getElementById('shop-content').style.display = 'none';
+        document.getElementById('chat-content').style.display = 'none';
+        document.getElementById('equipment-content').style.display = 'none';
+        document.getElementById('userinfo-content').style.display = 'none';
+        document.getElementById('leaderboard-content').style.display = 'none';
+        
+        console.log("✅ Đã khởi tạo sảnh thành công!");
+        console.log("👤 User:", userData);
+        console.log("🎨 Owned skins:", userData.ownedSkins);
+        console.log("🎨 Current skin:", userData.skin || 'skin_default');
     }
-};
+}
 // ===== THÊM VÀO CUỐI FILE auth.js =====
 
 // ===== SKIN DATA =====
@@ -728,8 +769,11 @@ function showUserInfo() {
     document.getElementById('equipment-content').style.display = 'none';
     document.getElementById('userinfo-content').style.display = 'block';
     
+    // 🔥 GỌI HÀM loadUserInfo ĐỂ LẤY DỮ LIỆU MỚI
     if (typeof loadUserInfo === 'function') {
         loadUserInfo();
+    } else {
+        console.warn("⚠️ Hàm loadUserInfo chưa được định nghĩa!");
     }
 }
 // ===== 🆕 BẢNG XẾP HẠNG =====
@@ -983,7 +1027,99 @@ async function loadLeaderboard() {
 function refreshLeaderboard() {
     loadLeaderboard();
 }
+// ===== HIỂN THỊ THÔNG TIN NGƯỜI CHƠI =====
+async function loadUserInfo() {
+    console.log("👤 Đang tải thông tin user...");
+    
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    if (!user) {
+        console.warn("⚠️ Không tìm thấy user trong localStorage");
+        // Hiển thị thông báo lỗi
+        const container = document.getElementById('userinfo-content');
+        if (container) {
+            container.innerHTML = `
+                <div style="text-align: center; color: #ef4444; padding: 20px;">
+                    ❌ Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại!
+                </div>
+                <button class="back-btn" onclick="backToLobby()">⬅️ Quay lại</button>
+            `;
+        }
+        return;
+    }
+    
+    // 🔥 GỌI API ĐỂ LẤY DỮ LIỆU MỚI NHẤT TỪ DATABASE
+    try {
+        const response = await fetch(`/api/user/${user.username}`);
+        const data = await response.json();
+        
+        if (data && data.success !== false) {
+            // Cập nhật lại localStorage với dữ liệu mới
+            const updatedUser = {
+                ...user,
+                id: data.id || user.id,
+                username: data.username || user.username,
+                display_name: data.display_name || user.display_name,
+                level: data.level || 1,
+                exp: data.exp || 0,
+                points: data.points || 0,
+                rank: data.rank || "Bùn",
+                coin: data.coin || 0,
+                avatar: data.avatar || "default",
+                ownedSkins: data.owned_skins || ['skin_default'],
+                skin: data.current_skin || 'skin_default',
+                ownedDice: data.owned_dice || [],
+                ownedBoard: data.owned_board || []
+            };
+            
+            localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            
+            // Cập nhật UI
+            renderUserInfo(updatedUser);
+            console.log("✅ Đã cập nhật thông tin từ database:", updatedUser);
+        } else {
+            // Fallback: dùng dữ liệu cũ
+            renderUserInfo(user);
+            console.warn("⚠️ Không lấy được dữ liệu từ database, dùng dữ liệu cũ");
+        }
+    } catch (err) {
+        console.error('❌ Lỗi lấy thông tin user:', err);
+        // Fallback: dùng dữ liệu cũ
+        renderUserInfo(user);
+    }
+}
 
+// ===== RENDER THÔNG TIN USER =====
+function renderUserInfo(user) {
+    console.log("🎨 Render thông tin user:", user);
+    
+    const rankImages = {
+        "Bùn": "bun.jpg",
+        "Sắt": "sat.jpg",
+        "Đồng": "dong.jpg",
+        "Bạc": "bac.jpg",
+        "Vàng": "vang.jpg",
+        "Kim Cương": "kimcuong.jpg",
+        "Hali": "hali.jpg"
+    };
+    const fileName = rankImages[user.rank] || "bun.jpg";
+    
+    const avatar = document.getElementById('userinfo-avatar');
+    const name = document.getElementById('userinfo-name');
+    const level = document.getElementById('userinfo-level');
+    const coin = document.getElementById('userinfo-coin');
+    const rank = document.getElementById('userinfo-rank');
+    const exp = document.getElementById('userinfo-exp');
+    
+    if (avatar) avatar.src = "assets/ranks/" + fileName;
+    if (name) name.textContent = user.display_name || user.username || "Người chơi";
+    if (level) level.textContent = user.level || 1;
+    if (coin) coin.textContent = user.coin || 0;
+    if (rank) rank.textContent = user.rank || "Bùn";
+    if (exp) exp.textContent = user.exp || 0;
+    
+    console.log(`✅ Đã hiển thị thông tin: Rank ${user.rank}, Level ${user.level}, Coin ${user.coin}`);
+}
 function backToLobby() {
     console.log("🔙 Quay về lobby");
     
@@ -998,3 +1134,21 @@ function backToLobby() {
     document.getElementById('userinfo-content').style.display = 'none';
     document.getElementById('leaderboard-content').style.display = 'none';
 }
+// ===== TỰ ĐỘNG ĐĂNG NHẬP KHI REFRESH TRANG =====
+window.onload = function() {
+    const user = localStorage.getItem("currentUser");
+    if (user) {
+        const u = JSON.parse(user);
+        
+        // 🔥 LUÔN Ở TRONG GAME (KHÔNG CẦN ĐĂNG NHẬP LẠI)
+        document.getElementById("login-screen").style.display = "none";
+        document.getElementById("lobby-screen").style.display = "flex";
+        
+        // Gọi initLobby để cập nhật dữ liệu từ database
+        initLobby(u);
+    } else {
+        // Nếu chưa có user, hiển thị màn hình đăng nhập
+        document.getElementById("login-screen").style.display = "flex";
+        document.getElementById("lobby-screen").style.display = "none";
+    }
+};

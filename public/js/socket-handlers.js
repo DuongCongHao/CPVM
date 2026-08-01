@@ -21,18 +21,170 @@ if (typeof socket !== 'undefined' && socket) {
     // ============================================
     // SOCKET HANDLERS - PHẦN CUỐI FILE
     // ============================================
-
-    // ===== NHẬN DANH SÁCH NGƯỜI CHƠI =====
-    socket.on('update-lobby-players', (players) => {
-        window.players = {};
-        players.forEach(p => {
-            window.players[p.playerNumber] = p;
-        });
+    // ===== ĐỒNG BỘ HẮC ÁM TRUY SÁT =====
+    socket.on('syncDarkChase', (data) => {
+        console.log('🌑 Nhận đồng bộ Hắc Ám Truy Sát:', data);
         
-        // Cập nhật rank cho đối thủ
-        if (typeof updateRankDisplay === 'function') {
-            updateRankDisplay();
+        window.darkChaseActive = true;
+        window.darkChaseOwner = data.playerNum;
+        window.darkChaseTarget = data.targetId;
+        window.darkChasePos = data.darkPos;
+        window.darkChaseTargetPos = data.targetPos;
+        window.darkChaseTurns = data.turns || 3;
+        window.darkChaseStarted = false;
+        
+        // 🆕 HIỂN THỊ 🌑 TRÊN MÁY ĐỐI THỦ
+        renderDarkChaser(data.darkPos, data.playerNum);
+        
+        // 🆕 HIỆU ỨNG UI ĐẸP CHO ĐỐI THỦ
+        if (typeof showSkinEffectText === 'function') {
+            showSkinEffectText(
+                '🌑 HẮC ÁM TRUY SÁT',
+                `⚠️ ${data.targetName} ĐANG BỊ TRUY ĐUỔI! ⚠️`,
+                '#ef4444',
+                '#dc2626',
+                '🚨'
+            );
         }
+        
+        // 🆕 LOG CHO ĐỐI THỦ
+        addLog(`🌑 ${data.playerName} đã triệu hồi BẢN THỂ HẮC ÁM!`);
+        addLog(`📍 Bản thể xuất hiện tại ô ${data.darkPos}, phía sau ${data.targetName} 5 ô!`);
+        addLog(`⏳ Có 3 lượt để truy đuổi!`);
+        addLog(`🚨 ${data.targetName} hãy cẩn thận! Bạn đang bị truy đuổi!`);
+        
+        // 🆕 CẢNH BÁO CHO ĐỐI THỦ
+        if (myPlayerNumber === data.targetId) {
+            // Đây là máy của người bị truy đuổi
+            const turnTxt = document.getElementById('turn-txt');
+            if (turnTxt) {
+                turnTxt.style.background = '#ef4444';
+                turnTxt.style.animation = 'chaserWarning 0.3s infinite alternate';
+                turnTxt.innerHTML = `🚨 CẢNH BÁO! ${data.playerName} ĐANG TRUY ĐUỔI BẠN!`;
+            }
+            
+            // Phát âm thanh cảnh báo
+            if (audioGame && audioGame.danger) {
+                playSFX(audioGame.danger);
+            }
+        }
+        
+        updateUI();
+    });
+
+    // ===== ĐỒNG BỘ CẬP NHẬT VỊ TRÍ =====
+    socket.on('syncDarkChaseUpdate', (data) => {
+        console.log('🌑 Nhận cập nhật Hắc Ám:', data);
+        
+        // 🆕 NẾU CHƯA ACTIVE NHƯNG NHẬN ĐƯỢC UPDATE, KÍCH HOẠT LẠI
+        if (!window.darkChaseActive) {
+            console.log('⚠️ darkChaseActive is false, kích hoạt lại từ update!');
+            if (data.playerNum && data.targetId) {
+                window.darkChaseActive = true;
+                window.darkChaseOwner = data.playerNum;
+                window.darkChaseTarget = data.targetId;
+                window.darkChaseTurns = data.turns || 3;
+            } else {
+                return;
+            }
+        }
+        
+        window.darkChasePos = data.darkPos;
+        window.darkChaseTargetPos = data.targetPos;
+        window.darkChaseTurns = data.turns;
+        
+        // 🆕 CẬP NHẬT ICON TRÊN MÁY ĐỐI THỦ
+        renderDarkChaser(data.darkPos, data.playerNum);
+        
+        // 📝 LOG CHO CẢ 2 MÁY
+        const ownerName = players[data.playerNum]?.name || 'Người chơi';
+        const targetName = players[data.targetId]?.name || 'Đối thủ';
+        
+        const distance = Math.abs(data.darkPos - data.targetPos);
+        const minDist = Math.min(distance, TOTAL_CELLS - distance);
+        addLog(`🌑 ${ownerName} đang truy đuổi! Khoảng cách: ${minDist} ô (còn ${data.turns} lượt)`);
+        
+        // 🆕 CẢNH BÁO KHI ĐẾN GẦN
+        if (myPlayerNumber === data.targetId && minDist <= 2) {
+            const turnTxt = document.getElementById('turn-txt');
+            if (turnTxt) {
+                turnTxt.style.background = '#ef4444';
+                turnTxt.style.animation = 'chaserWarning 0.3s infinite alternate';
+                turnTxt.innerHTML = `🚨 CẢNH BÁO! HẮC ÁM CÁCH BẠN ${minDist} Ô!`;
+            }
+            
+            if (audioGame && audioGame.danger) {
+                playSFX(audioGame.danger);
+            }
+        }
+        
+        if (data.turns <= 0) {
+            addLog(`⏰ Hết 3 lượt! Bản thể hắc ám tan biến. ${targetName} an toàn!`);
+            removeDarkChaser();
+            window.darkChaseActive = false;
+            
+            // Reset cảnh báo
+            const turnTxt = document.getElementById('turn-txt');
+            if (turnTxt) {
+                turnTxt.style.animation = '';
+                turnTxt.style.background = myPlayerNumber === 1 ? '#ef4444' : '#3b82f6';
+            }
+        }
+        
+        updateUI();
+    });
+
+    // ===== ĐỒNG BỘ KHI BẮT ĐƯỢC =====
+    socket.on('syncDarkChaseCatch', (data) => {
+        console.log('🌑 Nhận đồng bộ bắt được:', data);
+        
+        // Cập nhật dữ liệu
+        if (data.players) {
+            for (let i = 1; i <= 2; i++) {
+                if (data.players[i]) {
+                    players[i].money = data.players[i].money;
+                }
+            }
+        }
+        if (data.cellsData) {
+            cellsData = data.cellsData;
+        }
+        
+        // 📝 LOG CHO CẢ 2 MÁY
+        addLog(`💀 BẮT ĐƯỢC! ${data.targetName} đã bị bắt!`);
+        addLog(`💰 ${data.targetName} mất ${data.penalty}$!`);
+        if (data.stolenCell !== -1) {
+            addLog(`🏠 ${data.targetName} mất ô đất ${data.stolenCell} cho ${data.ownerName}!`);
+            initializeBoard();
+        }
+        
+        // 🆕 RESET CẢNH BÁO
+        const turnTxt = document.getElementById('turn-txt');
+        if (turnTxt) {
+            turnTxt.style.animation = '';
+            turnTxt.style.background = myPlayerNumber === 1 ? '#ef4444' : '#3b82f6';
+        }
+        
+        removeDarkChaser();
+        updateUI();
+    });
+
+    // ===== ĐỒNG BỘ KẾT THÚC (HẾT GIỜ) =====
+    socket.on('syncDarkChaseEnd', (data) => {
+        console.log('🌑 Nhận đồng bộ kết thúc:', data);
+        
+        const targetName = players[data.targetId]?.name || 'Đối thủ';
+        addLog(`⏰ Hết 3 lượt! Bản thể hắc ám tan biến. ${targetName} an toàn!`);
+        
+        // Reset cảnh báo
+        const turnTxt = document.getElementById('turn-txt');
+        if (turnTxt) {
+            turnTxt.style.animation = '';
+            turnTxt.style.background = myPlayerNumber === 1 ? '#ef4444' : '#3b82f6';
+        }
+        
+        removeDarkChaser();
+        updateUI();
     });
 
     // ===== NHẬN THÔNG TIN PHÒNG =====
@@ -287,6 +439,12 @@ if (typeof socket !== 'undefined' && socket) {
         // Tái tạo lại bàn cờ để nạp thuộc tính ô Thiên Tai đồng bộ từ server
         if (typeof initializeBoard === 'function') initializeBoard();
         if (typeof updateUI === 'function') updateUI();
+        // 🆕 SAU KHI VẼ LẠI BÀN CỜ, ĐẢM BẢO BẢN THỂ HẮC ÁM VẪN HIỂN THỊ
+        // ================================================================
+        if (window.darkChaseActive && window.darkChasePos !== null) {
+            renderDarkChaser(window.darkChasePos, window.darkChaseOwner);
+            console.log(`👹 Đã vẽ lại Bản thể Hắc Ám tại ô ${window.darkChasePos} sau khi thiên tai xuất hiện`);
+        }
     });
 
     socket.off('lightningCleared').on('lightningCleared', (data) => {
@@ -308,7 +466,12 @@ if (typeof socket !== 'undefined' && socket) {
         // Vẽ lại bàn cờ sạch
         if (typeof initializeBoard === 'function') initializeBoard();
         if (typeof updateUI === 'function') updateUI();
-        
+        /// 🆕 SAU KHI VẼ LẠI BÀN CỜ, ĐẢM BẢO BẢN THỂ HẮC ÁM VẪN HIỂN THỊ
+        // ================================================================
+        if (window.darkChaseActive && window.darkChasePos !== null) {
+            renderDarkChaser(window.darkChasePos, window.darkChaseOwner);
+            console.log(`👹 Đã vẽ lại Bản thể Hắc Ám tại ô ${window.darkChasePos} sau khi thiên tai kết thúc`);
+        }
         isMoving = false;
         if (typeof checkMyTurnControl === 'function') checkMyTurnControl();
     });
@@ -665,31 +828,26 @@ if (typeof socket !== 'undefined' && socket) {
         // Xóa tất cả dataset.invisible của player này
         for (let i = 0; i < TOTAL_CELLS; i++) {
             let slot = document.getElementById(`slot-p${playerNum}-${i}`);
-            if (slot) {
-                slot.dataset.invisible = 'false';
-                slot.style.display = '';
-                slot.style.opacity = '1';
-                slot.classList.remove('invisible-skill');
-                const avatar = slot.querySelector('.p-avatar');
-                if (avatar) {
-                    avatar.style.textShadow = '';
-                    avatar.style.filter = '';
-                }
-            }
-        }
-        
-        // Hiện lại ở vị trí START
-        let slot = document.getElementById(`slot-p${playerNum}-${pos}`);
-        if (slot) {
-            slot.style.display = '';
-            slot.style.opacity = '1';
-            if (playerNum === 1) {
-                slot.classList.add('has-p1');
+            if (!slot) continue;
+
+            delete slot.dataset.invisible;
+
+            if (i === players[playerNum].pos) {
+                slot.style.display = "";
+                slot.style.opacity = "1";
             } else {
-                slot.classList.add('has-p2');
+                slot.style.display = "none";
+                slot.style.opacity = "0";
+            }
+
+            slot.classList.remove("invisible-skill");
+
+            const avatar = slot.querySelector(".p-avatar");
+            if (avatar) {
+                avatar.style.textShadow = "";
+                avatar.style.filter = "";
             }
         }
-        
         window.isInvisible = false;
         window.invisiblePlayer = null;
         window.invisiblePos = null;
@@ -725,6 +883,12 @@ if (typeof socket !== 'undefined' && socket) {
         // Vẽ lại bàn cờ
         initializeBoard();
         updateUI();
+         // 🆕 SAU KHI VẼ LẠI BÀN CỜ, ĐẢM BẢO BẢN THỂ HẮC ÁM VẪN HIỂN THỊ
+        // ================================================================
+        if (window.darkChaseActive && window.darkChasePos !== null) {
+            renderDarkChaser(window.darkChasePos, window.darkChaseOwner);
+            console.log(`👹 Đã vẽ lại Bản thể Hắc Ám tại ô ${window.darkChasePos} sau khi bom nổ (đối thủ)`);
+        }
         
         addLog(`💣💥 BOM HẠT NHÂN ĐÃ PHÁT NỔ!`);
         
@@ -747,6 +911,12 @@ if (typeof socket !== 'undefined' && socket) {
             cellsData = data.cellsData;
             initializeBoard();
             updateUI();
+            // 🆕 SAU KHI VẼ LẠI BÀN CỜ, ĐẢM BẢO BẢN THỂ HẮC ÁM VẪN HIỂN THỊ
+            // ================================================================
+            if (window.darkChaseActive && window.darkChasePos !== null) {
+                renderDarkChaser(window.darkChasePos, window.darkChaseOwner);
+                console.log(`👹 Đã vẽ lại Bản thể Hắc Ám tại ô ${window.darkChasePos} sau khi đồng bộ phóng xạ`);
+            }
         }
         
         // 🔥 THÊM LOG ĐỂ DEBUG
@@ -768,5 +938,73 @@ if (typeof socket !== 'undefined' && socket) {
             }
             updateUI();
         }
+    });
+    // ===== ĐỒNG BỘ KHI NGƯỜI KHÁC RỜI TRẬN =====
+    socket.on('opponent-left', (data) => {
+        console.log('🚪 Đối thủ đã rời trận:', data);
+        
+        // Đánh dấu game kết thúc
+        window.gameEnding = true;
+        window.gameStarted = false;
+        
+        // Vô hiệu hóa nút roll
+        const rollBtn = document.getElementById('roll-btn');
+        if (rollBtn) {
+            rollBtn.disabled = true;
+            rollBtn.innerText = "⏳ KẾT THÚC";
+        }
+        
+        // Vô hiệu hóa nút skill
+        const skillBtn = document.getElementById('use-skill-btn');
+        if (skillBtn) {
+            skillBtn.disabled = true;
+        }
+        
+        // Dừng nhạc nền
+        if (audioGame && audioGame.bgm) {
+            audioGame.bgm.pause();
+            audioGame.bgm.currentTime = 0;
+        }
+        
+        // Ẩn nút rời trận
+        if (typeof hideLeaveButton === 'function') {
+            hideLeaveButton();
+        }
+        
+        // Hiển thị thông báo đơn giản (không popup animation)
+        if (typeof showNotification === 'function') {
+            showNotification('🚪 Đối thủ đã rời trận! Bạn được xử thắng!', 'success', 3000);
+        }
+        
+        if (typeof addLog === 'function') {
+            addLog(`🏆 ${data.message || 'Đối thủ đã rời trận. Bạn được xử thắng!'}`);
+        }
+        
+        // Cập nhật UI
+        if (typeof updateUI === 'function') {
+            updateUI();
+        }
+        
+        // Không hiển thị popup kết thúc trận
+        // Chỉ chuyển về lobby sau 3 giây
+        setTimeout(() => {
+            // Kiểm tra nếu đang ở game screen thì chuyển về lobby
+            const gameScreen = document.getElementById('game-screen');
+            if (gameScreen && gameScreen.style.display !== 'none') {
+                gameScreen.style.display = 'none';
+                const lobbyScreen = document.getElementById('lobby-screen');
+                if (lobbyScreen) {
+                    lobbyScreen.style.display = 'flex';
+                }
+                if (typeof enableLobbyButtons === 'function') {
+                    enableLobbyButtons();
+                }
+                if (typeof hideLeaveButton === 'function') {
+                    hideLeaveButton();
+                }
+                // Reload để cập nhật dữ liệu mới
+                location.reload();
+            }
+        }, 3000);
     });
 }

@@ -750,6 +750,12 @@
         
         initializeBoard();
         updateUI();
+        // 🆕 SAU KHI NỔ BOM, ĐẢM BẢO BẢN THỂ HẮC ÁM VẪN HIỂN THỊ
+        // ================================================================
+        if (window.darkChaseActive && window.darkChasePos !== null) {
+            renderDarkChaser(window.darkChasePos, window.darkChaseOwner);
+            console.log(`👹 Đã vẽ lại Bản thể Hắc Ám tại ô ${window.darkChasePos} sau khi bom nổ`);
+        }
     }
     // ===== KHỞI TẠO BÀN CỜ VẼ LƯỚI MA TRẬN =====
     function initializeBoard() {
@@ -835,7 +841,13 @@
             
             boardEl.appendChild(cellEl);
         });
-        
+        // 🆕 SAU KHI VẼ LẠI BÀN CỜ, KIỂM TRA BẢN THỂ HẮC ÁM
+        // ================================================================
+        if (window.darkChaseActive && window.darkChasePos !== null && window.darkChasePos !== undefined) {
+            // Vẽ lại bản thể hắc ám
+            renderDarkChaser(window.darkChasePos, window.darkChaseOwner);
+            console.log(`👹 Đã vẽ lại Bản thể Hắc Ám tại ô ${window.darkChasePos} sau khi vẽ lại bàn cờ`);
+        }
         // ===== 🆕 THÊM: ÁP DỤNG SKIN SAU KHI VẼ BÀN CỜ =====
         if (typeof updatePlayerSkin === 'function') {
             setTimeout(function() {
@@ -901,7 +913,6 @@
         if (baseComboUpgraded && socket) syncGameToRemote();
     }
 
-// =========================================================================
     // 🎯 HÀM CẬP NHẬT: LOGIC HẠ CÁNH VÀO Ô ĐẶC BIỆT BẪY ĐỒNG BỘ 100%
     // =========================================================================
     function handleLandOnCell(cellIndex) {
@@ -1016,6 +1027,23 @@
                 }
             }, 500);
             return;
+        }
+
+        // ================================================================
+        // 🆕 KIỂM TRA BẢN THỂ HẮC ÁM
+        // ================================================================
+        if (window.darkChaseActive && targetIndex === window.darkChasePos) {
+            // Nếu đối thủ dừng vào ô có bản thể hắc ám
+            if (currentTurn === window.darkChaseTarget) {
+                addLog(`💀 ${players[currentTurn].name} đã dừng vào ô có Bản thể Hắc Ám và bị bắt!`);
+                executeDarkChaseCatch();
+                return;
+            }
+            // Nếu chủ nhân dừng vào ô của chính mình
+            if (currentTurn === window.darkChaseOwner) {
+                addLog(`👹 ${players[currentTurn].name} đang đứng trên Bản thể Hắc Ám của mình.`);
+                // Không làm gì cả, tiếp tục
+            }
         }
 
         // 🟢 TRƯỜNG HỢP 4: Ô ĐẤT THƯỜNG
@@ -1610,6 +1638,7 @@
         let totalExp = currentUserData?.exp || 0;
         let currentCoins = currentUserData?.coin || currentUserData?.coins || 0;
         let playerName = currentUserData?.display_name || currentUserData?.username || "Bạn";
+        let userId = currentUserData?.id || currentUserData?.username;
 
         // 🔥 LẤY CÁC ELEMENT
         const titleEl = document.getElementById("match-status-title");
@@ -1732,6 +1761,38 @@
 
         if (typeof updateLobbyUI === "function") {
             updateLobbyUI(updatedUserData);
+        }
+
+        // ================================================================
+        // 🆕 GỬI DỮ LIỆU LÊN SERVER ĐỂ LƯU VÀO DATABASE
+        // ================================================================
+        if (userId) {
+            try {
+                const response = await fetch('/api/update-result', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id: userId,
+                        level: finalLevel,
+                        exp: finalTotalExp,
+                        points: finalPoints,
+                        rank: finalRank,
+                        coins: finalCoins
+                    })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    console.log('✅ Đã lưu dữ liệu vào database thành công!');
+                } else {
+                    console.error('❌ Lỗi lưu database:', result.message);
+                }
+            } catch (err) {
+                console.error('❌ Lỗi kết nối API:', err.message);
+            }
+        } else {
+            console.warn('⚠️ Không có userId để lưu database!');
         }
 
         console.log("🎬 ===== ANIMATION HOÀN TẤT =====");

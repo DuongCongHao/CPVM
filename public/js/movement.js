@@ -82,6 +82,25 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
                     p.money += 300;
                     p.rounds += 1;
 
+                    // ================================================================
+                    // 🆕 GIỮ BẢN THỂ HẮC ÁM KHI ĐI QUA START
+                    // ================================================================
+                    if (window.darkChaseActive) {
+                        // Nếu chủ nhân của bản thể đang đi qua START
+                        if (window.darkChaseOwner === movePlayer) {
+                            // Bản thể vẫn ở vị trí cũ, không thay đổi
+                            // Render lại icon để đảm bảo hiển thị
+                            renderDarkChaser(window.darkChasePos, movePlayer);
+                            addLog(`👹 Bản thể Hắc Ám vẫn đang truy đuổi tại ô ${window.darkChasePos}! (Còn ${window.darkChaseTurns} lượt)`);
+                        }
+                        // Nếu đối thủ đang đi qua START (người bị truy đuổi)
+                        else if (window.darkChaseTarget === movePlayer) {
+                            // Vẫn render bản thể ở vị trí cũ để đối thủ thấy
+                            renderDarkChaser(window.darkChasePos, window.darkChaseOwner);
+                            addLog(`👹 ${p.name} đi qua START, Bản thể Hắc Ám vẫn đang truy đuổi! (Còn ${window.darkChaseTurns} lượt)`);
+                        }
+                    }
+
                     console.log("======== ROUND +1 ========");
                     console.log(p.name);
                     console.log("Rounds =", p.rounds);

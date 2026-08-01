@@ -165,17 +165,29 @@ router.post("/login", async (req, res) => {
 // 3. CẬP NHẬT KẾT QUẢ SAU TRẬN ĐẤU
 // ========================
 router.post("/update-result", async (req, res) => {
+    console.log("📥 update-result nhận:", req.body);
     try {
-        const { id, level, exp, points, rank, coins, coin, win } = req.body;
+        const { id, userId, level, exp, points, rank, coins, coin, win } = req.body;
+
+        // 🔥 HỖ TRỢ CẢ id VÀ userId
+        const userIdParam = id || userId;
+
+        if (!userIdParam) {
+            return res.status(400).json({
+                success: false,
+                message: "Thiếu userId!"
+            });
+        }
 
         // 1. Lấy thông tin user hiện tại từ DB
         const { data: user, error: fetchErr } = await supabase
             .from("users")
             .select("*")
-            .eq("id", id)
+            .eq("id", userIdParam)
             .single();
 
         if (fetchErr || !user) {
+            console.log("❌ Không tìm thấy user với id:", userIdParam);
             return res.status(404).json({
                 success: false,
                 message: "Không tìm thấy người chơi"
@@ -195,7 +207,7 @@ router.post("/update-result", async (req, res) => {
             };
         } 
         // TH2: Nếu chỉ truyền biến { win: true / false } -> Server tự tính
-        else {
+        else if (win !== undefined) {
             let currentExp = user.exp || 0;
             let currentCoin = user.coin || 0;
             let currentPoints = user.points || 0;
@@ -227,15 +239,21 @@ router.post("/update-result", async (req, res) => {
                 rank: currentRank,
                 coin: currentCoin
             };
+        } else {
+            return res.status(400).json({
+                success: false,
+                message: "Thiếu dữ liệu cập nhật (points/exp hoặc win)"
+            });
         }
 
         console.log("📝 Dữ liệu chuẩn bị UPDATE vào Supabase:", updatedData);
+        console.log("📝 User ID:", userIdParam);
 
         // 2. Cập nhật vào Supabase
         const { error: updateErr } = await supabase
             .from("users")
             .update(updatedData)
-            .eq("id", id);
+            .eq("id", userIdParam);
 
         if (updateErr) {
             console.log("❌ Lỗi Supabase Update:", updateErr.message);
@@ -250,6 +268,7 @@ router.post("/update-result", async (req, res) => {
         });
 
     } catch (err) {
+        console.error("❌ Lỗi update-result:", err.message);
         res.status(500).json({
             success: false,
             message: err.message
@@ -309,62 +328,6 @@ router.post("/update-skin", async (req, res) => {
     }
 });
 // ========================
-// 5. 🆕 LẤY THÔNG TIN USER (BAO GỒM RANK)
-// ========================
-router.get("/user/:username", async (req, res) => {
-    try {
-        const { username } = req.params;
-
-        if (!username) {
-            return res.status(400).json({
-                success: false,
-                message: "Thiếu username!"
-            });
-        }
-
-        console.log(`📥 Lấy thông tin user: ${username}`);
-
-        const { data: user, error } = await supabase
-            .from("users")
-            .select("id, username, display_name, level, exp, points, rank, coin, avatar, owned_skins, current_skin, owned_dice, owned_board")
-            .eq("username", username)
-            .maybeSingle();
-
-        if (error || !user) {
-            return res.status(404).json({
-                success: false,
-                message: "Không tìm thấy người dùng"
-            });
-        }
-
-        console.log(`✅ Đã lấy thông tin user ${username}, rank: ${user.rank}`);
-
-        res.json({
-            success: true,
-            id: user.id,
-            username: user.username,
-            display_name: user.display_name || user.username,
-            level: user.level || 1,
-            exp: user.exp || 0,
-            points: user.points || 0,
-            rank: user.rank || "Bùn",
-            coin: user.coin || 0,
-            avatar: user.avatar || "default",
-            owned_skins: user.owned_skins || ['skin_default'],
-            current_skin: user.current_skin || 'skin_default',
-            owned_dice: user.owned_dice || [],
-            owned_board: user.owned_board || []
-        });
-
-    } catch (err) {
-        console.error("❌ Lỗi lấy user:", err.message);
-        res.status(500).json({
-            success: false,
-            message: err.message
-        });
-    }
-});
-// ========================
 // 5. LẤY THÔNG TIN USER (BAO GỒM RANK)
 // ========================
 router.get("/user/:username", async (req, res) => {
@@ -413,6 +376,38 @@ router.get("/user/:username", async (req, res) => {
             owned_dice: user.owned_dice || [],
             owned_board: user.owned_board || []
         });
+
+    } catch (err) {
+        console.error("❌ Lỗi lấy user:", err.message);
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
+    }
+});
+router.get("/user-id/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        console.log(`📥 Lấy user theo ID hoặc username: ${id}`);
+
+        // 🔥 TÌM THEO CẢ id, username VÀ display_name
+        const { data: user, error } = await supabase
+            .from("users")
+            .select("*")
+            .or(`id.eq.${id},username.eq.${id},display_name.eq.${id}`)
+            .maybeSingle();
+
+        if (error || !user) {
+            console.log(`❌ Không tìm thấy user: ${id}`);
+            return res.status(404).json({
+                success: false,
+                message: "Không tìm thấy người chơi"
+            });
+        }
+
+        console.log(`✅ Tìm thấy user: ${user.username} (ID: ${user.id})`);
+        res.json(user);
 
     } catch (err) {
         console.error("❌ Lỗi lấy user:", err.message);

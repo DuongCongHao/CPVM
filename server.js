@@ -7,7 +7,7 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 app.use(express.json());
 const authRoutes = require("./routes/auth");
-
+const API_BASE = `http://localhost:${PORT}/api`;
 // ============================================
 // 🛡️ HÀM VALIDATE DỮ LIỆU - CHỐNG HACK
 // ============================================
@@ -154,6 +154,18 @@ function calculateRewards(isWin, currentData) {
         pointsGained: pointsGained
     };
 }
+// ============================================
+// 🏆 HÀM XÁC ĐỊNH RANK THEO ĐIỂM
+// ============================================
+function getRankFromPoints(points) {
+    if (points >= 600) return "Hali";
+    if (points >= 500) return "Kim Cương";
+    if (points >= 400) return "Vàng";
+    if (points >= 300) return "Bạc";
+    if (points >= 200) return "Đồng";
+    if (points >= 100) return "Sắt";
+    return "Bùn";
+}
 // Cấu hình CORS để nhận mọi kết nối từ các thiết bị khác nhau
 const { Server } = require("socket.io");
 const io = new Server(server, {
@@ -174,7 +186,7 @@ let quickMatchQueue = [];
 const TURN_TIME_LIMIT = 15;
 // ===== DANH SÁCH THẺ KỸ NĂNG =====
 const SKILLS = [
-    "doiVanMay",
+    "hacAmTruySat",
     "dieuHuong",
     "thor",
     "cuopTien",
@@ -245,7 +257,62 @@ io.on('connection', (socket) => {
     socket.chatUserId = null;
     // ===== 🆕 LƯU RANK MẶC ĐỊNH =====
     socket.rank = 'Bùn';
-    
+    // ============================================
+    // 🌑 HẮC ÁM TRUY SÁT - RELAY CHO CẢ 2 MÁY
+    // ============================================
+
+    // 1. Khi người chơi triệu hồi hắc ám
+    socket.on('syncDarkChase', (data) => {
+        const roomId = socket.roomId;
+        if (!roomId) {
+            console.log('⚠️ Không tìm thấy roomId cho syncDarkChase');
+            return;
+        }
+        
+        console.log(`🌑 [Phòng ${roomId}] ${data.playerName} triệu hồi Hắc Ám Truy Sát!`);
+        console.log(`📍 Target: ${data.targetName} tại ô ${data.targetPos}`);
+        console.log(`📍 Dark chaser tại ô ${data.darkPos}`);
+        
+        // 🆕 GỬI CHO CẢ 2 MÁY TRONG PHÒNG
+        io.to(roomId).emit('syncDarkChase', data);
+    });
+
+    // 2. Khi cập nhật vị trí hắc ám (mỗi lượt)
+    socket.on('syncDarkChaseUpdate', (data) => {
+        const roomId = socket.roomId;
+        if (!roomId) return;
+        
+        console.log(`🌑 [Phòng ${roomId}] Cập nhật vị trí hắc ám: ô ${data.darkPos}, còn ${data.turns} lượt`);
+        
+        // 🆕 GỬI CHO CẢ 2 MÁY TRONG PHÒNG
+        io.to(roomId).emit('syncDarkChaseUpdate', data);
+    });
+
+    // 3. Khi bắt được đối thủ
+    socket.on('syncDarkChaseCatch', (data) => {
+        const roomId = socket.roomId;
+        if (!roomId) return;
+        
+        console.log(`💀 [Phòng ${roomId}] BẮT ĐƯỢC! ${data.targetName} bị bắt!`);
+        console.log(`💰 ${data.targetName} mất ${data.penalty}$`);
+        if (data.stolenCell !== -1) {
+            console.log(`🏠 Mất ô đất ${data.stolenCell}`);
+        }
+        
+        // 🆕 GỬI CHO CẢ 2 MÁY TRONG PHÒNG
+        io.to(roomId).emit('syncDarkChaseCatch', data);
+    });
+
+    // 4. Khi hết giờ (không đuổi kịp)
+    socket.on('syncDarkChaseEnd', (data) => {
+        const roomId = socket.roomId;
+        if (!roomId) return;
+        
+        console.log(`⏰ [Phòng ${roomId}] Hết 3 lượt! Hắc ám tan biến.`);
+        
+        // 🆕 GỬI CHO CẢ 2 MÁY TRONG PHÒNG
+        io.to(roomId).emit('syncDarkChaseEnd', data);
+    });
     // ===== 🆕 LẤY RANK NGAY KHI KẾT NỐI (NẾU CÓ USER ID) =====
     socket.on('setUserInfo', async (data) => {
         const { userId, username } = data;
@@ -1125,16 +1192,95 @@ io.on('connection', (socket) => {
         const totalRounds = Math.max(winner.rounds || 0, loser.rounds || 0);
         
         console.log(`📊 Kết quả trận đấu: ${winner.name} thắng, ${loser.name} thua, ${totalRounds} vòng`);
+        
+        // =====================================================
+        // 🔥 NẾU THẮNG DO ĐỐI THỦ RỜI TRẬN / MẤT KẾT NỐI
+        // THÌ DATABASE ĐÃ ĐƯỢC UPDATE Ở disconnect hoặc leave-room
+        // KHÔNG UPDATE LẦN NỮA
+        // =====================================================
+        if (data.reason === "disconnect" || data.reason === "leave") {
+            // 🆕 LẤY DỮ LIỆU USER ĐỂ HIỂN THỊ ĐÚNG SỐ ĐIỂM
+            let winnerPoints = 25;
+            let loserPoints = -25;
+            let winnerExp = 150;
+            let loserExp = 0;
+            let winnerCoins = 50;
+            let loserCoins = 0;
+            
+            // Thử lấy dữ liệu mới nhất từ database để hiển thị chính xác
+            try {
+                const winnerUser = await axios.get(`http://localhost:${PORT}/api/user-id/${winner.userId}`);
+                const loserUser = await axios.get(`http://localhost:${PORT}/api/user-id/${loser.userId}`);
+                
+                if (winnerUser.data && winnerUser.data.success !== false) {
+                    // Không cần làm gì, chỉ để lấy dữ liệu
+                }
+            } catch (err) {
+                console.log("⚠️ Không thể lấy dữ liệu mới nhất, dùng giá trị mặc định");
+            }
 
-        // ===== 🏆 LƯU VÀO DATABASE =====
+            const matchResult = {
+                winnerId: data.winnerId,
+                winnerName: winner.name,
+                reason: data.reason,
+                totalRounds: totalRounds,
+                reward: {
+                    winner: {
+                        exp: winnerExp,
+                        coins: winnerCoins,
+                        points: winnerPoints
+                    },
+                    loser: {
+                        exp: loserExp,
+                        coins: loserCoins,
+                        points: loserPoints
+                    }
+                }
+            };
+
+            const winnerSocket = io.sockets.sockets.get(winner.id);
+            const loserSocket = io.sockets.sockets.get(loser.id);
+
+            if (winnerSocket) {
+                winnerSocket.emit("matchResult", {
+                    ...matchResult,
+                    isWinner: true,
+                    message: `🎉 Đối thủ đã rời trận. Bạn được xử thắng! (+${winnerPoints} RP, +${winnerExp} EXP)`
+                });
+                console.log(`📤 Đã gửi matchResult cho ${winner.name}`);
+            }
+
+            if (loserSocket) {
+                loserSocket.emit("matchResult", {
+                    ...matchResult,
+                    isWinner: false,
+                    message: `💀 Bạn đã rời trận. Bị trừ ${Math.abs(loserPoints)} RP.`
+                });
+                console.log(`📤 Đã gửi matchResult cho ${loser.name}`);
+            }
+
+            console.log("✅ GameOver bỏ qua cập nhật Database vì đã xử lý ở disconnect/leave-room");
+
+            return;
+        }
+        
+        // ===== 🏆 LƯU VÀO DATABASE (CHO TRƯỜNG HỢP THUA BÌNH THƯỜNG) =====
         try {
             // Lấy dữ liệu hiện tại của người thắng
-            const winnerUserResponse = await axios.get(`http://localhost:${PORT}/api/user/${winner.userId}`);
+            const winnerUserResponse = await axios.get(`http://localhost:${PORT}/api/user-id/${winner.userId}`);
             const winnerCurrentData = winnerUserResponse.data;
             
             const winnerReward = calculateRewards(true, winnerCurrentData);
             console.log(`🏆 ${winner.name}: +${winnerReward.expGained} EXP, +${winnerReward.coinsGained} Coin, +${winnerReward.pointsGained} RP`);
-            
+            console.log("🚀 Chuẩn bị gọi update-result");
+            console.log({
+                id: disconnectedUserId,
+                level: user.level,
+                exp: user.exp,
+                points: newPoints,
+                rank: newRank,
+                coins: user.coin
+            });
             await axios.post(`${process.env.API_URL}/api/update-result`, {
                 id: winner.userId,
                 level: winnerReward.level,
@@ -1146,12 +1292,20 @@ io.on('connection', (socket) => {
             console.log(`✅ Đã lưu phần thưởng cho ${winner.name}`);
 
             // Lấy dữ liệu hiện tại của người thua
-            const loserUserResponse = await axios.get(`http://localhost:${PORT}/api/user/${loser.userId}`);
+            const loserUserResponse = await axios.get(`http://localhost:${PORT}/api/user-id/${loser.userId}`);
             const loserCurrentData = loserUserResponse.data;
             
             const loserReward = calculateRewards(false, loserCurrentData);
             console.log(`💀 ${loser.name}: +${loserReward.expGained} EXP, +${loserReward.coinsGained} Coin, ${loserReward.pointsGained} RP`);
-            
+            console.log("🚀 Chuẩn bị gọi update-result");
+            console.log({
+                id: disconnectedUserId,
+                level: user.level,
+                exp: user.exp,
+                points: newPoints,
+                rank: newRank,
+                coins: user.coin
+            });
             await axios.post(`${process.env.API_URL}/api/update-result`, {
                 id: loser.userId,
                 level: loserReward.level,
@@ -1264,6 +1418,7 @@ io.on('connection', (socket) => {
     });
     // ===== XỬ LÝ KHI NGƯỜI CHƠI MẤT KẾT NỐI =====
     socket.on('disconnect', () => {
+        console.log('code mới đang test');
         console.log(`❌ Thiết bị ngắt kết nối: ${socket.id}`);
         
         // ===== XỬ LÝ RỜI PHÒNG CHAT =====
@@ -1316,14 +1471,99 @@ io.on('connection', (socket) => {
         if (opponent) {
             console.log(`🏆 ${opponent.name} được xử thắng vì ${disconnectedPlayer.name} đã mất kết nối!`);
             
+            // ================================================================
+            // 🆕 XỬ LÝ TRỪ ĐIỂM CHO NGƯỜI RỜI TRẬN (disconnectedPlayer)
+            // ================================================================
+            const disconnectedUserId = disconnectedPlayer.userId;
+            const opponentUserId = opponent.userId;
+            
+            // ✅ ĐÚNG: Thêm /api vào trước URL
+            const API_BASE = `http://localhost:${PORT}/api`;
+            
+            // ================================================================
+            // 1. TRỪ ĐIỂM CHO NGƯỜI RỜI TRẬN
+            // ================================================================
+            axios.get(`${API_BASE}/user/${disconnectedUserId}`)
+                .then(async (response) => {
+                    const user = response.data;
+                    if (user && user.success !== false) {
+                        console.log(`📊 Người rời: ${user.username}, Points cũ: ${user.points}`);
+                        
+                        // TRỪ ĐIỂM RANK CHO NGƯỜI RỜI TRẬN (KHÔNG NHẬN EXP/COIN)
+                        const newPoints = Math.max(0, (user.points || 0) - 25);
+                        const newRank = getRankFromPoints(newPoints);
+                        
+                        // ✅ SỬA: DÙNG user.id (UUID) THAY VÌ disconnectedUserId (username)
+                        await axios.post(`${API_BASE}/update-result`, {
+                            id: user.id,  // ← UUID THẬT
+                            level: user.level || 1,
+                            exp: user.exp || 0, // ⭐ KHÔNG CỘNG EXP
+                            points: newPoints,
+                            rank: newRank,
+                            coins: user.coin || 0 // ⭐ KHÔNG CỘNG COIN
+                        });
+                        console.log(`✅ Đã trừ 25 RP cho ${disconnectedPlayer.name} (rời trận - mất kết nối)`);
+                    }
+                })
+                .catch(err => {
+                    console.log("STATUS:", err.response?.status);
+                    console.log("URL:", err.config?.url);
+                    console.log("DATA:", err.response?.data);
+                });
+            
+            // ================================================================
+            // 2. THƯỞNG CHO ĐỐI THỦ (opponent)
+            // ================================================================
+            axios.get(`${API_BASE}/user/${opponentUserId}`)
+                .then(async (response) => {
+                    const user = response.data;
+                    if (user && user.success !== false) {
+                        console.log(`📊 Đối thủ: ${user.username}, Points cũ: ${user.points}`);
+                        
+                        // Người thắng nhận thưởng bình thường
+                        const newExp = (user.exp || 0) + 150;
+                        const newPoints = (user.points || 0) + 25;
+                        const newCoins = (user.coin || 0) + 50;
+                        const newLevel = Math.floor(newExp / 1000) + 1;
+                        const newRank = getRankFromPoints(newPoints);
+                        
+                        // ✅ SỬA: DÙNG user.id (UUID) THAY VÌ opponentUserId (username)
+                        await axios.post(`${API_BASE}/update-result`, {
+                            id: user.id,  // ← UUID THẬT
+                            level: newLevel,
+                            exp: newExp,
+                            points: newPoints,
+                            rank: newRank,
+                            coins: newCoins
+                        });
+                        console.log(`✅ Đã thưởng cho ${opponent.name}: +150 EXP, +25 RP, +50 Coin`);
+                    }
+                })
+                .catch(err => {
+                    console.log("STATUS:", err.response?.status);
+                    console.log("URL:", err.config?.url);
+                    console.log("DATA:", err.response?.data);
+                });
+            
+            // ================================================================
+            // 3. GỬI SỰ KIỆN CHO ĐỐI THỦ
+            // ================================================================
             const opponentSocket = io.sockets.sockets.get(opponent.id);
             if (opponentSocket) {
+                // Gửi gameOver cho đối thủ (để cập nhật điểm)
                 opponentSocket.emit('gameOver', {
                     winnerId: opponent.playerNumber,
                     reason: 'disconnect',
-                    message: `${disconnectedPlayer.name} đã mất kết nối. Bạn được xử thắng!`
+                    message: `${disconnectedPlayer.name} đã mất kết nối. Bạn được xử thắng!`,
+                    isLoser: false
                 });
                 console.log(`📤 Đã gửi gameOver cho ${opponent.name}`);
+                
+                // Gửi sự kiện đối thủ rời trận (để client xử lý UI)
+                opponentSocket.emit('opponent-left', {
+                    message: `${disconnectedPlayer.name} đã mất kết nối. Bạn được xử thắng!`
+                });
+                console.log(`📤 Đã gửi opponent-left cho ${opponent.name}`);
             }
         } else {
             console.log(`⚠️ Không tìm thấy đối thủ trong phòng ${roomId}`);
@@ -1339,7 +1579,7 @@ io.on('connection', (socket) => {
         delete rooms[roomId];
         console.log(`🗑️ Đã xóa phòng ${roomId}`);
     });
-
+    // ===== XỬ LÝ KHI NGƯỜI CHƠI CHỦ ĐỘNG RỜI PHÒNG =====
     // ===== XỬ LÝ KHI NGƯỜI CHƠI CHỦ ĐỘNG RỜI PHÒNG =====
     socket.on('leave-room', (data) => {
         console.log(`🚪 Người chơi ${socket.id} chủ động rời phòng`);
@@ -1370,14 +1610,95 @@ io.on('connection', (socket) => {
         if (opponent) {
             console.log(`🏆 ${opponent.name} được xử thắng vì ${leaver.name} đã rời trận!`);
             
+            // ================================================================
+            // 🆕 XỬ LÝ TRỪ ĐIỂM CHO NGƯỜI RỜI TRẬN (leaver)
+            // ================================================================
+            const leaverUserId = leaver.userId;
+            const opponentUserId = opponent.userId;
+            
+            // ✅ ĐÚNG: Thêm /api vào trước URL
+            const API_BASE = `http://localhost:${PORT}/api`;
+            
+            // ================================================================
+            // 1. TRỪ ĐIỂM CHO NGƯỜI RỜI TRẬN
+            // ================================================================
+            axios.get(`${API_BASE}/user/${leaverUserId}`)
+                .then(async (response) => {
+                    const user = response.data;
+                    if (user && user.success !== false) {
+                        console.log(`📊 Người rời: ${user.username}, Points cũ: ${user.points}`);
+                        
+                        // TRỪ ĐIỂM RANK CHO NGƯỜI RỜI TRẬN (KHÔNG NHẬN EXP/COIN)
+                        const newPoints = Math.max(0, (user.points || 0) - 25);
+                        const newRank = getRankFromPoints(newPoints);
+                        
+                        // ✅ SỬA: DÙNG user.id (UUID) THAY VÌ leaverUserId (username)
+                        await axios.post(`${API_BASE}/update-result`, {
+                            id: user.id,  // ← UUID THẬT
+                            level: user.level || 1,
+                            exp: user.exp || 0, // ⭐ KHÔNG CỘNG EXP
+                            points: newPoints,
+                            rank: newRank,
+                            coins: user.coin || 0 // ⭐ KHÔNG CỘNG COIN
+                        });
+                        console.log(`✅ Đã trừ 25 RP cho ${leaver.name} (rời trận chủ động)`);
+                    }
+                })
+                .catch(err => {
+                    console.error(`❌ Lỗi trừ điểm cho ${leaver.name}:`, err.message);
+                });
+            
+            // ================================================================
+            // 2. THƯỞNG CHO ĐỐI THỦ (opponent)
+            // ================================================================
+            axios.get(`${API_BASE}/user/${opponentUserId}`)
+                .then(async (response) => {
+                    const user = response.data;
+                    if (user && user.success !== false) {
+                        console.log(`📊 Đối thủ: ${user.username}, Points cũ: ${user.points}`);
+                        
+                        // Người thắng nhận thưởng bình thường
+                        const newExp = (user.exp || 0) + 150;
+                        const newPoints = (user.points || 0) + 25;
+                        const newCoins = (user.coin || 0) + 50;
+                        const newLevel = Math.floor(newExp / 1000) + 1;
+                        const newRank = getRankFromPoints(newPoints);
+                        
+                        // ✅ SỬA: DÙNG user.id (UUID) THAY VÌ opponentUserId (username)
+                        await axios.post(`${API_BASE}/update-result`, {
+                            id: user.id,  // ← UUID THẬT
+                            level: newLevel,
+                            exp: newExp,
+                            points: newPoints,
+                            rank: newRank,
+                            coins: newCoins
+                        });
+                        console.log(`✅ Đã thưởng cho ${opponent.name}: +150 EXP, +25 RP, +50 Coin`);
+                    }
+                })
+                .catch(err => {
+                    console.error(`❌ Lỗi thưởng cho ${opponent.name}:`, err.message);
+                });
+            
+            // ================================================================
+            // 3. GỬI SỰ KIỆN CHO ĐỐI THỦ
+            // ================================================================
             const opponentSocket = io.sockets.sockets.get(opponent.id);
             if (opponentSocket) {
+                // Gửi gameOver cho đối thủ (để cập nhật điểm)
                 opponentSocket.emit('gameOver', {
                     winnerId: opponent.playerNumber,
                     reason: 'leave',
-                    message: `${leaver.name} đã rời trận. Bạn được xử thắng!`
+                    message: `${leaver.name} đã rời trận. Bạn được xử thắng!`,
+                    isLoser: false
                 });
                 console.log(`📤 Đã gửi gameOver cho ${opponent.name}`);
+                
+                // Gửi sự kiện đối thủ rời trận (để client xử lý UI)
+                opponentSocket.emit('opponent-left', {
+                    message: `${leaver.name} đã rời trận. Bạn được xử thắng!`
+                });
+                console.log(`📤 Đã gửi opponent-left cho ${opponent.name}`);
             }
         }
         
