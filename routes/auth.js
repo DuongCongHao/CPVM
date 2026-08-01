@@ -391,12 +391,30 @@ router.get("/user-id/:id", async (req, res) => {
 
         console.log(`📥 Lấy user theo ID hoặc username: ${id}`);
 
-        // 🔥 TÌM THEO CẢ id, username VÀ display_name
-        const { data: user, error } = await supabase
+        // 🔥 CÁCH 1: TÌM THEO ID TRƯỚC, NẾU KHÔNG CÓ THÌ TÌM THEO USERNAME
+        let { data: user, error } = await supabase
             .from("users")
             .select("*")
-            .or(`id.eq.${id},username.eq.${id},display_name.eq.${id}`)
+            .eq("id", id)
             .maybeSingle();
+
+        // Nếu không tìm thấy theo ID, thử tìm theo username
+        if (!user) {
+            const { data: userByUsername, error: error2 } = await supabase
+                .from("users")
+                .select("*")
+                .eq("username", id)
+                .maybeSingle();
+            
+            if (error2 || !userByUsername) {
+                console.log(`❌ Không tìm thấy user: ${id}`);
+                return res.status(404).json({
+                    success: false,
+                    message: "Không tìm thấy người chơi"
+                });
+            }
+            user = userByUsername;
+        }
 
         if (error || !user) {
             console.log(`❌ Không tìm thấy user: ${id}`);

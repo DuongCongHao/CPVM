@@ -617,6 +617,18 @@ if (typeof socket !== 'undefined' && socket) {
         // Đánh dấu game kết thúc
         window.gameEnding = true;
         window.gameStarted = false;
+        window.isMoving = false;  // 🔥 GIẢI PHÓNG TRẠNG THÁI DI CHUYỂN
+        
+        // Ẩn tất cả notification/modal ngay lập tức
+        if (typeof hideNotification === 'function') {
+            hideNotification();
+        }
+        if (typeof closeBuyModal === 'function') {
+            closeBuyModal();
+        }
+        if (typeof hideBuyModal === 'function') {
+            hideBuyModal();
+        }
         
         // Vô hiệu hóa nút roll
         const rollBtn = document.getElementById('roll-btn');
@@ -651,10 +663,14 @@ if (typeof socket !== 'undefined' && socket) {
             return;
         }
         
+        // 🔥 TỰ TÍNH isWinner DỰA TRÊN winnerId
+        const isWinner = (window.myPlayerNumber === data.winnerId);
+        console.log(`🎬 isWinner = ${isWinner} (myPlayerNumber: ${window.myPlayerNumber}, winnerId: ${data.winnerId})`);
+        
         // 🔥 GỌI ANIMATION CHO CẢ THẮNG VÀ THUA
         if (typeof showMatchResultAnimation === 'function') {
-            console.log(`🎬 Gọi showMatchResultAnimation với isWin = ${data.isWinner}`);
-            showMatchResultAnimation(data.isWinner, currentUser, data);
+            console.log(`🎬 Gọi showMatchResultAnimation với isWin = ${isWinner}`);
+            showMatchResultAnimation(isWinner, currentUser, data);
         } else {
             showSimpleGameOver(data.winnerId);
         }
@@ -969,6 +985,19 @@ if (typeof socket !== 'undefined' && socket) {
         // Đánh dấu game kết thúc
         window.gameEnding = true;
         window.gameStarted = false;
+        window._gameOverReceived = true;
+        window.isMoving = false;
+        
+        // Ẩn tất cả notification/modal
+        if (typeof hideNotification === 'function') {
+            hideNotification();
+        }
+        if (typeof closeBuyModal === 'function') {
+            closeBuyModal();
+        }
+        if (typeof hideBuyModal === 'function') {
+            hideBuyModal();
+        }
         
         // Vô hiệu hóa nút roll
         const rollBtn = document.getElementById('roll-btn');
@@ -989,45 +1018,60 @@ if (typeof socket !== 'undefined' && socket) {
             audioGame.bgm.currentTime = 0;
         }
         
+        // Dừng âm thanh chạy
+        if (audioGame && audioGame.run) {
+            audioGame.run.pause();
+            audioGame.run.currentTime = 0;
+        }
+        
         // Ẩn nút rời trận
         if (typeof hideLeaveButton === 'function') {
             hideLeaveButton();
         }
         
-        // Hiển thị thông báo đơn giản (không popup animation)
-        if (typeof showNotification === 'function') {
-            showNotification('🚪 Đối thủ đã rời trận! Bạn được xử thắng!', 'success', 3000);
+        // Lấy user từ localStorage
+        const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+        if (!currentUser) {
+            console.error("❌ Không tìm thấy user!");
+            showSimpleGameOver(1);
+            return;
         }
         
+        // ================================================================
+        // 🔥 HIỂN THỊ POPUP THẮNG (VÌ ĐỐI THỦ ĐÃ RỜI)
+        // ================================================================
+        if (typeof showMatchResultAnimation === 'function') {
+            // Tạo dữ liệu matchResult để hiển thị popup
+            const matchData = {
+                winnerId: window.myPlayerNumber,
+                isWinner: true,
+                reason: 'opponent-left',
+                message: data.message || 'Đối thủ đã rời trận. Bạn được xử thắng!',
+                totalRounds: 0,
+                reward: {
+                    winner: {
+                        exp: 150,
+                        coins: 50,
+                        points: 25
+                    },
+                    loser: {
+                        exp: 0,
+                        coins: 0,
+                        points: -25
+                    }
+                }
+            };
+            
+            console.log(`🎬 Gọi showMatchResultAnimation với isWin = true (đối thủ rời)`);
+            showMatchResultAnimation(true, currentUser, matchData);
+        } else {
+            // Fallback: hiển thị popup đơn giản
+            showSimpleGameOver(window.myPlayerNumber);
+        }
+        
+        // Thêm log
         if (typeof addLog === 'function') {
             addLog(`🏆 ${data.message || 'Đối thủ đã rời trận. Bạn được xử thắng!'}`);
         }
-        
-        // Cập nhật UI
-        if (typeof updateUI === 'function') {
-            updateUI();
-        }
-        
-        // Không hiển thị popup kết thúc trận
-        // Chỉ chuyển về lobby sau 3 giây
-        setTimeout(() => {
-            // Kiểm tra nếu đang ở game screen thì chuyển về lobby
-            const gameScreen = document.getElementById('game-screen');
-            if (gameScreen && gameScreen.style.display !== 'none') {
-                gameScreen.style.display = 'none';
-                const lobbyScreen = document.getElementById('lobby-screen');
-                if (lobbyScreen) {
-                    lobbyScreen.style.display = 'flex';
-                }
-                if (typeof enableLobbyButtons === 'function') {
-                    enableLobbyButtons();
-                }
-                if (typeof hideLeaveButton === 'function') {
-                    hideLeaveButton();
-                }
-                // Reload để cập nhật dữ liệu mới
-                location.reload();
-            }
-        }, 3000);
     });
 }

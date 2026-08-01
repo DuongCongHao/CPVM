@@ -183,7 +183,23 @@ function useSkill(){
 
         // ===== 🆕 ĐIỀU HƯỚNG MỚI (TÀNG HÌNH) =====
         case "dieuHuong":
-            playSFX(audioGame.run);
+            // Phát âm thanh chạy nhưng không loop (chỉ 1 lần)
+            if (audioGame && audioGame.run) {
+                // Lưu trạng thái loop ban đầu
+                const wasLoop = audioGame.run.loop;
+                audioGame.run.loop = false;
+                audioGame.run.currentTime = 0;
+                audioGame.run.play().catch(() => {});
+                // Tắt sau 1 giây để đảm bảo không kéo dài
+                setTimeout(() => {
+                    if (audioGame.run) {
+                        audioGame.run.pause();
+                        audioGame.run.currentTime = 0;
+                        // Khôi phục loop về trạng thái ban đầu (nếu cần)
+                        audioGame.run.loop = wasLoop;
+                    }
+                }, 1000);
+            }
             
             // ===== KIỂM TRA NẾU ĐÃ TÀNG HÌNH TRƯỚC ĐÓ THÌ XÓA =====
             if (window.isInvisible) {
@@ -247,7 +263,7 @@ function useSkill(){
         case "hacAmTruySat": 
             const player = players[myPlayerNumber];
             const enemyId = myPlayerNumber === 1 ? 2 : 1;
-            const enemy2 = players[enemyId];  // ✅ ĐỔI TÊN THÀNH enemy2 ĐỂ KHÔNG XUNG ĐỘT VỚI BIẾN enemy Ở ĐẦU HÀM
+            const enemy2 = players[enemyId];
             
             // Lưu vị trí của đối thủ
             const enemyPos = enemy2.pos;
@@ -306,7 +322,6 @@ function useSkill(){
             // Đánh dấu đã dùng skill
             players[myPlayerNumber].skill = null;
             players[myPlayerNumber].skillUsed = true;
-            skillUsedThisTurn = true;
             
             updateUI();
             updateSkillUI();
@@ -319,9 +334,8 @@ function useSkill(){
     players[myPlayerNumber].skill = null;
     players[myPlayerNumber].skillUsed = true;
 
-    if (skill.id !== "doiVanMay") {
-        skillUsedThisTurn = true;
-    }
+    // ✅ THÊM: Đánh dấu đã dùng skill để không mua đất trong lượt này
+    skillUsedThisTurn = true;
 
     console.log("===== SAU KHI DÙNG SKILL =====");
     console.log(players[myPlayerNumber]);

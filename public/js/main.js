@@ -447,6 +447,7 @@
 
         let logMessages = [];
         let hasPenalty = false;
+        let gameOverSent = false;
 
         for(let i=1; i<=2; i++){
             const p = players[i];
@@ -463,6 +464,7 @@
                 if(p.money < 0){
                     const enemy = i===1 ? 2 : 1;
                     removeHaoBoss();
+                    gameOverSent = true;
                     
                     // 🔥 ĐỒNG BỘ XÓA BỐ HẢO
                     if (socket && socket.connected) {
@@ -977,6 +979,12 @@
             return;
         }
         
+        // ✅ THÊM: RESET skillUsedThisTurn KHI KẾT THÚC LƯỢT
+        if (skillUsedThisTurn) {
+            skillUsedThisTurn = false;
+            console.log("✅ Đã reset skillUsedThisTurn sau khi kết thúc lượt");
+        }
+        
         // 🔥 KIỂM TRA VÒNG 7 - ƯU TIÊN CAO NHẤT
         if (players[1].rounds >= 7 || players[2].rounds >= 7) {
             console.log("🏁 PHÁT HIỆN VÒNG 7! KẾT THÚC NGAY LẬP TỨC!");
@@ -1243,6 +1251,14 @@
             }
         }
 
+        // ✅ THÊM: Reset skillUsedThisTurn khi bắt đầu lượt mới (đảm bảo an toàn)
+        if (myPlayerNumber === currentTurn && gameStarted) {
+            if (skillUsedThisTurn) {
+                skillUsedThisTurn = false;
+                console.log("✅ Đã reset skillUsedThisTurn ở đầu lượt (checkMyTurnControl)");
+            }
+        }
+
         if (typeof gameStarted !== 'undefined' && gameStarted && currentTurn !== null) {
             rollBtn.onclick = () => {
                 playSFX(audioGame.dice);
@@ -1273,17 +1289,12 @@
             updateSkillUI();
         }
     }
+    // ===== TÍNH TỔNG TÀI SẢN (TIỀN + GIÁ TRỊ ĐẤT) =====
     function calculateTotalAsset(playerId){
-
         let money = players[playerId].money;
-
         let landValue = calculateTotalLandValue(playerId);
-
         return money + landValue;
     }
-    // ===== KẾT THÚC TRÒ CHƠI HOÀN TOÀN =====
-    let matchResultSent = false;
-
     // ===== GỬI GAMEOVER LÊN SERVER =====
     function gameOver(winnerId, reason = "money") {
         console.log("🏆 GAME OVER - Người thắng:", winnerId);
@@ -1379,29 +1390,29 @@
             }
         } else {
             console.log("🚪 Bạn là người thua, không gửi gameOver lên server!");
-            
-            // ✅ THÊM FALLBACK: Nếu sau 5s không nhận được matchResult, tự hiển thị
-            setTimeout(() => {
-                if (!window._gameOverReceived) {
-                    console.log("⏰ Timeout: Không nhận được matchResult, tự hiển thị kết quả...");
-                    if (typeof showMatchResultAnimation === 'function') {
-                        showMatchResultAnimation(false, currentUser, { winnerId: winnerId, reason: reason });
-                    } else {
-                        showSimpleGameOver(winnerId);
-                    }
-                }
-            }, 5000);
         }
         
-        // ===== GỌI ANIMATION (CHỈ CHO NGƯỜI THUA, VÌ NGƯỜI THẮNG SẼ NHẬN TỪ SERVER) =====
-        if (!isWin) {
-            if (typeof showMatchResultAnimation === 'function') {
-                console.log(`🎬 Gọi showMatchResultAnimation với isWin = ${isWin}`);
-                showMatchResultAnimation(isWin, currentUser, null);
-            } else {
-                showSimpleGameOver(winnerId);
+        // ✅ FALLBACK: Nếu sau 5s không nhận được matchResult, tự hiển thị (CHO CẢ THẮNG VÀ THUA)
+        setTimeout(() => {
+            if (!window._gameOverReceived) {
+                console.log("⏰ Timeout: Không nhận được matchResult, tự hiển thị kết quả...");
+                const fallbackData = {
+                    winnerId: winnerId,
+                    isWinner: isWin,
+                    reason: reason,
+                    totalRounds: 0,
+                    reward: {
+                        winner: { exp: 150, coins: 50, points: 25 },
+                        loser: { exp: 75, coins: 25, points: -20 }
+                    }
+                };
+                if (typeof showMatchResultAnimation === 'function') {
+                    showMatchResultAnimation(isWin, currentUser, fallbackData);
+                } else {
+                    showSimpleGameOver(winnerId);
+                }
             }
-        }
+        }, 5000);
         
         window._gameOverProcessing = false;
     }
@@ -1521,14 +1532,21 @@
         console.log("📊 isWin:", isWin);
         console.log("📊 matchData:", matchData);
         
-        // 🔥 BẬT POPUP
+        // 🔥 BẬT POPUP NGAY LẬP TỨC
         const gameOverOverlay = document.getElementById("game-over-overlay");
         if (gameOverOverlay) {
             gameOverOverlay.style.display = "flex";
+            gameOverOverlay.style.visibility = "visible";
+            gameOverOverlay.classList.remove("hidden");
         } else {
             console.error("❌ Không tìm thấy game-over-overlay!");
             return;
         }
+
+        // Ẩn tất cả modal có thể đang hiển thị
+        if (typeof hideNotification === 'function') hideNotification();
+        if (typeof closeBuyModal === 'function') closeBuyModal();
+        if (typeof hideBuyModal === 'function') hideBuyModal();
 
         // ===== LẤY PHẦN THƯỞNG TỪ SERVER =====
         let expGained = 0;
