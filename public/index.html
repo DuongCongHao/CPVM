@@ -806,15 +806,15 @@
                     </div>
                     
                     <!-- Kích hoạt tính năng đổ xúc xắc đồng bộ trực tuyến -->
-                    <div>
+                    <div class="action-buttons">
                         <button class="action-btn" id="roll-btn" onclick="rollDice3D()">ĐỔ XÚC XẮC</button>
-                        <button
-                            id="use-skill-btn"
-                            class="action-btn"
-                            onclick="useSkill()"
-                            disabled>
-                            🎴 Dùng kỹ năng
-                        </button>
+                        <div class="sub-actions">
+                            <button id="use-skill-btn" class="action-btn" onclick="useSkill()" disabled>🎴 Kỹ năng</button>
+                            <button id="teleport-btn" class="action-btn teleport-btn" onclick="openTeleportSelector()" disabled>
+                                🌀 Dịch chuyển
+                                <span id="teleport-cooldown-display" style="font-size: 9px; color: #94a3b8; display: block;">Sẵn sàng</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -967,11 +967,12 @@
 
                 <li>🎴 Thẻ bài ngẫu nhiên:
                     <ul>
-                        <li>➡️ Tàng hình: tàng hình và dịch chuyển đến ô bất kỳ.</li>
+                        <li>➡️ Tàng hình: tàng hình và dịch chuyển đến ô bất kỳ, nếu còn trạng thái tàng hình mà đi qua đối thủ đang không trong đất của bản thân thì sẽ tung ám sát -250$.</li>
                         <li>⚡ Sét đánh: bắn sét vào đối thủ -5% tiền và bật ngược lại 3 ô.</li>
                         <li>👹 Hắc ám truy sát: tạo ra thực thể hắc ám ở sau đối thủ 5 ô, sẽ lấy số xúc xắc được của mình để truy đuổi đối thủ trong 3 lượt, nếu bắt được sẽ hút 10% tiền và mất một ô đất ngẫu nhiên</li>
                         <li>🔄 Đổi vị trí với đối thủ.</li>
                         <li>💰 Cướp 15% tiền của đối thủ.</li>
+                        <li>💣 Gài bom: gài 1 quả bom vào đối thủ, nếu trong 2 lượt xúc sắc mà đối thủ không chạy về đến ô start thì bom nổ -5% $ và phá hủy 3 ô đất lân cận</li>
                     </ul>
                 </li>
 
@@ -1030,6 +1031,7 @@
     <script src="js/determine-turn.js"></script>
     <script src="js/dice.js"></script>
     <script src="js/movement.js"></script>
+    <script src="js/teleport.js"></script>
     <script>
         function showHelpModal() { document.getElementById('help-modal').style.display = 'flex'; }
         function hideHelpModal() { document.getElementById('help-modal').style.display = 'none'; }

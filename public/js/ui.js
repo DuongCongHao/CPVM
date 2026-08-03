@@ -180,6 +180,11 @@ function updateUI() {
     } else if (p2Rad) {
         p2Rad.style.display = 'none';
     }
+
+    // ===== 🆕 CẬP NHẬT UI TELEPORT =====
+    if (typeof updateTeleportUI === 'function') {
+        updateTeleportUI();
+    }
 }
 // ===== NHẬT KÝ TRẬN ĐẤU =====
 function addLog(text) {
@@ -415,3 +420,64 @@ function updateRankDisplay() {
         console.warn(`⚠️ window.players[${opponentNum}]:`, window.players ? window.players[opponentNum] : 'undefined');
     }
 }
+// ===== HIỆU ỨNG ÁM SÁT =====
+function showAssassinationEffect(targetId, assassinId, amount) {
+    console.log(`🗡️ HIỆU ỨNG ÁM SÁT: ${players[assassinId].name} → ${players[targetId].name} (-${amount}$)`);
+    
+    // 1. Flash màn hình đỏ
+    const flash = document.createElement('div');
+    flash.style.cssText = `
+        position: fixed;
+        inset: 0;
+        background: rgba(255, 0, 0, 0.3);
+        z-index: 9998;
+        pointer-events: none;
+        animation: assassinateFlash 0.6s ease-out forwards;
+    `;
+    document.body.appendChild(flash);
+    setTimeout(() => {
+        if (flash.parentNode) flash.remove();
+    }, 700);
+    
+    // 2. Rung màn hình
+    document.body.classList.add('assassinate-shake');
+    setTimeout(() => {
+        document.body.classList.remove('assassinate-shake');
+    }, 500);
+    
+    // 3. Hiển thị chữ ÁM SÁT!
+    const text = document.createElement('div');
+    text.textContent = `🗡️ ÁM SÁT! -${amount}$`;
+    text.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 48px;
+        font-weight: 900;
+        color: #ef4444;
+        text-shadow: 0 0 30px rgba(239, 68, 68, 0.8), 0 0 60px rgba(239, 68, 68, 0.5);
+        z-index: 9999;
+        pointer-events: none;
+        animation: assassinateText 1s ease-out forwards;
+        font-family: 'Arial Black', sans-serif;
+        letter-spacing: 4px;
+        background: rgba(0,0,0,0.7);
+        padding: 20px 40px;
+        border-radius: 16px;
+        border: 3px solid #ef4444;
+        box-shadow: 0 0 60px rgba(239, 68, 68, 0.3);
+    `;
+    document.body.appendChild(text);
+    setTimeout(() => {
+        if (text.parentNode) text.remove();
+    }, 1200);
+    
+    // 4. Âm thanh
+    if (audioGame && audioGame.danger) {
+        audioGame.danger.currentTime = 0;
+        audioGame.danger.volume = 0.8;
+        audioGame.danger.play().catch(() => {});
+    }
+}
+

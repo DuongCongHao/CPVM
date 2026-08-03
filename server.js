@@ -22,15 +22,9 @@ const MAX_COINS_PER_MATCH = 100;
 const MAX_EXP_PER_MATCH = 200;
 
 function validateMoney(value) {
-    // 🔥 CHO PHÉP TIỀN ÂM KHI GAME KẾT THÚC (BỐ HẢO QUÉT)
-    // Chỉ chặn khi game chưa kết thúc
-    if (window.gameEnding) {
-        return true;
-    }
-    return typeof value === 'number' && 
-           !isNaN(value) && 
-           value >= MIN_MONEY && 
-           value <= MAX_MONEY;
+    // Server không có window, bỏ kiểm tra gameEnding
+    // Cho phép tiền âm (có thể do Bố Hảo quét)
+    return typeof value === 'number' && !isNaN(value) && value <= MAX_MONEY;
 }
 
 function validatePosition(pos) {
@@ -200,7 +194,8 @@ const SKILLS = [
     "dieuHuong",
     "thor",
     "cuopTien",
-    "doiViTri"
+    "doiViTri",
+    "gaiBom"
 ];
 
 
@@ -286,7 +281,13 @@ io.on('connection', (socket) => {
         // 🆕 GỬI CHO CẢ 2 MÁY TRONG PHÒNG
         io.to(roomId).emit('syncDarkChase', data);
     });
-
+    // ===== RELAY TELEPORT =====
+    socket.on('syncTeleport', (data) => {
+        const roomId = socket.roomId;
+        if (!roomId) return;
+        console.log(`🌀 [Phòng ${roomId}] Teleport: Player ${data.playerId} → ô ${data.targetPos}`);
+        io.to(roomId).emit('syncTeleport', data);
+    });
     // 2. Khi cập nhật vị trí hắc ám (mỗi lượt)
     socket.on('syncDarkChaseUpdate', (data) => {
         const roomId = socket.roomId;
@@ -322,6 +323,33 @@ io.on('connection', (socket) => {
         
         // 🆕 GỬI CHO CẢ 2 MÁY TRONG PHÒNG
         io.to(roomId).emit('syncDarkChaseEnd', data);
+    });
+    // ===== RELAY BOM =====
+    socket.on('syncBombPlanted', (data) => {
+        const roomId = socket.roomId;
+        if (!roomId) return;
+        console.log(`💣 [Phòng ${roomId}] Gài bom: ${data.ownerName} → ${data.targetName}`);
+        io.to(roomId).emit('syncBombPlanted', data);
+    });
+
+    socket.on('syncBombCountdown', (data) => {
+        const roomId = socket.roomId;
+        if (!roomId) return;
+        io.to(roomId).emit('syncBombCountdown', data);
+    });
+
+    socket.on('syncBombExploded', (data) => {
+        const roomId = socket.roomId;
+        if (!roomId) return;
+        console.log(`💥 [Phòng ${roomId}] Bom nổ! Target: ${data.targetId}`);
+        io.to(roomId).emit('syncBombExploded', data);
+    });
+
+    socket.on('syncBombDefused', (data) => {
+        const roomId = socket.roomId;
+        if (!roomId) return;
+        console.log(`💣 [Phòng ${roomId}] Bom đã được gỡ`);
+        io.to(roomId).emit('syncBombDefused', data);
     });
     // ===== 🆕 LẤY RANK NGAY KHI KẾT NỐI (NẾU CÓ USER ID) =====
     socket.on('setUserInfo', async (data) => {
@@ -593,7 +621,10 @@ io.on('connection', (socket) => {
                         rounds: 0,
                         skillUsed: false,
                         skin: opponentSocket.skin || 'skin_default',
-                        rank: opponentSocket.rank || 'Bùn'
+                        rank: opponentSocket.rank || 'Bùn',
+                        teleportCooldown: 0,        // 🆕
+                        teleportMaxCooldown: 5,     // 🆕
+                        teleportAvailable: true  
                     },
                     {
                         id: socket.id,
@@ -603,7 +634,10 @@ io.on('connection', (socket) => {
                         rounds: 0,
                         skillUsed: false,
                         skin: socket.skin || 'skin_default',
-                        rank: socket.rank || 'Bùn'
+                        rank: socket.rank || 'Bùn',
+                        teleportCooldown: 0,        // 🆕
+                        teleportMaxCooldown: 5,     // 🆕
+                        teleportAvailable: true  
                     }
                 ],
                 currentTurn: null,
@@ -724,7 +758,10 @@ io.on('connection', (socket) => {
                     rounds: 0,
                     skillUsed: false,
                     skin: socket.skin || 'skin_default',
-                    rank: socket.rank || 'Bùn'
+                    rank: socket.rank || 'Bùn', 
+                    teleportCooldown: 0,        // 🆕
+                    teleportMaxCooldown: 5,     // 🆕
+                    teleportAvailable: true
                 }
             ],
             currentTurn: null,
@@ -783,7 +820,10 @@ io.on('connection', (socket) => {
             rounds: 0,
             skillUsed: false,
             skin: socket.skin || 'skin_default',
-            rank: socket.rank || 'Bùn'
+            rank: socket.rank || 'Bùn',
+            teleportCooldown: 0,        // 🆕
+            teleportMaxCooldown: 5,     // 🆕
+            teleportAvailable: true
         });
         
         rooms[roomId].status = 'playing';
@@ -1386,7 +1426,6 @@ io.on('connection', (socket) => {
     });
     // ===== XỬ LÝ KHI NGƯỜI CHƠI MẤT KẾT NỐI =====
     socket.on('disconnect', () => {
-        console.log('code mới đang test');
         console.log(`❌ Thiết bị ngắt kết nối: ${socket.id}`);
         
         // ===== XỬ LÝ RỜI PHÒNG CHAT =====

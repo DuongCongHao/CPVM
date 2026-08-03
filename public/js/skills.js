@@ -49,6 +49,12 @@ const skillCards = {
         name: "🔄 Đổi Vị Trí",
         description: "Đổi vị trí hiện tại với đối thủ.",
         type: "swap"
+    },
+    gaiBom: {
+        id: "gaiBom",
+        name: "💣 Gài Bom",
+        description: "Gài bom vào người đối thủ. Sau 2 lượt xúc xắc của họ, nếu chưa qua START, bom nổ: mất 5% tiền + hủy 3 ô đất!",
+        type: "trap"
     }
 };
 
@@ -94,6 +100,14 @@ function useSkill(){
 
     if(currentTurn !== myPlayerNumber){
         alert("Chưa tới lượt của bạn!");
+        return;
+    }
+
+    // ================================================================
+    // 🆕 KIỂM TRA ĐANG MANG BOM (KHÔNG ĐƯỢC DÙNG SKILL)
+    // ================================================================
+    if (window.bombData && window.bombData.active && window.bombData.targetId === myPlayerNumber) {
+        alert("⚠️ Bạn đang mang bom! Không thể dùng kỹ năng trong khi bom chưa được gỡ!");
         return;
     }
 
@@ -269,7 +283,68 @@ function useSkill(){
             shouldEndTurn = true;
             break;
 
-        // ===== KỸ NĂNG: HẮC ÁM TRUY SÁT (THAY THẾ ĐỔI VẬN MAY) =====
+        // ===== KỸ NĂNG: GÀI BOM =====
+        case "gaiBom": {
+            const player = players[myPlayerNumber];
+            const enemyId = myPlayerNumber === 1 ? 2 : 1;
+            const enemy = players[enemyId];
+            
+            // Kiểm tra đã có bom chưa
+            if (window.bombData && window.bombData.active) {
+                addLog(`⚠️ Đã có bom đang hoạt động trên người ${enemy.name}!`);
+                shouldEndTurn = true;
+                break;
+            }
+            
+            // Reset bombData cũ nếu có
+            window.bombData = null;
+            
+            // KÍCH HOẠT BOM
+            window.bombData = {
+                targetId: enemyId,
+                ownerId: myPlayerNumber,
+                turnsLeft: 2,
+                active: true,
+                plantedAt: Date.now()
+            };
+            
+            addLog(`💣 ${player.name} đã gài bom vào người ${enemy.name}! (Còn 2 lượt xúc xắc)`);
+            
+            // Hiệu ứng UI
+            if (typeof showSkinEffectText === 'function') {
+                showSkinEffectText(
+                    '💣 GÀI BOM',
+                    `⚡ ${enemy.name} đang mang bom! ⚡`,
+                    '#ef4444',
+                    '#dc2626',
+                    '💣'
+                );
+            }
+            
+            // Đồng bộ với đối thủ
+            if (socket && socket.connected) {
+                socket.emit('syncBombPlanted', {
+                    targetId: enemyId,
+                    ownerId: myPlayerNumber,
+                    turnsLeft: 2,
+                    targetName: enemy.name,
+                    ownerName: player.name
+                });
+            }
+            
+            // Đánh dấu đã dùng skill
+            players[myPlayerNumber].skill = null;
+            players[myPlayerNumber].skillUsed = true;
+            skillUsedThisTurn = true;
+            
+            updateUI();
+            updateSkillUI();
+            
+            shouldEndTurn = true;
+            break;
+        }
+
+        // ===== KỸ NĂNG: HẮC ÁM TRUY SÁT =====
         case "hacAmTruySat": 
             const player = players[myPlayerNumber];
             const enemyId = myPlayerNumber === 1 ? 2 : 1;
@@ -791,3 +866,136 @@ function executeDarkChaseCatch() {
     
     return true;
 }
+// ===== NỔ BOM =====
+function executeBombExplosion(targetId) {
+    const target = players[targetId];
+    const ownerId = window.bombData?.ownerId || (targetId === 1 ? 2 : 1);
+    const owner = players[ownerId];
+    
+    if (!target) return;
+    
+    addLog(`💥💥💥 BOM PHÁT NỔ! ${target.name} bị nổ tung! 💥💥💥`);
+    
+    // 1. Trừ 5% tiền
+    const penalty = Math.floor(target.money * 0.05);
+    target.money -= penalty;
+    addLog(`💰 ${target.name} mất ${penalty}$ (5% tiền)`);
+    
+    // 2. Hủy diệt 3 ô đất (ô hiện tại, ô trước, ô sau)
+    const TOTAL_CELLS = 20;
+    const currentPos = target.pos;
+    const leftPos = (currentPos - 1 + TOTAL_CELLS) % TOTAL_CELLS;
+    const rightPos = (currentPos + 1) % TOTAL_CELLS;
+    const affectedCells = [leftPos, currentPos, rightPos];
+    
+    let destroyedCount = 0;
+    affectedCells.forEach(pos => {
+        if (pos === 0) return; // Không hủy ô START
+        if (cellsData[pos]) {
+            // Lưu lại chủ cũ để thông báo
+            const oldOwner = cellsData[pos].owner;
+            cellsData[pos].owner = null;
+            cellsData[pos].price = 100;
+            cellsData[pos].isUpgraded = false;
+            cellsData[pos].hasGift = false;
+            cellsData[pos].isRadioactive = false;
+            destroyedCount++;
+            if (oldOwner) {
+                addLog(`💥 Ô ${pos} của ${players[oldOwner]?.name || 'ai đó'} đã bị phá hủy!`);
+            } else {
+                addLog(`💥 Ô ${pos} bị phá hủy!`);
+            }
+        }
+    });
+    
+    addLog(`💣 Tổng cộng ${destroyedCount} ô đất bị phá hủy!`);
+    
+    // Hiệu ứng nổ
+    if (typeof showBombExplosionEffect === 'function') {
+        showBombExplosionEffect(currentPos, leftPos, rightPos);
+    }
+    
+    // Âm thanh nổ
+    if (audioGame && audioGame.bomb) {
+        playSFX(audioGame.bomb);
+        setTimeout(() => playSFX(audioGame.bomb), 300);
+    }
+    
+    // Rung màn hình
+    document.body.classList.add('bomb-shake');
+    setTimeout(() => {
+        document.body.classList.remove('bomb-shake');
+    }, 800);
+    
+    // Reset bombData
+    window.bombData = null;
+    window.bombCheckAfterMove = false;
+    
+    // Đồng bộ
+    if (socket && socket.connected) {
+        socket.emit('syncBombExploded', {
+            targetId: targetId,
+            penalty: penalty,
+            affectedCells: affectedCells,
+            players: players,
+            cellsData: cellsData
+        });
+    }
+    
+    // Cập nhật UI
+    initializeBoard();
+    updateUI();
+    
+    // Kiểm tra game over
+    if (target.money < 0) {
+        const enemy = targetId === 1 ? 2 : 1;
+        addLog(`💀 ${target.name} đã phá sản sau khi bom nổ!`);
+        if (socket && socket.connected) {
+            socket.emit("gameOver", { winnerId: enemy, reason: "money" });
+        } else {
+            gameOver(enemy, "money");
+        }
+    }
+}
+
+// ===== HIỆU ỨNG NỔ BOM =====
+function showBombExplosionEffect(center, left, right) {
+    // Flash trắng
+    const flash = document.createElement('div');
+    flash.style.cssText = `
+        position: fixed;
+        inset: 0;
+        background: rgba(255, 255, 255, 0.6);
+        z-index: 9998;
+        pointer-events: none;
+        animation: bombFlash 0.8s ease-out forwards;
+    `;
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 900);
+    
+    // Chữ BÙM
+    const text = document.createElement('div');
+    text.textContent = '💥 BÙM! 💥';
+    text.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 60px;
+        font-weight: 900;
+        color: #ef4444;
+        text-shadow: 0 0 30px rgba(239, 68, 68, 0.8), 0 0 60px rgba(239, 68, 68, 0.5);
+        z-index: 9999;
+        pointer-events: none;
+        animation: bombText 1.2s ease-out forwards;
+        font-family: 'Arial Black', sans-serif;
+        background: rgba(0,0,0,0.7);
+        padding: 20px 50px;
+        border-radius: 20px;
+        border: 4px solid #ef4444;
+        box-shadow: 0 0 80px rgba(239, 68, 68, 0.5);
+    `;
+    document.body.appendChild(text);
+    setTimeout(() => text.remove(), 1400);
+}
+

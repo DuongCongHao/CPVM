@@ -49,7 +49,62 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
             }
 
             if (direction === 1) {
+                // Di chuyển tiến 1 ô
                 p.pos = (p.pos + 1) % TOTAL_CELLS;
+
+                // ================================================================
+                // 🗡️ KIỂM TRA ÁM SÁT KHI ĐANG TÀNG HÌNH VÀ ĐI QUA ĐỐI THỦ
+                // ================================================================
+                if (window.isInvisible && window.invisiblePlayer === movePlayer) {
+                    const enemyId = movePlayer === 1 ? 2 : 1;
+                    const enemy = players[enemyId];
+                    // Kiểm tra: đối thủ đang đứng ở ô vừa bước vào
+                    if (enemy && enemy.pos === p.pos) {
+                        const cell = cellsData[p.pos];
+                        const isEnemySafe = (cell.owner === enemyId);
+                        
+                        if (!isEnemySafe) {
+                            // Thực hiện ám sát: trừ 250 tiền của đối thủ
+                            const assassinateAmount = 250;
+                            enemy.money -= assassinateAmount;
+                            
+                            // Log nổi bật trên máy kẻ ám sát
+                            addLog(`🗡️🔥 <strong style="color: #ef4444;">${p.name} (TÀNG HÌNH) ĐÃ ÁM SÁT ${enemy.name}! Mất ${assassinateAmount}$!</strong>`);
+                            
+                            // Gửi sự kiện ám sát cho cả 2 máy
+                            if (socket && socket.connected) {
+                                socket.emit('syncAssassination', {
+                                    targetId: enemyId,
+                                    assassinId: movePlayer,
+                                    amount: assassinateAmount,
+                                    pos: p.pos
+                                });
+                                console.log(`🗡️ Đã gửi syncAssassination: ${p.name} → ${enemy.name} (-${assassinateAmount}$)`);
+                            }
+                            
+                            // Gọi hiệu ứng nổi bật trên máy hiện tại (kẻ ám sát)
+                            if (typeof showAssassinationEffect === 'function') {
+                                showAssassinationEffect(enemyId, movePlayer, assassinateAmount);
+                            }
+                            
+                            // Cập nhật UI
+                            updateUI();
+                            
+                            // Kiểm tra nếu đối thủ phá sản
+                            if (enemy.money < 0) {
+                                addLog(`💀 ${enemy.name} đã bị ám sát và phá sản!`);
+                                if (socket && socket.connected) {
+                                    socket.emit("gameOver", { winnerId: movePlayer, reason: "money" });
+                                } else {
+                                    gameOver(movePlayer, "money");
+                                }
+                                // Dừng di chuyển vì game kết thúc
+                                isMoving = false;
+                                return;
+                            }
+                        }
+                    }
+                }
 
                 if (p.pos === 0) {
                     // 🔥 KIỂM TRA TRƯỚC KHI CỘNG TIỀN
@@ -77,6 +132,28 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
                         window.invisiblePos = null;
                         
                         addLog(`👻 ${p.name} đã đến START, hiệu ứng tàng hình kết thúc! (Đối thủ đã thấy bạn)`);
+                    }
+                    
+                    // ================================================================
+                    // 💣 KIỂM TRA BOM KHI QUA START (THÊM VÀO)
+                    // ================================================================
+                    if (window.bombData && window.bombData.active && window.bombData.targetId === movePlayer) {
+                        // Gỡ bom (không nổ)
+                        window.bombData.active = false;
+                        addLog(`💣 ${p.name} đã đi qua START, bom đã được gỡ bỏ an toàn!`);
+                        
+                        // Đồng bộ
+                        if (socket && socket.connected) {
+                            socket.emit('syncBombDefused', {
+                                targetId: movePlayer,
+                                ownerId: window.bombData.ownerId
+                            });
+                        }
+                        
+                        // Reset bombData
+                        window.bombData = null;
+                        // Đảm bảo không nổ bom ở cuối lượt
+                        window.bombCheckAfterMove = false;
                     }
                     
                     p.money += 300;
@@ -130,7 +207,54 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
                     }
                 }
             } else {
+                // Di chuyển lùi 1 ô
                 p.pos = (p.pos - 1 + TOTAL_CELLS) % TOTAL_CELLS;
+                
+                // ================================================================
+                // 🗡️ KIỂM TRA ÁM SÁT KHI ĐANG TÀNG HÌNH VÀ ĐI QUA ĐỐI THỦ (LÙI)
+                // ================================================================
+                if (window.isInvisible && window.invisiblePlayer === movePlayer) {
+                    const enemyId = movePlayer === 1 ? 2 : 1;
+                    const enemy = players[enemyId];
+                    if (enemy && enemy.pos === p.pos) {
+                        const cell = cellsData[p.pos];
+                        const isEnemySafe = (cell.owner === enemyId);
+                        
+                        if (!isEnemySafe) {
+                            const assassinateAmount = 250;
+                            enemy.money -= assassinateAmount;
+                            
+                            addLog(`🗡️🔥 <strong style="color: #ef4444;">${p.name} (TÀNG HÌNH) ĐÃ ÁM SÁT ${enemy.name}! Mất ${assassinateAmount}$!</strong>`);
+                            
+                            if (socket && socket.connected) {
+                                socket.emit('syncAssassination', {
+                                    targetId: enemyId,
+                                    assassinId: movePlayer,
+                                    amount: assassinateAmount,
+                                    pos: p.pos
+                                });
+                                console.log(`🗡️ Đã gửi syncAssassination: ${p.name} → ${enemy.name} (-${assassinateAmount}$)`);
+                            }
+                            
+                            if (typeof showAssassinationEffect === 'function') {
+                                showAssassinationEffect(enemyId, movePlayer, assassinateAmount);
+                            }
+                            
+                            updateUI();
+                            
+                            if (enemy.money < 0) {
+                                addLog(`💀 ${enemy.name} đã bị ám sát và phá sản!`);
+                                if (socket && socket.connected) {
+                                    socket.emit("gameOver", { winnerId: movePlayer, reason: "money" });
+                                } else {
+                                    gameOver(movePlayer, "money");
+                                }
+                                isMoving = false;
+                                return;
+                            }
+                        }
+                    }
+                }
             }
             
             let nextSlot = document.getElementById(`slot-p${movePlayer}-${p.pos}`);
@@ -158,6 +282,26 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
             
             if (typeof syncGameToRemote === 'function') {
                 syncGameToRemote();
+            }
+
+            // ================================================================
+            // 💣 KIỂM TRA BOM SAU KHI DI CHUYỂN XONG (THÊM VÀO)
+            // ================================================================
+            if (window.bombCheckAfterMove && window.bombData && window.bombData.active) {
+                window.bombCheckAfterMove = false;
+                // Nếu người chơi đã qua START thì không nổ (nhưng trường hợp này đã được xử lý ở trên)
+                // Kiểm tra nếu vị trí hiện tại KHÔNG phải START
+                if (p.pos !== 0) {
+                    // BOM NỔ!
+                    if (typeof executeBombExplosion === 'function') {
+                        executeBombExplosion(movePlayer);
+                    } else {
+                        console.error("❌ Hàm executeBombExplosion chưa được định nghĩa!");
+                    }
+                } else {
+                    // Đã qua START, bom đã được gỡ ở trên (nếu có)
+                    window.bombData = null;
+                }
             }
 
             // 🔥 KIỂM TRA TRƯỚC KHI GỌI CALLBACK

@@ -3023,3 +3023,238 @@ body.hao-shake {
         transform: translate(0, 0) rotate(0deg);
     }
 }
+/* ===== HIỆU ỨNG ÁM SÁT ===== */
+@keyframes assassinateFlash {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+@keyframes assassinateText {
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    30% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+    70% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1) translateY(-50px); opacity: 0; }
+}
+
+.assassinate-shake {
+    animation: assassinateShake 0.5s ease-out;
+}
+
+@keyframes assassinateShake {
+    0%, 100% { transform: translateX(0); }
+    10% { transform: translateX(-10px) rotate(-1deg); }
+    30% { transform: translateX(10px) rotate(1deg); }
+    50% { transform: translateX(-5px); }
+    70% { transform: translateX(5px); }
+}
+/* ===== BOM ===== */
+@keyframes bombFlash {
+    0% { opacity: 1; background: rgba(255,255,255,0.8); }
+    100% { opacity: 0; background: rgba(255,255,255,0); }
+}
+@keyframes bombText {
+    0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+    30% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; }
+    70% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1) translateY(-80px); opacity: 0; }
+}
+@keyframes bombWarning {
+    0% { background-color: #ef4444; box-shadow: 0 0 20px rgba(239,68,68,0.3); }
+    100% { background-color: #dc2626; box-shadow: 0 0 60px rgba(239,68,68,0.8); }
+}
+.bomb-shake {
+    animation: bombShake 0.6s ease-out;
+}
+@keyframes bombShake {
+    0%, 100% { transform: translateX(0) rotate(0); }
+    10% { transform: translateX(-15px) rotate(-2deg); }
+    30% { transform: translateX(15px) rotate(2deg); }
+    50% { transform: translateX(-8px); }
+    70% { transform: translateX(8px); }
+}
+.teleport-btn {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+}
+.teleport-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.teleport-btn.active {
+    animation: teleportGlow 0.8s infinite alternate;
+}
+@keyframes teleportGlow {
+    0% { box-shadow: 0 0 10px rgba(139, 92, 246, 0.3); }
+    100% { box-shadow: 0 0 30px rgba(139, 92, 246, 0.8); }
+}/* ===== KHU VỰC NÚT GIỮA BÀN CỜ ===== */
+.cell-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 4px;
+    gap: 4px;
+}
+
+/* ===== 3 NÚT HÀNH ĐỘNG ===== */
+.action-buttons {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px; /* Tăng gap để tách biệt */
+    justify-content: center;
+    align-items: stretch;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+}
+
+.action-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    font-size: 12px;
+    padding: 5px 4px;
+    border-radius: 6px;
+    border: none;
+    background: #3b82f6;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    text-align: center;
+    line-height: 1.2;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Nút đổ xúc xắc */
+#roll-btn {
+    background: linear-gradient(135deg, #10b981, #059669); /* Xanh lá giống kỹ năng chính */
+}
+
+/* Nút kỹ năng chính - Đẩy lên trên 2px */
+#use-skill-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    transform: translateY(-2px); /* Đẩy lên trên */
+}
+
+/* Nút dịch chuyển - Nhỏ lại và thu hẹp */
+.teleport-btn {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+    font-size: 11px; /* Nhỏ hơn một chút */
+    padding: 4px 3px; /* Giảm padding */
+    flex: 0.8 1 0; /* Chiếm ít không gian hơn */
+    min-width: 50px;
+}
+
+/* Cooldown display không làm tăng kích thước nút */
+#teleport-cooldown-display {
+    font-size: 7px;
+    color: #94a3b8;
+    display: block;
+    line-height: 1;
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* ===== DICE AREA ===== */
+.dice-area {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 2px;
+}
+
+/* ===== TURN INDICATOR ===== */
+.turn-indicator {
+    font-size: 13px;
+    font-weight: bold;
+    padding: 4px 10px;
+    border-radius: 10px;
+    background: #1e293b;
+    color: #f8fafc;
+    text-align: center;
+    width: 100%;
+    max-width: 200px;
+    margin: 0 auto 2px auto;
+}
+
+/* === MOBILE === */
+@media (max-width: 600px) {
+    .cell-center {
+        padding: 2px;
+        gap: 2px;
+    }
+    
+    .action-buttons {
+        max-width: 260px;
+        gap: 5px; /* Tăng gap trên mobile */
+    }
+    
+    .action-btn {
+        font-size: 10px;
+        padding: 4px 2px;
+        border-radius: 5px;
+    }
+    
+    #use-skill-btn {
+        transform: translateY(-1px); /* Ít hơn trên mobile */
+    }
+    
+    .teleport-btn {
+        font-size: 9px;
+        padding: 3px 2px;
+        flex: 0.7 1 0;
+        min-width: 40px;
+    }
+    
+    #teleport-cooldown-display {
+        font-size: 6px;
+        display: block;
+    }
+    
+    .dice-area {
+        gap: 8px;
+    }
+    
+    .turn-indicator {
+        font-size: 10px;
+        padding: 3px 6px;
+        max-width: 150px;
+    }
+}
+
+@media (max-width: 430px) {
+    .action-buttons {
+        max-width: 200px;
+        gap: 4px;
+    }
+    
+    .action-btn {
+        font-size: 8px;
+        padding: 3px 2px;
+    }
+    
+    .teleport-btn {
+        font-size: 8px;
+        padding: 2px 2px;
+        flex: 0.6 1 0;
+        min-width: 35px;
+    }
+    
+    #teleport-cooldown-display {
+        font-size: 6px;
+        display: none;
+    }
+}

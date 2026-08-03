@@ -1288,6 +1288,11 @@
         if (typeof updateSkillUI === 'function') {
             updateSkillUI();
         }
+
+        // ===== 🆕 CẬP NHẬT UI TELEPORT =====
+        if (typeof updateTeleportUI === 'function') {
+            updateTeleportUI();
+        }
     }
     // ===== TÍNH TỔNG TÀI SẢN (TIỀN + GIÁ TRỊ ĐẤT) =====
     function calculateTotalAsset(playerId){

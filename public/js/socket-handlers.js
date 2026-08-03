@@ -186,7 +186,31 @@ if (typeof socket !== 'undefined' && socket) {
         removeDarkChaser();
         updateUI();
     });
-
+    // ===== ĐỒNG BỘ DỊCH CHUYỂN =====
+    socket.on('syncTeleport', (data) => {
+        console.log('🌀 Nhận đồng bộ dịch chuyển:', data);
+        
+        const playerId = data.playerId;
+        if (players[playerId]) {
+            players[playerId].pos = data.targetPos;
+            players[playerId].teleportCooldown = data.cooldown;
+            players[playerId].teleportAvailable = data.available;
+            
+            addLog(`🌀 ${players[playerId].name} đã dịch chuyển đến ô ${data.targetPos}`);
+            
+            // ================================================================
+            // 🎵 PHÁT ÂM THANH TELEPORT CHO CẢ 2 MÁY
+            // ================================================================
+            if (audioGame && audioGame.teleport) {
+                audioGame.teleport.currentTime = 0;
+                audioGame.teleport.volume = 0.8;
+                audioGame.teleport.play().catch(() => {});
+            }
+            
+            updateUI();
+            updateTeleportUI();
+        }
+    });
     // ===== NHẬN THÔNG TIN PHÒNG =====
     socket.on('room-joined', (data) => {
         if (data.players) {
@@ -210,6 +234,20 @@ if (typeof socket !== 'undefined' && socket) {
                 
                 console.log(`👤 Player ${playerNum}: ${p.name}, Rank: ${p.rank || 'Bùn'}`);
             });
+            
+            // ================================================================
+            // 🆕 KHỞI TẠO TELEPORT CHO TỪNG PLAYER
+            // ================================================================
+            for (let i = 1; i <= 2; i++) {
+                if (window.players[i]) {
+                    window.players[i].teleportCooldown = 0;
+                    window.players[i].teleportMaxCooldown = 5;
+                    window.players[i].teleportAvailable = true;
+                }
+            }
+            if (typeof updateTeleportUI === 'function') {
+                updateTeleportUI();
+            }
             
             // Cập nhật rank
             if (typeof updateRankDisplay === 'function') {
@@ -403,6 +441,22 @@ if (typeof socket !== 'undefined' && socket) {
                 players[2].skill
                 ? "🎴 " + players[2].skill.name
                 : "🎴 Chưa có thẻ";
+        }
+        
+        // ================================================================
+        // 🆕 KHỞI TẠO TELEPORT CHO NGƯỜI CHƠI
+        // ================================================================
+        for (let i = 1; i <= 2; i++) {
+            if (players[i]) {
+                if (players[i].teleportCooldown === undefined) {
+                    players[i].teleportCooldown = 0;
+                    players[i].teleportMaxCooldown = 5;
+                    players[i].teleportAvailable = true;
+                }
+            }
+        }
+        if (typeof updateTeleportUI === 'function') {
+            updateTeleportUI();
         }
         
         // ===== KHỞI TẠO BÀN CỜ =====
@@ -601,7 +655,136 @@ if (typeof socket !== 'undefined' && socket) {
             checkMyTurnControl();
 
     });
+    // ===== ĐỒNG BỘ BOM =====
+
+// Khi gài bom
+socket.on('syncBombPlanted', (data) => {
+    console.log('💣 Nhận đồng bộ gài bom:', data);
+    window.bombData = {
+        targetId: data.targetId,
+        ownerId: data.ownerId,
+        turnsLeft: data.turnsLeft,
+        active: true,
+        plantedAt: Date.now()
+    };
+    addLog(`💣 ${data.ownerName} đã gài bom vào người ${data.targetName}! (Còn ${data.turnsLeft} lượt)`);
     
+    // Cảnh báo cho người bị gài
+    if (myPlayerNumber === data.targetId) {
+        showNotification('💣 CẢNH BÁO! Bạn đang mang bom!', 'danger', 3000);
+        // Hiệu ứng đỏ trên thanh turn
+        const turnTxt = document.getElementById('turn-txt');
+        if (turnTxt) {
+            turnTxt.style.background = '#ef4444';
+            turnTxt.style.animation = 'bombWarning 0.5s infinite alternate';
+        }
+    }
+    updateUI();
+});
+
+// Khi bom đếm ngược
+socket.on('syncBombCountdown', (data) => {
+    if (window.bombData && window.bombData.targetId === data.targetId) {
+        window.bombData.turnsLeft = data.turnsLeft;
+        addLog(`💣 Bom còn ${data.turnsLeft} lượt xúc xắc`);
+    }
+});
+
+// Khi bom nổ
+socket.on('syncBombExploded', (data) => {
+    console.log('💥 Nhận đồng bộ bom nổ:', data);
+    // Cập nhật dữ liệu
+    if (data.players) {
+        for (let i = 1; i <= 2; i++) {
+            if (data.players[i]) {
+                players[i].money = data.players[i].money;
+                players[i].pos = data.players[i].pos;
+            }
+        }
+    }
+    if (data.cellsData) {
+        cellsData = data.cellsData;
+    }
+    
+    // Hiệu ứng nổ
+    if (typeof showBombExplosionEffect === 'function') {
+        showBombExplosionEffect(data.affectedCells[1], data.affectedCells[0], data.affectedCells[2]);
+    }
+    
+    addLog(`💥💥💥 BOM PHÁT NỔ!`);
+    if (data.penalty) {
+        addLog(`💰 Mất ${data.penalty}$`);
+    }
+    
+    initializeBoard();
+    updateUI();
+    
+    // Reset bombData
+    window.bombData = null;
+});
+
+    // Khi bom được gỡ
+    socket.on('syncBombDefused', (data) => {
+        console.log('💣 Nhận đồng bộ bom được gỡ:', data);
+        if (window.bombData && window.bombData.targetId === data.targetId) {
+            window.bombData.active = false;
+            window.bombData = null;
+            addLog(`💣 Bom đã được gỡ bỏ an toàn!`);
+            
+            // Reset cảnh báo
+            const turnTxt = document.getElementById('turn-txt');
+            if (turnTxt) {
+                turnTxt.style.background = '';
+                turnTxt.style.animation = '';
+            }
+            if (typeof hideNotification === 'function') {
+                hideNotification();
+            }
+            updateUI();
+        }
+    });
+    // ===== ĐỒNG BỘ ÁM SÁT (TÀNG HÌNH) =====
+    socket.on('syncAssassination', (data) => {
+        console.log('🗡️ Nhận đồng bộ ám sát:', data);
+        
+        const targetId = data.targetId;
+        const assassinId = data.assassinId;
+        const amount = data.amount;
+        const pos = data.pos;
+        
+        // Cập nhật tiền cho đối thủ (target)
+        if (players[targetId]) {
+            players[targetId].money -= amount;
+            
+            // Log nổi bật
+            const assassinName = players[assassinId]?.name || 'Ai đó';
+            const targetName = players[targetId]?.name || 'Ai đó';
+            addLog(`🗡️🔥 <strong style="color: #ef4444; font-size: 16px;">${assassinName} (TÀNG HÌNH) ĐÃ ÁM SÁT ${targetName}! Mất ${amount}$!</strong>`);
+            
+            // Gọi hiệu ứng nổi bật
+            showAssassinationEffect(targetId, assassinId, amount);
+            
+            updateUI();
+            
+            // Kiểm tra phá sản
+            if (players[targetId].money < 0) {
+                addLog(`💀 ${targetName} đã bị ám sát và phá sản!`);
+                if (socket && socket.connected) {
+                    socket.emit("gameOver", { winnerId: assassinId, reason: "money" });
+                } else {
+                    gameOver(assassinId, "money");
+                }
+            }
+        }
+    });
+    // ===== RELAY ÁM SÁT =====
+    socket.on('syncAssassination', (data) => {
+        const roomId = socket.roomId;
+        if (!roomId) return;
+        
+        console.log(`🗡️ [Phòng ${roomId}] Relay ám sát: ${data.assassinId} → ${data.targetId} (-${data.amount}$)`);
+        io.to(roomId).emit('syncAssassination', data);
+    });
     // ===== NHẬN KẾT QUẢ TRẬN ĐẤU TỪ SERVER =====
     socket.on('matchResult', (data) => {
         console.log('🏆 NHẬN KẾT QUẢ TRẬN ĐẤU:', data);

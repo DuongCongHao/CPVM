@@ -51,6 +51,60 @@ socket.off('diceRolledResult').on('diceRolledResult', (data) => {
     // Chạy hiệu ứng xoay 3D
     executeDiceAnimation(data.d1, data.d2);
 });
+// ===== QUAY XÚC XẮC 3D ONLINE =====
+function rollDice3D() {
+    // 🔥 KIỂM TRA GAME ĐÃ KẾT THÚC CHƯA
+    if (window.gameEnding) {
+        console.log("⛔ Game đã kết thúc, không thể tung xúc xắc!");
+        return;
+    }
+    
+    // Nếu game chưa bắt đầu hoặc đang trong hiệu ứng di chuyển thì chặn bấm
+    if(!gameStarted || isMoving) {
+        console.log("⏳ Game chưa bắt đầu hoặc đang di chuyển");
+        return;
+    }
+    
+    // KHÓA CỨNG: Chỉ có người chơi có lượt mới được gửi lệnh tung xúc xắc
+    if (typeof myPlayerNumber !== 'undefined' && myPlayerNumber !== currentTurn) {
+        console.log("⛔ Không phải lượt của bạn!");
+        return; 
+    }
+
+    // Tạm thời vô hiệu hóa nút bấm để tránh người chơi spam click khi đang đợi kết quả
+    document.getElementById('roll-btn').disabled = true;
+    hideNotification();
+    
+    // GỬI LỆNH LÊN SERVER: Yêu cầu tung xúc xắc
+    socket.emit('requestRollDice');
+}
+
+// LẮNG NGHE KẾT QUẢ TỪ SERVER TRẢ VỀ (Dùng chung cho cả 2 máy người chơi)
+socket.off('diceRolledResult').on('diceRolledResult', (data) => {
+    // 🔥 KIỂM TRA GAME ĐÃ KẾT THÚC CHƯA
+    if (window.gameEnding) {
+        console.log("⛔ Game đã kết thúc, bỏ qua kết quả xúc xắc!");
+        return;
+    }
+    
+    // Cả 2 tab cùng khóa nút chặn bấm bậy bạ trong lúc đổ xúc xắc
+    isMoving = true;
+    document.getElementById('roll-btn').disabled = true;
+    playSFX(audioGame.dice);
+    // Chạy hiệu ứng xoay 3D
+    executeDiceAnimation(data.d1, data.d2);
+});
+
+// LẮNG NGHE KẾT QUẢ TỪ SERVER TRẢ VỀ (Dùng chung cho cả 2 máy người chơi)
+socket.off('diceRolledResult').on('diceRolledResult', (data) => {
+    // Cả 2 tab cùng khóa nút chặn bấm bậy bạ trong lúc đổ xúc xắc
+    isMoving = true;
+    document.getElementById('roll-btn').disabled = true;
+    playSFX(audioGame.dice);
+    // Chạy hiệu ứng xoay 3D
+    executeDiceAnimation(data.d1, data.d2);
+});
+
 // HÀM XỬ LÝ HIỆU ỨNG QUAY 3D
 function executeDiceAnimation(d1, d2) {
     const cube1 = document.getElementById('cube1');
@@ -135,6 +189,28 @@ function executeDiceAnimation(d1, d2) {
             }
 
             // ================================================================
+            // 💣 KIỂM TRA BOM (THÊM VÀO)
+            // ================================================================
+            if (window.bombData && window.bombData.active && currentTurn === window.bombData.targetId) {
+                // Giảm số lượt còn lại
+                window.bombData.turnsLeft--;
+                addLog(`💣 Bom còn ${window.bombData.turnsLeft} lượt xúc xắc của ${players[currentTurn].name}`);
+                
+                // Cập nhật đồng bộ
+                if (socket && socket.connected) {
+                    socket.emit('syncBombCountdown', {
+                        targetId: window.bombData.targetId,
+                        turnsLeft: window.bombData.turnsLeft
+                    });
+                }
+                
+                // Nếu hết lượt, đánh dấu để kiểm tra sau khi di chuyển
+                if (window.bombData.turnsLeft <= 0) {
+                    window.bombCheckAfterMove = true;
+                }
+            }
+
+            // ================================================================
             // CODE CŨ (GIỮ NGUYÊN)
             // ================================================================
             if ((d1 === 1 && d2 === 1) || (d1 === 6 && d2 === 6)) {
@@ -158,6 +234,35 @@ function executeDiceAnimation(d1, d2) {
             } else {
                 addLog(`🎲 <strong>${players[currentTurn].name}</strong> di chuyển <strong>${d1 + d2} ô</strong>...`);
             }
+            if (currentTurn === myPlayerNumber) {
+                reduceTeleportCooldown(currentTurn);
+            }
         }, 500);
     }, 600);
+}
+// ===== GIẢM COOLDOWN TELEPORT =====
+function reduceTeleportCooldown(playerId) {
+    const player = players[playerId];
+    if (!player) return;
+    
+    if (player.teleportCooldown > 0) {
+        player.teleportCooldown--;
+        if (player.teleportCooldown === 0) {
+            player.teleportAvailable = true;
+            addLog(`🌀 ${player.name} đã hồi chiêu Dịch Chuyển!`);
+            // Hiển thị thông báo
+            if (playerId === myPlayerNumber) {
+                if (typeof showNotification === 'function') {
+                    showNotification('🌀 Dịch Chuyển đã sẵn sàng!', 'success', 2000);
+                }
+            }
+        }
+    }
+    updateTeleportUI();
+}
+
+// Gọi sau khi tung xúc xắc thành công (trong executeDiceAnimation hoặc moveStepByStep)
+// Thêm vào sau khi di chuyển xong:
+if (currentTurn === myPlayerNumber) {
+    reduceTeleportCooldown(currentTurn);
 }
