@@ -861,36 +861,40 @@ if (typeof socket !== 'undefined' && socket) {
             return;
         }
         
-        // ===== HIỆN LẠI NHÂN VẬT CỦA ĐỐI THỦ =====
+        // ===== CẬP NHẬT VỊ TRÍ MỚI CHO ĐỐI THỦ =====
+        if (players[playerNum]) {
+            players[playerNum].pos = pos;
+            console.log(`👻 Đã cập nhật vị trí đối thủ ${playerNum} về ô ${pos}`);
+        }
+        
+        // ===== HIỆN LẠI NHÂN VẬT CỦA ĐỐI THỦ (XÓA ẢO ẢNH) =====
         console.log('👻 Hiện lại nhân vật đối thủ!');
         
-        // Xóa tất cả dataset.invisible của player này
+        // Reset toàn bộ slot của đối thủ về trạng thái bình thường
         for (let i = 0; i < TOTAL_CELLS; i++) {
             let slot = document.getElementById(`slot-p${playerNum}-${i}`);
             if (!slot) continue;
 
+            // Xóa tất cả thuộc tính ẩn
             delete slot.dataset.invisible;
+            slot.classList.remove('invisible-skill');
+            slot.style.display = '';
+            slot.style.opacity = '';
 
-            if (i === players[playerNum].pos) {
-                slot.style.display = "";
-                slot.style.opacity = "1";
-            } else {
-                slot.style.display = "none";
-                slot.style.opacity = "0";
-            }
-
-            slot.classList.remove("invisible-skill");
-
-            const avatar = slot.querySelector(".p-avatar");
+            const avatar = slot.querySelector('.p-avatar');
             if (avatar) {
-                avatar.style.textShadow = "";
-                avatar.style.filter = "";
+                avatar.style.textShadow = '';
+                avatar.style.filter = '';
+                avatar.style.opacity = '';
             }
         }
+        
+        // Reset biến toàn cục
         window.isInvisible = false;
         window.invisiblePlayer = null;
         window.invisiblePos = null;
         
+        // Cập nhật UI để hiển thị đúng vị trí
         updateUI();
     });
     // ===== ĐỒNG BỘ BOM HẠT NHÂN =====

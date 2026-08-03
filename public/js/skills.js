@@ -138,8 +138,15 @@ function useSkill(){
                 " đã đổi vị trí với đối thủ"
             );
             updateUI();
+            
+            // 🔥 Áp dụng hiệu ứng bất lợi cho cả 2 người chơi (sau khi đổi)
+            // Đối thủ trước
+            applyCellEffectForPlayer(opponent);
+            // Người dùng skill sau (nếu muốn áp dụng cho chính mình)
+            applyCellEffectForPlayer(myPlayerNumber);
+            
+            shouldEndTurn = true;
             break;
-
         // ===== 🆕 THẦN THOR MỚI =====
         case "thor":
             playSFX(audioGame.lightning);
@@ -177,6 +184,9 @@ function useSkill(){
                     cellsData: cellsData
                 });
             }
+            
+            // 🔥 Áp dụng hiệu ứng bất lợi cho đối thủ tại vị trí mới
+            applyCellEffectForPlayer(enemy);
             
             shouldEndTurn = true;
             break;

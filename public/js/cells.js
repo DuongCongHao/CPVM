@@ -350,3 +350,94 @@ function triggerGiftAction() {
         });
     }
 }
+// ===== ÁP DỤNG HIỆU ỨNG BẤT LỢI CỦA Ô ĐẤT CHO BẤT KỲ NGƯỜI CHƠI NÀO (DÙNG CHO SKILL) =====
+function applyCellEffectForPlayer(playerId) {
+    const p = players[playerId];
+    if (!p) return;
+    const pos = p.pos;
+    const cell = cellsData[pos];
+    if (pos === 0) return; // Bỏ qua ô START
+
+    // ============================================
+    // 1. KIỂM TRA BẪY (LUÔN BỊ ẢNH HƯỞNG)
+    // ============================================
+    // Mạng nhện
+    if (pos === spiderWebIndex) {
+        p.skipNextTurn = true;
+        addLog(`🕸️ ${p.name} bị mắc mạng nhện và sẽ mất lượt kế tiếp!`);
+        updateUI();
+        if (typeof syncGameToRemote === 'function') syncGameToRemote();
+        return;
+    }
+
+    // Thiên tai sấm sét
+    if (window.lightningIndex !== null && pos === Number(window.lightningIndex)) {
+        const penalty = Math.floor(p.money * 0.5);
+        p.money -= penalty;
+        addLog(`⚡ ${p.name} bị sét đánh, mất ${penalty}$!`);
+        // Xóa thiên tai trên bàn cờ
+        window.lightningIndex = null;
+        initializeBoard();
+        updateUI();
+        if (typeof syncGameToRemote === 'function') syncGameToRemote();
+        if (p.money < 0) {
+            const enemy = playerId === 1 ? 2 : 1;
+            if (socket && socket.connected) {
+                socket.emit("gameOver", { winnerId: enemy, reason: "money" });
+            } else {
+                gameOver(enemy, "money");
+            }
+        }
+        return;
+    }
+
+    // Bom hạt nhân
+    if (window.nuclearBombIndex !== null && pos === Number(window.nuclearBombIndex) && !window.nuclearBombDetonated) {
+        detonateNuclearBomb();
+        return;
+    }
+
+    // Phóng xạ
+    if (cell.isRadioactive) {
+        p.radiationEffect = 3;
+        addLog(`☢️ ${p.name} bị nhiễm phóng xạ!`);
+        if (typeof syncGameToRemote === 'function') syncGameToRemote();
+        updateUI();
+        return;
+    }
+
+    // ============================================
+    // 2. XỬ LÝ Ô ĐẤT (CHỈ HIỆU ỨNG XẤU - THUẾ)
+    // ============================================
+    if (cell.owner === null) {
+        // Ô TRỐNG: KHÔNG LÀM GÌ (KHÔNG MUA)
+        addLog(`⏭️ ${p.name} đứng trên ô trống ${pos} nhưng không được mua (do skill)`);
+        return;
+    }
+
+    if (cell.owner === playerId) {
+        // ĐẤT CỦA MÌNH: KHÔNG NÂNG CẤP
+        addLog(`⏭️ ${p.name} đứng trên đất của mình (ô ${pos}) nhưng không được nâng cấp (do skill)`);
+        return;
+    }
+
+    // ĐẤT CỦA ĐỐI THỦ: PHẢI ĐÓNG THUẾ
+    const enemyId = cell.owner;
+    const fine = cell.price * 2;
+    p.money -= fine;
+    players[enemyId].money += fine;
+    addLog(`💸 ${p.name} bị phạt ${fine}$ khi đứng trên đất của ${players[enemyId].name} (do skill)`);
+    updateUI();
+    if (typeof syncGameToRemote === 'function') syncGameToRemote();
+
+    // Kiểm tra phá sản
+    if (p.money < 0) {
+        const enemy = playerId === 1 ? 2 : 1;
+        addLog(`💀 ${p.name} đã phá sản!`);
+        if (socket && socket.connected) {
+            socket.emit("gameOver", { winnerId: enemy, reason: "money" });
+        } else {
+            gameOver(enemy, "money");
+        }
+    }
+}
