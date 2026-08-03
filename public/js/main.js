@@ -1527,17 +1527,22 @@
 
     // 2. Hàm chạy animation
     // ===== HÀM CHẠY ANIMATION =====
+    // ===== HÀM CHẠY ANIMATION =====
     async function showMatchResultAnimation(isWin, currentUserData, matchData) {
         console.log("🎬 ===== BẮT ĐẦU ANIMATION =====");
         console.log("📊 isWin:", isWin);
         console.log("📊 matchData:", matchData);
         
-        // 🔥 BẬT POPUP NGAY LẬP TỨC
+        // 🔥 HIỂN THỊ OVERLAY NGAY LẬP TỨC (ƯU TIÊN HÀNG ĐẦU)
+        // Sử dụng setTimeout 0 để đẩy việc hiển thị lên đầu event loop
         const gameOverOverlay = document.getElementById("game-over-overlay");
         if (gameOverOverlay) {
+            // Đảm bảo overlay hiển thị ngay cả khi DOM chưa kịp cập nhật
             gameOverOverlay.style.display = "flex";
             gameOverOverlay.style.visibility = "visible";
             gameOverOverlay.classList.remove("hidden");
+            // Force reflow để đảm bảo trình duyệt áp dụng ngay
+            void gameOverOverlay.offsetHeight;
         } else {
             console.error("❌ Không tìm thấy game-over-overlay!");
             return;

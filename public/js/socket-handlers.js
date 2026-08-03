@@ -609,15 +609,21 @@ if (typeof socket !== 'undefined' && socket) {
         // Đánh dấu đã nhận matchResult
         window._gameOverReceived = true;
         
+        // Dừng mọi hoạt động ngay lập tức
+        window.gameEnding = true;
+        window.gameStarted = false;
+        window.isMoving = false;
+        
+        // Hủy tất cả timer đang chạy (nếu có)
+        if (window._turnTimer) {
+            clearInterval(window._turnTimer);
+            window._turnTimer = null;
+        }
+        
         // Ẩn nút rời trận
         if (typeof hideLeaveButton === 'function') {
             hideLeaveButton();
         }
-        
-        // Đánh dấu game kết thúc
-        window.gameEnding = true;
-        window.gameStarted = false;
-        window.isMoving = false;  // 🔥 GIẢI PHÓNG TRẠNG THÁI DI CHUYỂN
         
         // Ẩn tất cả notification/modal ngay lập tức
         if (typeof hideNotification === 'function') {
@@ -667,10 +673,13 @@ if (typeof socket !== 'undefined' && socket) {
         const isWinner = (window.myPlayerNumber === data.winnerId);
         console.log(`🎬 isWinner = ${isWinner} (myPlayerNumber: ${window.myPlayerNumber}, winnerId: ${data.winnerId})`);
         
-        // 🔥 GỌI ANIMATION CHO CẢ THẮNG VÀ THUA
+        // 🔥 ƯU TIÊN HIỂN THỊ POPUP NGAY LẬP TỨC
         if (typeof showMatchResultAnimation === 'function') {
             console.log(`🎬 Gọi showMatchResultAnimation với isWin = ${isWinner}`);
-            showMatchResultAnimation(isWinner, currentUser, data);
+            // Dùng requestAnimationFrame để ưu tiên render
+            requestAnimationFrame(() => {
+                showMatchResultAnimation(isWinner, currentUser, data);
+            });
         } else {
             showSimpleGameOver(data.winnerId);
         }
