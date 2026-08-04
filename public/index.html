@@ -573,7 +573,84 @@
                     <div class="lobby-item-desc">Xem top người chơi</div>
                 </div>
             </div>
+            <!-- ===== HỘP QUÀ THEO CẤP ===== -->
+            <!-- Nút hộp quà góc phải -->
+            <button id="gift-box-btn" style="
+                position: fixed;
+                bottom: 100px;
+                right: 20px;
+                width: 60px;
+                height: 60px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #f59e0b, #d97706);
+                color: white;
+                border: none;
+                font-size: 30px;
+                box-shadow: 0 4px 20px rgba(245, 158, 11, 0.5);
+                cursor: pointer;
+                z-index: 999;
+                transition: all 0.3s;
+            ">
+                🎁
+                <span id="gift-badge" style="
+                    display: none;
+                    position: absolute;
+                    top: -5px;
+                    right: -5px;
+                    background: #ef4444;
+                    color: white;
+                    border-radius: 50%;
+                    width: 20px;
+                    height: 20px;
+                    font-size: 11px;
+                    font-weight: bold;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                ">1</span>
+            </button>
 
+            <!-- Popup quà theo cấp -->
+            <div id="reward-popup" style="
+                display: none;
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: #1e293b;
+                border-radius: 16px;
+                padding: 25px;
+                width: 90%;
+                max-width: 400px;
+                max-height: 80vh;
+                overflow-y: auto;
+                z-index: 1000;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+                border: 2px solid #facc15;
+            ">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="color: #facc15; margin: 0;">🎁 Quà theo cấp</h3>
+                    <button id="close-reward-popup" style="
+                        background: none;
+                        border: none;
+                        color: #94a3b8;
+                        font-size: 24px;
+                        cursor: pointer;
+                    ">✕</button>
+                </div>
+                <div id="reward-list">
+                    <!-- Sẽ được tạo bằng JS -->
+                </div>
+            </div>
+
+            <!-- Overlay mờ -->
+            <div id="reward-overlay" style="
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.6);
+                z-index: 999;
+            "></div>
             <!-- ===== KHU VỰC NỘI DUNG ===== -->
             <div id="lobby-content" style="margin-top: 15px;">
                 <!-- Nội dung mặc định: Đấu trường -->

@@ -3275,3 +3275,32 @@ body.hao-shake {
     color: #dc2626;
     transform: scale(1.2);
 }
+/* ===== HỘP QUÀ THEO CẤP ===== */
+#gift-box-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 30px rgba(245, 158, 11, 0.7);
+}
+
+#gift-box-btn:active {
+    transform: scale(0.95);
+}
+
+#reward-popup::-webkit-scrollbar {
+    width: 4px;
+}
+#reward-popup::-webkit-scrollbar-thumb {
+    background: #facc15;
+    border-radius: 4px;
+}
+#reward-popup::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+
+/* Hiệu ứng xuất hiện popup */
+#reward-popup {
+    animation: popupFade 0.3s ease-out;
+}
+@keyframes popupFade {
+    from { opacity: 0; transform: translate(-50%, -45%) scale(0.95); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}

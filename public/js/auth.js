@@ -292,6 +292,7 @@ function initLobby(user){
                 console.log("✅ Đã áp dụng skin trong lobby");
             }, 500);
         }
+        
 
         // ===== HIỂN THỊ SẢNH =====
         // Đã hiển thị ở đầu hàm initLobby
@@ -310,6 +311,10 @@ function initLobby(user){
         console.log("🎨 Owned skins:", userData.ownedSkins);
         console.log("🎨 Current skin:", userData.skin || 'skin_default');
     }
+    // Cập nhật UI quà theo level
+    if (typeof updateRewardUI === 'function') {
+        updateRewardUI();
+    }
 }
 // ===== THÊM VÀO CUỐI FILE auth.js =====
 
@@ -326,6 +331,7 @@ const SKIN_LIST = [
     { id: 'skin_wizard', name: 'Phù thủy', icon: '🧙', price: 1000, desc: 'Phù thủy quyền năng', rarity: 'uncommon' },
     { id: 'skin_robot', name: 'Robot', icon: '🤖', price: 2000, desc: 'Người máy tương lai', rarity: 'rare' },
     { id: 'skin_car', name: 'Ô tô', icon: '🚗', price: 1500, desc: 'Xe hơi tốc độ', rarity: 'common' },
+    { id: 'skin_level30', name: 'Thiên sứ', icon: '👼', price: 0, desc: 'Phần thưởng đặc biệt khi đạt cấp 30!', rarity: 'rare' }
 ];
 // ===== SHOP FUNCTIONS =====
 let shopFilter = 'all';
@@ -523,6 +529,9 @@ function loadShop() {
     if (shopFilter === 'all' || shopFilter === 'skins') {
         // Hiển thị skin
         SKIN_LIST.forEach(skin => {
+            // 🆕 BỎ QUA SKIN THƯỞNG CẤP 30 (KHÔNG HIỂN THỊ TRONG SHOP)
+            if (skin.id === 'skin_level30') return;
+            
             const isOwned = user?.ownedSkins?.includes(skin.id) || false;
             const isEquipped = user?.skin === skin.id;
             const canAfford = currentCoin >= skin.price;
@@ -1152,3 +1161,245 @@ window.onload = function() {
         document.getElementById("lobby-screen").style.display = "none";
     }
 };
+// ===== QUÀ THEO CẤP =====
+const LEVEL_REWARDS = {
+    5:  { type: 'coin', amount: 1000 },
+    10: { type: 'coin', amount: 1000 },
+    15: { type: 'coin', amount: 1000 },
+    20: { type: 'coin', amount: 1000 },
+    25: { type: 'coin', amount: 1000 },
+    30: { type: 'skin', skinId: 'skin_level30' }
+};
+
+// Lấy danh sách level đã nhận từ server
+async function fetchClaimedLevels(userId) {
+    try {
+        const res = await fetch(`/api/rewards/${userId}`);
+        const data = await res.json();
+        return data.success ? data.claimed : [];
+    } catch (err) {
+        console.error('❌ Lỗi lấy quà đã nhận:', err);
+        return [];
+    }
+}
+
+// Kiểm tra có quà chưa nhận không (để hiển thị badge)
+async function checkUnclaimedRewards() {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    if (!user) return false;
+    const claimed = await fetchClaimedLevels(user.id);
+    const claimedSet = new Set(claimed);
+    for (let lv = 5; lv <= 30; lv += 5) {
+        if (user.level >= lv && !claimedSet.has(lv)) return true;
+    }
+    return false;
+}
+
+// Cập nhật badge trên nút hộp quà
+async function updateGiftBadge() {
+    const badge = document.getElementById('gift-badge');
+    if (!badge) return;
+    const hasUnclaimed = await checkUnclaimedRewards();
+    if (hasUnclaimed) {
+        badge.style.display = 'flex';
+        badge.textContent = '✨';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+// ===== HIỂN THỊ POPUP QUÀ =====
+async function openRewardPopup() {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    if (!user) {
+        alert('Vui lòng đăng nhập!');
+        return;
+    }
+
+    const popup = document.getElementById('reward-popup');
+    const overlay = document.getElementById('reward-overlay');
+    const list = document.getElementById('reward-list');
+
+    const claimedLevels = await fetchClaimedLevels(user.id);
+    const claimedSet = new Set(claimedLevels);
+
+    // ===== TÍNH TOÁN LEVEL & EXP =====
+    const level = user.level || 1;
+    const exp = user.exp || 0;
+    const expPerLevel = 1000;
+    const currentExp = exp % expPerLevel;
+    const expPercent = (currentExp / expPerLevel) * 100;
+    const nextLevel = level + 1;
+
+    // ===== TẠO HTML =====
+    let html = `
+        <!-- Thông tin Level & EXP -->
+        <div style="
+            background: rgba(15,23,42,0.6);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(250,204,21,0.2);
+        ">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="color: #f8fafc; font-weight: bold; font-size: 15px;">
+                    🏅 Level <span style="color: #facc15;">${level}</span>
+                </span>
+                <span style="color: #94a3b8; font-size: 13px;">
+                    ${currentExp} / ${expPerLevel} EXP
+                </span>
+            </div>
+            <div style="
+                width: 100%;
+                height: 6px;
+                background: #1e293b;
+                border-radius: 10px;
+                overflow: hidden;
+            ">
+                <div style="
+                    width: ${expPercent}%;
+                    height: 100%;
+                    background: linear-gradient(90deg, #38bdf8, #facc15);
+                    border-radius: 10px;
+                    transition: width 0.5s ease;
+                "></div>
+            </div>
+            <div style="color: #94a3b8; font-size: 11px; margin-top: 4px; text-align: right;">
+                ⏳ ${expPerLevel - currentExp} EXP đến cấp ${nextLevel}
+            </div>
+        </div>
+        <div style="color: #94a3b8; font-size: 13px; margin-bottom: 10px;">
+            🎁 Chọn cấp để nhận quà:
+        </div>
+    `;
+
+    // Danh sách quà theo cấp
+    for (let lv = 5; lv <= 30; lv += 5) {
+        const reward = LEVEL_REWARDS[lv];
+        if (!reward) continue;
+        const isClaimed = claimedSet.has(lv);
+        const canClaim = user.level >= lv && !isClaimed;
+        const rewardText = reward.type === 'coin' 
+            ? `💰 ${reward.amount} Coin` 
+            : '🎖️ Skin đặc biệt';
+
+        html += `
+            <div class="reward-item" style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 12px 16px;
+                margin-bottom: 8px;
+                background: ${isClaimed ? 'rgba(34, 197, 94, 0.1)' : 'rgba(15, 23, 42, 0.5)'};
+                border-radius: 10px;
+                border-left: 4px solid ${isClaimed ? '#22c55e' : canClaim ? '#facc15' : '#475569'};
+                transition: all 0.2s;
+            ">
+                <div>
+                    <strong style="color: ${isClaimed ? '#22c55e' : canClaim ? '#facc15' : '#94a3b8'}; font-size: 16px;">
+                        🏅 Cấp ${lv}
+                    </strong>
+                    <span style="color: #94a3b8; font-size: 13px; margin-left: 8px;">
+                        ${rewardText}
+                    </span>
+                </div>
+                ${isClaimed ? 
+                    '<span style="color: #22c55e; font-size: 13px;">✅ Đã nhận</span>' :
+                    canClaim ? 
+                    `<button onclick="claimLevelReward(${lv})" class="claim-btn" style="
+                        background: #facc15;
+                        color: #0f172a;
+                        border: none;
+                        padding: 6px 18px;
+                        border-radius: 6px;
+                        font-weight: bold;
+                        cursor: pointer;
+                        transition: 0.2s;
+                    ">Nhận</button>` :
+                    `<span style="color: #64748b; font-size: 12px;">🔒 Chưa đạt</span>`
+                }
+            </div>
+        `;
+    }
+
+    list.innerHTML = html;
+    popup.style.display = 'block';
+    overlay.style.display = 'block';
+}
+function closeRewardPopup() {
+    document.getElementById('reward-popup').style.display = 'none';
+    document.getElementById('reward-overlay').style.display = 'none';
+}
+
+// Nhận quà
+async function claimLevelReward(level) {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    if (!user) {
+        alert('Vui lòng đăng nhập!');
+        return;
+    }
+    if (user.level < level) {
+        alert('Bạn chưa đạt cấp này!');
+        return;
+    }
+
+    const claimed = await fetchClaimedLevels(user.id);
+    if (claimed.includes(level)) {
+        alert('Bạn đã nhận quà này rồi!');
+        return;
+    }
+
+    const reward = LEVEL_REWARDS[level];
+    if (!reward) return;
+
+    // Cập nhật local
+    if (reward.type === 'coin') {
+        user.coin = (user.coin || 0) + reward.amount;
+        user.coins = user.coin;
+    } else if (reward.type === 'skin') {
+        if (!user.ownedSkins) user.ownedSkins = ['skin_default'];
+        if (!user.ownedSkins.includes(reward.skinId)) {
+            user.ownedSkins.push(reward.skinId);
+            user.skin = reward.skinId;
+        } else {
+            alert('Bạn đã sở hữu skin này rồi!');
+            return;
+        }
+    }
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    localStorage.setItem('user', JSON.stringify(user));
+
+    // Gửi lên server
+    try {
+        const res = await fetch('/api/rewards/claim', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.id, level: level })
+        });
+        const data = await res.json();
+        if (!data.success) {
+            alert('❌ ' + data.message);
+            return;
+        }
+        alert(`✅ Nhận quà cấp ${level} thành công!`);
+    } catch (err) {
+        alert('❌ Lỗi kết nối server!');
+        console.error(err);
+        return;
+    }
+
+    // Cập nhật UI
+    if (typeof updateLobbyUI === 'function') updateLobbyUI(user);
+    if (typeof updatePlayerSkin === 'function') updatePlayerSkin();
+    updateGiftBadge();
+    openRewardPopup(); // refresh
+}
+
+// Gán sự kiện
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('gift-box-btn').addEventListener('click', openRewardPopup);
+    document.getElementById('close-reward-popup').addEventListener('click', closeRewardPopup);
+    document.getElementById('reward-overlay').addEventListener('click', closeRewardPopup);
+    updateGiftBadge();
+});
+

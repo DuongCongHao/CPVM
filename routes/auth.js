@@ -497,4 +497,85 @@ router.get("/leaderboard", async (req, res) => {
         });
     }
 });
+// ===== LẤY DANH SÁCH QUÀ ĐÃ NHẬN TỪ CỘT JSONB =====
+router.get('/rewards/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        console.log('📥 GET /rewards/', userId);
+
+        const { data, error } = await supabase
+            .from('users')
+            .select('claimed_rewards')
+            .eq('id', userId)
+            .maybeSingle();
+
+        if (error) {
+            console.error('❌ Supabase error:', error.message);
+            return res.status(500).json({ success: false, message: error.message });
+        }
+
+        if (!data) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy user' });
+        }
+
+        // Lấy danh sách level đã nhận từ JSONB (mặc định là {})
+        const claimedObj = data.claimed_rewards || {};
+        const claimed = Object.keys(claimedObj).filter(key => claimedObj[key] === true).map(Number);
+        console.log('✅ Claimed levels:', claimed);
+        res.json({ success: true, claimed });
+    } catch (err) {
+        console.error('❌ Lỗi lấy quà đã nhận:', err.message);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ===== NHẬN QUÀ – CẬP NHẬT CỘT JSONB =====
+router.post('/rewards/claim', async (req, res) => {
+    try {
+        const { userId, level } = req.body;
+        console.log('📥 POST /rewards/claim', { userId, level });
+
+        if (!userId || !level) {
+            return res.status(400).json({ success: false, message: 'Thiếu userId hoặc level' });
+        }
+
+        // Lấy thông tin user hiện tại
+        const { data: user, error: fetchErr } = await supabase
+            .from('users')
+            .select('claimed_rewards')
+            .eq('id', userId)
+            .maybeSingle();
+
+        if (fetchErr || !user) {
+            console.error('❌ Không tìm thấy user:', fetchErr?.message);
+            return res.status(404).json({ success: false, message: 'Không tìm thấy user' });
+        }
+
+        // Kiểm tra đã nhận chưa
+        const claimedObj = user.claimed_rewards || {};
+        if (claimedObj[level] === true) {
+            return res.status(400).json({ success: false, message: 'Bạn đã nhận quà cấp này rồi!' });
+        }
+
+        // Đánh dấu đã nhận
+        claimedObj[level] = true;
+
+        // Cập nhật vào database
+        const { error: updateErr } = await supabase
+            .from('users')
+            .update({ claimed_rewards: claimedObj })
+            .eq('id', userId);
+
+        if (updateErr) {
+            console.error('❌ Update error:', updateErr.message);
+            return res.status(500).json({ success: false, message: updateErr.message });
+        }
+
+        console.log(`✅ Claimed reward level ${level} for user ${userId}`);
+        res.json({ success: true, message: `Nhận quà cấp ${level} thành công!` });
+    } catch (err) {
+        console.error('❌ Lỗi nhận quà:', err.message);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
 module.exports = router;
