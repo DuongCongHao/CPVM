@@ -3304,3 +3304,281 @@ body.hao-shake {
     from { opacity: 0; transform: translate(-50%, -45%) scale(0.95); }
     to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
+/* ===== SKIN XÚC XẮC BĂNG GIÁ ===== */
+.dice-ice .cube-face {
+    background: linear-gradient(135deg, #e0f7fa, #b3e5fc) !important;
+    border-color: #0288d1 !important;
+    color: #01579b !important;
+    text-shadow: 0 0 10px rgba(2, 136, 209, 0.3);
+    box-shadow: inset 0 0 20px rgba(2, 136, 209, 0.2), 0 0 15px rgba(2, 136, 209, 0.1);
+}
+
+.dice-ice .cube-face::after {
+    content: '❄️';
+    position: absolute;
+    font-size: 8px;
+    top: 2px;
+    right: 3px;
+    opacity: 0.5;
+}
+
+/* ===== SKIN XÚC XẮC CẦU VỒNG ===== */
+.dice-rainbow .cube-face {
+    border-color: #8b5cf6 !important;
+    color: #1e293b !important;
+    text-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+    animation: rainbowDice 2s linear infinite;
+    background: linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb, #a29bfe, #fd79a8) !important;
+    background-size: 300% 300% !important;
+}
+
+@keyframes rainbowDice {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.dice-rainbow .cube-face::after {
+    content: '🌈';
+    position: absolute;
+    font-size: 8px;
+    top: 2px;
+    right: 3px;
+    opacity: 0.6;
+}
+
+/* ===== SKIN MẶC ĐỊNH ===== */
+.cube:not(.dice-ice):not(.dice-rainbow) .cube-face {
+    background: #f8fafc;
+    border-color: #0f172a;
+    color: #0f172a;
+}
+/* ===== TRANG BỊ (EQUIPMENT) - RESPONSIVE ===== */
+
+/* Container chính */
+#equipment-content {
+    padding: 10px 5px;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+#equipment-content h3 {
+    text-align: center;
+    color: #facc15;
+    font-size: 18px;
+    margin-bottom: 12px;
+}
+
+/* Grid cho skin nhân vật */
+.equipment-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 15px;
+    width: 100%;
+    max-width: 100%;
+}
+
+/* Grid cho xúc xắc */
+.equipment-grid.dice-grid {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+/* Mỗi item trang bị - CHỈ ICON */
+.equip-item-card {
+    background: rgba(15, 23, 42, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 10px 4px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.equip-item-card:hover {
+    background: rgba(15, 23, 42, 0.8);
+    transform: translateY(-3px);
+    border-color: rgba(56, 189, 248, 0.3);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Trạng thái đang dùng - VIỀN VÀNG */
+.equip-item-card.active {
+    border-color: #facc15 !important;
+    background: rgba(250, 204, 21, 0.12) !important;
+    box-shadow: 0 0 25px rgba(250, 204, 21, 0.15);
+}
+
+/* Icon to, rõ */
+.equip-item-card .icon {
+    font-size: 30px;
+    line-height: 1.2;
+    display: block;
+    margin-bottom: 2px;
+}
+
+/* Tên skin - NHỎ, MỜ, CHỈ HIỆN KHI HOVER */
+.equip-item-card .name {
+    font-size: 9px;
+    color: #64748b;
+    display: block;
+    margin-top: 2px;
+    opacity: 0.5;
+    transition: opacity 0.3s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.equip-item-card:hover .name {
+    opacity: 1;
+    color: #94a3b8;
+}
+
+/* Badge "Đang dùng" - NHỎ, TRONG SUỐT */
+.equip-item-card .badge {
+    font-size: 8px;
+    color: #facc15;
+    background: rgba(250, 204, 21, 0.15);
+    padding: 1px 8px;
+    border-radius: 10px;
+    margin-top: 2px;
+    display: inline-block;
+    border: 1px solid rgba(250, 204, 21, 0.2);
+}
+
+/* Header phân loại (Skin nhân vật / Xúc xắc) */
+.equipment-section-title {
+    color: #94a3b8;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 10px 0 8px 0;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Trạng thái rỗng */
+.equip-empty {
+    grid-column: 1 / -1;
+    color: #64748b;
+    text-align: center;
+    padding: 20px;
+    font-size: 13px;
+}
+
+/* ===== RESPONSIVE MOBILE ===== */
+
+/* Điện thoại nhỏ - 4 cột nhưng thu nhỏ */
+@media (max-width: 480px) {
+    .equipment-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 5px;
+    }
+    .equipment-grid.dice-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    .equip-item-card .icon {
+        font-size: 24px;
+    }
+    .equip-item-card .name {
+        font-size: 7px;
+        opacity: 0.7;
+    }
+    .equip-item-card {
+        padding: 6px 2px;
+        border-radius: 8px;
+        border-width: 1.5px;
+    }
+    .equip-item-card .badge {
+        font-size: 6px;
+        padding: 0px 5px;
+    }
+    .equipment-section-title {
+        font-size: 10px;
+    }
+    #equipment-content {
+        padding: 8px 4px;
+    }
+}
+
+/* Điện thoại siêu nhỏ (dưới 380px) - giảm xuống 3 cột */
+@media (max-width: 380px) {
+    .equipment-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4px;
+    }
+    .equipment-grid.dice-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .equip-item-card .icon {
+        font-size: 20px;
+    }
+    .equip-item-card {
+        padding: 5px 2px;
+    }
+}
+
+/* Desktop - hiển thị bình thường */
+@media (min-width: 769px) {
+    .equip-item-card .icon {
+        font-size: 38px;
+    }
+    .equip-item-card .name {
+        font-size: 11px;
+    }
+    .equipment-grid {
+        gap: 12px;
+    }
+}
+/* ===== TRANG BỊ - CÓ CUỘN ===== */
+#equipment-content {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 10px 5px 20px 5px;
+    scroll-behavior: smooth;
+}
+
+#equipment-content::-webkit-scrollbar {
+    width: 4px;
+}
+
+#equipment-content::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.3);
+    border-radius: 10px;
+}
+
+#equipment-content::-webkit-scrollbar-thumb {
+    background: #facc15;
+    border-radius: 10px;
+}
+
+#equip-skin-list,
+#equip-dice-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 5px;
+}
+
+#equip-skin-list::-webkit-scrollbar,
+#equip-dice-list::-webkit-scrollbar {
+    width: 3px;
+}
+
+#equip-skin-list::-webkit-scrollbar-thumb,
+#equip-dice-list::-webkit-scrollbar-thumb {
+    background: #facc15;
+    border-radius: 10px;
+}

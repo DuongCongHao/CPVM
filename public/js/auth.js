@@ -184,55 +184,62 @@ loginBtn.onclick = async ()=>{
     }
 
 };
-function initLobby(user){
-    console.log("🔧 Init Lobby với user:", user);
-    
-    // ===== HIỂN THỊ LOBBY NGAY =====
-    document.getElementById("login-screen").style.display = "none";
-    document.getElementById("lobby-screen").style.display = "flex";
-    
-    // ===== HIỂN THỊ NGAY DỮ LIỆU CŨ (ĐỂ KHÔNG BỊ TRẮNG) =====
-    renderLobbyUI(user);
-    
-    // ===== GỌI API ĐỂ LẤY DỮ LIỆU MỚI NHẤT =====
-    fetch(`/api/user/${user.username}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data && data.success !== false) {
-                // Cập nhật dữ liệu mới từ database
-                const updatedUser = {
-                    ...user,
-                    id: data.id || user.id,
-                    username: data.username || user.username,
-                    display_name: data.display_name || user.display_name,
-                    level: data.level || 1,
-                    exp: data.exp || 0,
-                    points: data.points || 0,
-                    rank: data.rank || "Bùn",
-                    coin: data.coin || 0,
-                    avatar: data.avatar || "default",
-                    ownedSkins: data.owned_skins || ['skin_default'],
-                    skin: data.current_skin || 'skin_default',
-                    ownedDice: data.owned_dice || [],
-                    ownedBoard: data.owned_board || []
-                };
-                
-                // Lưu lại localStorage với dữ liệu mới
-                localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-                localStorage.setItem('user', JSON.stringify(updatedUser));
-                
-                // Cập nhật UI với dữ liệu mới
-                renderLobbyUI(updatedUser);
-                console.log("✅ Đã cập nhật dữ liệu từ database:", updatedUser);
-            } else {
-                console.log("⚠️ Không lấy được dữ liệu từ database, giữ dữ liệu cũ");
-            }
-        })
-        .catch(err => {
-            console.error('❌ Lỗi lấy dữ liệu user:', err);
-            // Giữ dữ liệu cũ, không làm gì
-        });
-    
+    function initLobby(user){
+        console.log("🔧 Init Lobby với user:", user);
+        
+        // ===== HIỂN THỊ LOBBY NGAY =====
+        document.getElementById("login-screen").style.display = "none";
+        document.getElementById("lobby-screen").style.display = "flex";
+        
+        // ===== HIỂN THỊ NGAY DỮ LIỆU CŨ (ĐỂ KHÔNG BỊ TRẮNG) =====
+        renderLobbyUI(user);
+        
+        // ===== GỌI API ĐỂ LẤY DỮ LIỆU MỚI NHẤT =====
+        fetch(`/api/user/${user.username}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.success !== false) {
+                    // Cập nhật dữ liệu mới từ database
+                    const updatedUser = {
+                        ...user,
+                        id: data.id || user.id,
+                        username: data.username || user.username,
+                        display_name: data.display_name || user.display_name,
+                        level: data.level || 1,
+                        exp: data.exp || 0,
+                        points: data.points || 0,
+                        rank: data.rank || "Bùn",
+                        coin: data.coin || 0,
+                        avatar: data.avatar || "default",
+                        ownedSkins: data.owned_skins || ['skin_default'],
+                        skin: data.current_skin || 'skin_default',
+                        ownedDice: data.owned_dice || [],
+                        diceSkin: data.dice_skin || 'dice_default',
+                        ownedBoard: data.owned_board || []
+                    };
+                    
+                    // Lưu lại localStorage với dữ liệu mới
+                    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+                    localStorage.setItem('user', JSON.stringify(updatedUser));
+                    
+                    // Cập nhật UI với dữ liệu mới
+                    renderLobbyUI(updatedUser);
+                    console.log("✅ Đã cập nhật dữ liệu từ database:", updatedUser);
+                    
+                    // 🆕 ÁP DỤNG SKIN XÚC XẮC SAU KHI LOAD XONG
+                    if (typeof updateDiceSkin === 'function') {
+                        updateDiceSkin();
+                    }
+                } else {
+                    console.log("⚠️ Không lấy được dữ liệu từ database, giữ dữ liệu cũ");
+                }
+            })
+            .catch(err => {
+                console.error('❌ Lỗi lấy dữ liệu user:', err);
+                // Giữ dữ liệu cũ, không làm gì
+            });
+    }
+
     // ===== RENDER UI LOBBY =====
     function renderLobbyUI(userData) {
         // ===== 🆕 LÀM SẠCH SKIN =====
@@ -292,7 +299,6 @@ function initLobby(user){
                 console.log("✅ Đã áp dụng skin trong lobby");
             }, 500);
         }
-        
 
         // ===== HIỂN THỊ SẢNH =====
         // Đã hiển thị ở đầu hàm initLobby
@@ -310,12 +316,17 @@ function initLobby(user){
         console.log("👤 User:", userData);
         console.log("🎨 Owned skins:", userData.ownedSkins);
         console.log("🎨 Current skin:", userData.skin || 'skin_default');
+        console.log("🎲 Dice skin:", userData.diceSkin || 'dice_default');
+        
+        // Cập nhật UI quà theo level
+        if (typeof updateRewardUI === 'function') {
+            updateRewardUI();
+        }
+        if (typeof updateGiftBadge === 'function') {
+            updateGiftBadge();
+        }
     }
-    // Cập nhật UI quà theo level
-    if (typeof updateRewardUI === 'function') {
-        updateRewardUI();
-    }
-}
+
 // ===== THÊM VÀO CUỐI FILE auth.js =====
 
 // ===== SKIN DATA =====
@@ -331,7 +342,11 @@ const SKIN_LIST = [
     { id: 'skin_wizard', name: 'Phù thủy', icon: '🧙', price: 1000, desc: 'Phù thủy quyền năng', rarity: 'uncommon' },
     { id: 'skin_robot', name: 'Robot', icon: '🤖', price: 2000, desc: 'Người máy tương lai', rarity: 'rare' },
     { id: 'skin_car', name: 'Ô tô', icon: '🚗', price: 1500, desc: 'Xe hơi tốc độ', rarity: 'common' },
-    { id: 'skin_level30', name: 'Thiên sứ', icon: '👼', price: 0, desc: 'Phần thưởng đặc biệt khi đạt cấp 30!', rarity: 'rare' }
+    { id: 'skin_level30', name: 'Thiên sứ', icon: '👼', price: 0, desc: 'Phần thưởng đặc biệt khi đạt cấp 30!', rarity: 'rare' },
+    // 🆕 SKIN XÚC XẮC
+    { id: 'dice_default', name: 'Xúc xắc mặc định', icon: '🎲', price: 0, desc: 'Xúc xắc cơ bản', rarity: 'common', category: 'dice' },
+    { id: 'dice_ice', name: '🧊 Xúc xắc băng giá', icon: '🎲', price: 2000, desc: 'Xúc xắc băng giá với màu xanh dương', rarity: 'rare', category: 'dice' },
+    { id: 'dice_rainbow', name: '🌈 Xúc xắc cầu vồng', icon: '🎲', price: 3000, desc: 'Xúc xắc cầu vồng rực rỡ sắc màu', rarity: 'legendary', category: 'dice' }
 ];
 // ===== SHOP FUNCTIONS =====
 let shopFilter = 'all';
@@ -348,6 +363,17 @@ function getShopUser() {
     }
     if (!user.skin) {
         user.skin = 'skin_default';
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        localStorage.setItem('user', JSON.stringify(user));
+    }
+    // 🆕 THÊM DICE
+    if (!user.ownedDice) {
+        user.ownedDice = [];
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        localStorage.setItem('user', JSON.stringify(user));
+    }
+    if (!user.diceSkin) {
+        user.diceSkin = 'dice_default';
         localStorage.setItem('currentUser', JSON.stringify(user));
         localStorage.setItem('user', JSON.stringify(user));
     }
@@ -370,13 +396,16 @@ function saveShopUser(user) {
             body: JSON.stringify({
                 userId: user.id,
                 owned_skins: user.ownedSkins || ['skin_default'],
-                current_skin: user.skin || 'skin_default'
+                current_skin: user.skin || 'skin_default',
+                owned_dice: user.ownedDice || [],
+                dice_skin: user.diceSkin || 'dice_default',
+                coin: user.coin || user.coins || 0 // 🆕 THÊM COIN
             })
         })
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                console.log('✅ Đã lưu skin lên database!');
+                console.log('✅ Đã lưu skin và coin lên database!');
             } else {
                 console.error('❌ Lỗi lưu skin:', data.message);
             }
@@ -386,7 +415,6 @@ function saveShopUser(user) {
         });
     }
 }
-
 function updatePlayerSkin() {
     const user = getShopUser();
     if (!user) {
@@ -522,22 +550,20 @@ function loadShop() {
     
     container.innerHTML = '';
     
-    // 🔥 QUAN TRỌNG: Khi filter là 'all', hiển thị tất cả skin
-    // Khi filter là 'skins', hiển thị skin
-    // Các filter khác hiển thị thông báo "Đang phát triển"
-    
-    if (shopFilter === 'all' || shopFilter === 'skins') {
-        // Hiển thị skin
+    // ============================================================
+    // 🔥 FILTER 'all' - HIỂN THỊ TẤT CẢ (NHÂN VẬT + XÚC XẮC)
+    // ============================================================
+    if (shopFilter === 'all') {
+        // ---------- 1. SKIN NHÂN VẬT ----------
         SKIN_LIST.forEach(skin => {
-            // 🆕 BỎ QUA SKIN THƯỞNG CẤP 30 (KHÔNG HIỂN THỊ TRONG SHOP)
             if (skin.id === 'skin_level30') return;
+            if (skin.category === 'dice') return;
             
             const isOwned = user?.ownedSkins?.includes(skin.id) || false;
             const isEquipped = user?.skin === skin.id;
             const canAfford = currentCoin >= skin.price;
             const isFree = skin.price === 0;
             
-            // Ẩn skin default nếu đã có và không phải đang dùng
             if (skin.id === 'skin_default' && isOwned && !isEquipped) return;
             
             const div = document.createElement('div');
@@ -594,8 +620,249 @@ function loadShop() {
             
             container.appendChild(div);
         });
+        
+        // ---------- 2. SKIN XÚC XẮC ----------
+        // Thêm divider
+        const divider = document.createElement('div');
+        divider.style.cssText = `
+            grid-column: 1 / -1;
+            color: #facc15;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            padding: 12px 0 8px 0;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            margin-top: 8px;
+        `;
+        divider.textContent = '🎲 XÚC XẮC';
+        container.appendChild(divider);
+        
+        // ===== 🆕 LỌC BỎ dice_default (KHÔNG HIỂN THỊ TRONG CỬA HÀNG) =====
+        SKIN_LIST.filter(s => s.category === 'dice' && s.id !== 'dice_default').forEach(skin => {
+            const isOwned = user?.ownedDice?.includes(skin.id) || false;
+            const isEquipped = user?.diceSkin === skin.id;
+            const canAfford = currentCoin >= skin.price;
+            
+            const div = document.createElement('div');
+            div.style.cssText = `
+                background: ${isEquipped ? 'rgba(250, 204, 21, 0.15)' : 'rgba(15, 23, 42, 0.5)'};
+                border: ${isEquipped ? '2px solid #facc15' : '1px solid rgba(255,255,255,0.08)'};
+                border-radius: 10px;
+                padding: 12px 8px;
+                text-align: center;
+                cursor: ${isOwned || canAfford ? 'pointer' : 'default'};
+                opacity: ${canAfford || isOwned ? 1 : 0.5};
+                transition: all 0.3s;
+                position: relative;
+            `;
+            
+            const equippedBadge = isEquipped ? '<div style="position:absolute;top:-5px;right:-5px;background:#facc15;color:#000;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:bold;">ĐANG DÙNG</div>' : '';
+            const ownedBadge = isOwned && !isEquipped ? '<div style="position:absolute;top:-5px;right:-5px;background:#34d399;color:#000;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:bold;">ĐÃ CÓ</div>' : '';
+            
+            let dicePreview = '';
+            if (skin.id === 'dice_ice') {
+                dicePreview = '<div style="font-size:30px;margin-bottom:4px;color:#0288d1;">🎲❄️</div>';
+            } else if (skin.id === 'dice_rainbow') {
+                dicePreview = '<div style="font-size:30px;margin-bottom:4px;">🎲🌈</div>';
+            } else {
+                dicePreview = `<div style="font-size:30px;margin-bottom:4px;">${skin.icon}</div>`;
+            }
+            
+            div.innerHTML = `
+                ${equippedBadge}
+                ${ownedBadge}
+                ${dicePreview}
+                <div style="color: #f8fafc; font-weight: bold; font-size: 13px;">${skin.name}</div>
+                <div style="color: #94a3b8; font-size: 11px;">${skin.desc}</div>
+                <div style="color: #facc15; font-size: 13px; margin-top: 4px;">
+                    ${skin.price} Coin
+                </div>
+                <div style="font-size: 10px; margin-top: 2px; color: ${isOwned ? '#34d399' : '#94a3b8'};">
+                    ${isOwned ? (isEquipped ? '✅ Đang dùng' : '✔️ Đã sở hữu') : (canAfford ? '💰 Mua ngay' : '❌ Chưa đủ coin')}
+                </div>
+            `;
+            
+            if (isOwned) {
+                div.onclick = () => {
+                    if (isEquipped) return;
+                    const userData = getShopUser();
+                    if (userData) {
+                        userData.diceSkin = skin.id;
+                        saveShopUser(userData);
+                        loadShop();
+                        updateDiceSkin();
+                        alert(`✅ Đã chuyển sang ${skin.name}!`);
+                    }
+                };
+            } else if (canAfford) {
+                div.onclick = () => {
+                    if (confirm(`Mua ${skin.name} với giá ${skin.price} Coin?`)) {
+                        buyDiceSkin(skin.id);
+                    }
+                };
+            }
+            
+            container.appendChild(div);
+        });
+    
+    // ============================================================
+    // 🔥 FILTER 'skins' - CHỈ NHÂN VẬT
+    // ============================================================
+    } else if (shopFilter === 'skins') {
+        SKIN_LIST.forEach(skin => {
+            if (skin.id === 'skin_level30') return;
+            if (skin.category === 'dice') return;
+            
+            const isOwned = user?.ownedSkins?.includes(skin.id) || false;
+            const isEquipped = user?.skin === skin.id;
+            const canAfford = currentCoin >= skin.price;
+            const isFree = skin.price === 0;
+            
+            if (skin.id === 'skin_default' && isOwned && !isEquipped) return;
+            
+            const div = document.createElement('div');
+            div.style.cssText = `
+                background: ${isEquipped ? 'rgba(250, 204, 21, 0.15)' : 'rgba(15, 23, 42, 0.5)'};
+                border: ${isEquipped ? '2px solid #facc15' : '1px solid rgba(255,255,255,0.08)'};
+                border-radius: 10px;
+                padding: 12px 8px;
+                text-align: center;
+                cursor: ${isOwned || canAfford || isFree ? 'pointer' : 'default'};
+                opacity: ${isFree || canAfford || isOwned ? 1 : 0.5};
+                transition: all 0.3s;
+                position: relative;
+            `;
+            
+            const equippedBadge = isEquipped ? '<div style="position:absolute;top:-5px;right:-5px;background:#facc15;color:#000;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:bold;">ĐANG DÙNG</div>' : '';
+            const ownedBadge = isOwned && !isEquipped ? '<div style="position:absolute;top:-5px;right:-5px;background:#34d399;color:#000;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:bold;">ĐÃ CÓ</div>' : '';
+            
+            div.innerHTML = `
+                ${equippedBadge}
+                ${ownedBadge}
+                <div style="font-size: 36px;">${skin.icon}</div>
+                <div style="color: #f8fafc; font-weight: bold; font-size: 13px;">${skin.name}</div>
+                <div style="color: #94a3b8; font-size: 11px;">${skin.desc}</div>
+                <div style="color: #facc15; font-size: 13px; margin-top: 4px;">
+                    ${isFree ? '🎁 FREE' : `${skin.price} Coin`}
+                </div>
+                <div style="font-size: 10px; margin-top: 2px; color: ${isOwned ? '#34d399' : '#94a3b8'};">
+                    ${isOwned ? (isEquipped ? '✅ Đang dùng' : '✔️ Đã sở hữu') : (canAfford || isFree ? '💰 Mua ngay' : '❌ Chưa đủ coin')}
+                </div>
+            `;
+            
+            if (isOwned) {
+                div.onclick = () => {
+                    if (isEquipped) return;
+                    const userData = getShopUser();
+                    if (userData) {
+                        userData.skin = skin.id;
+                        saveShopUser(userData);
+                        loadShop();
+                        updatePlayerSkin();
+                        loadEquipment();
+                        alert(`✅ Đã chuyển sang skin ${skin.name}!`);
+                    }
+                };
+            } else if (canAfford || isFree) {
+                div.onclick = () => {
+                    if (skin.id === 'skin_default') return;
+                    if (confirm(`Mua skin ${skin.name} với giá ${skin.price} Coin?`)) {
+                        buySkin(skin.id);
+                    }
+                };
+            }
+            
+            container.appendChild(div);
+        });
+    
+    // ============================================================
+    // 🔥 FILTER 'dice' - CHỈ XÚC XẮC (LỌC BỎ dice_default)
+    // ============================================================
+    } else if (shopFilter === 'dice') {
+        // ===== 🆕 LỌC BỎ dice_default =====
+        SKIN_LIST.filter(s => s.category === 'dice' && s.id !== 'dice_default').forEach(skin => {
+            const isOwned = user?.ownedDice?.includes(skin.id) || false;
+            const isEquipped = user?.diceSkin === skin.id;
+            const canAfford = currentCoin >= skin.price;
+            
+            const div = document.createElement('div');
+            div.style.cssText = `
+                background: ${isEquipped ? 'rgba(250, 204, 21, 0.15)' : 'rgba(15, 23, 42, 0.5)'};
+                border: ${isEquipped ? '2px solid #facc15' : '1px solid rgba(255,255,255,0.08)'};
+                border-radius: 10px;
+                padding: 12px 8px;
+                text-align: center;
+                cursor: ${isOwned || canAfford ? 'pointer' : 'default'};
+                opacity: ${canAfford || isOwned ? 1 : 0.5};
+                transition: all 0.3s;
+                position: relative;
+            `;
+            
+            const equippedBadge = isEquipped ? '<div style="position:absolute;top:-5px;right:-5px;background:#facc15;color:#000;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:bold;">ĐANG DÙNG</div>' : '';
+            const ownedBadge = isOwned && !isEquipped ? '<div style="position:absolute;top:-5px;right:-5px;background:#34d399;color:#000;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:bold;">ĐÃ CÓ</div>' : '';
+            
+            let dicePreview = '';
+            if (skin.id === 'dice_ice') {
+                dicePreview = '<div style="font-size:30px;margin-bottom:4px;color:#0288d1;">🎲❄️</div>';
+            } else if (skin.id === 'dice_rainbow') {
+                dicePreview = '<div style="font-size:30px;margin-bottom:4px;">🎲🌈</div>';
+            } else {
+                dicePreview = `<div style="font-size:30px;margin-bottom:4px;">${skin.icon}</div>`;
+            }
+            
+            div.innerHTML = `
+                ${equippedBadge}
+                ${ownedBadge}
+                ${dicePreview}
+                <div style="color: #f8fafc; font-weight: bold; font-size: 13px;">${skin.name}</div>
+                <div style="color: #94a3b8; font-size: 11px;">${skin.desc}</div>
+                <div style="color: #facc15; font-size: 13px; margin-top: 4px;">
+                    ${skin.price} Coin
+                </div>
+                <div style="font-size: 10px; margin-top: 2px; color: ${isOwned ? '#34d399' : '#94a3b8'};">
+                    ${isOwned ? (isEquipped ? '✅ Đang dùng' : '✔️ Đã sở hữu') : (canAfford ? '💰 Mua ngay' : '❌ Chưa đủ coin')}
+                </div>
+            `;
+            
+            if (isOwned) {
+                div.onclick = () => {
+                    if (isEquipped) return;
+                    const userData = getShopUser();
+                    if (userData) {
+                        userData.diceSkin = skin.id;
+                        saveShopUser(userData);
+                        loadShop();
+                        updateDiceSkin();
+                        alert(`✅ Đã chuyển sang ${skin.name}!`);
+                    }
+                };
+            } else if (canAfford) {
+                div.onclick = () => {
+                    if (confirm(`Mua ${skin.name} với giá ${skin.price} Coin?`)) {
+                        buyDiceSkin(skin.id);
+                    }
+                };
+            }
+            
+            container.appendChild(div);
+        });
+        
+        // Nếu không có skin xúc xắc nào (không tính dice_default)
+        if (SKIN_LIST.filter(s => s.category === 'dice' && s.id !== 'dice_default').length === 0) {
+            const empty = document.createElement('div');
+            empty.style.cssText = 'grid-column: 1 / -1; text-align: center; color: #64748b; padding: 30px 10px;';
+            empty.innerHTML = `
+                <div style="font-size: 36px; margin-bottom: 10px;">🎲</div>
+                <div style="font-size: 14px;">Chưa có skin xúc xắc nào</div>
+                <div style="font-size: 12px; color: #94a3b8; margin-top: 5px;">Sẽ có thêm trong tương lai!</div>
+            `;
+            container.appendChild(empty);
+        }
+    
+    // ============================================================
+    // 🔥 FILTER KHÁC - ĐANG PHÁT TRIỂN
+    // ============================================================
     } else {
-        // Các category khác (dice, board, skills) -> hiển thị thông báo
         container.innerHTML = `
             <div style="grid-column: 1 / -1; text-align: center; color: #94a3b8; padding: 40px 10px;">
                 <div style="font-size: 48px; margin-bottom: 10px;">🚧</div>
@@ -606,7 +873,6 @@ function loadShop() {
         `;
     }
 }
-
 function filterShop(category) {
     shopFilter = category;
     document.querySelectorAll('.shop-category-btn').forEach(btn => {
@@ -618,78 +884,203 @@ function filterShop(category) {
     }
 }
 
-// ===== EQUIPMENT FUNCTIONS =====
 function loadEquipment() {
     const user = getShopUser();
     if (!user) {
         const skinList = document.getElementById('equip-skin-list');
-        if (skinList) skinList.innerHTML = '<div style="color:#64748b;font-size:13px;">Vui lòng đăng nhập!</div>';
+        if (skinList) skinList.innerHTML = '<div class="equip-empty">Vui lòng đăng nhập!</div>';
         return;
     }
     
-    // ===== LOAD SKIN =====
+    // ===== SKIN NHÂN VẬT =====
     const skinContainer = document.getElementById('equip-skin-list');
     if (skinContainer) {
         skinContainer.innerHTML = '';
         
-        // Lấy danh sách skin đã sở hữu
         const ownedSkins = user.ownedSkins || ['skin_default'];
         const currentSkin = user.skin || 'skin_default';
         
-        ownedSkins.forEach(skinId => {
+        // Lọc skin nhân vật (không phải dice)
+        const filteredSkins = ownedSkins.filter(id => {
+            const skin = SKIN_LIST.find(s => s.id === id);
+            return skin && skin.category !== 'dice';
+        });
+        
+        // Cập nhật số lượng
+        const skinCount = document.getElementById('skin-count');
+        if (skinCount) skinCount.textContent = `(${filteredSkins.length})`;
+        
+        if (filteredSkins.length === 0) {
+            const empty = document.createElement('div');
+            empty.style.cssText = 'grid-column: 1 / -1; text-align: center; color: #64748b; padding: 20px;';
+            empty.textContent = 'Chưa có skin nhân vật';
+            skinContainer.appendChild(empty);
+        } else {
+            filteredSkins.forEach(skinId => {
+                const skin = SKIN_LIST.find(s => s.id === skinId);
+                if (!skin) return;
+                
+                const isActive = currentSkin === skinId;
+                
+                const div = document.createElement('div');
+                div.style.cssText = `
+                    background: ${isActive ? 'rgba(250, 204, 21, 0.15)' : 'rgba(15, 23, 42, 0.4)'};
+                    border: ${isActive ? '2px solid #facc15' : '1px solid rgba(255,255,255,0.08)'};
+                    border-radius: 10px;
+                    padding: 12px 8px;
+                    text-align: center;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                    position: relative;
+                    min-height: 80px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                `;
+                
+                div.innerHTML = `
+                    <span style="font-size: 32px; display: block; margin-bottom: 4px;">${skin.icon}</span>
+                    <span style="color: ${isActive ? '#facc15' : '#f8fafc'}; font-size: 12px; font-weight: ${isActive ? 'bold' : 'normal'};">${skin.name}</span>
+                    ${isActive ? '<span style="font-size: 10px; color: #facc15; margin-top: 2px;">✅ Đang dùng</span>' : ''}
+                `;
+                
+                div.onmouseover = function() {
+                    if (!isActive) {
+                        this.style.border = '1px solid rgba(56, 189, 248, 0.3)';
+                        this.style.background = 'rgba(15, 23, 42, 0.7)';
+                    }
+                };
+                div.onmouseout = function() {
+                    if (!isActive) {
+                        this.style.border = '1px solid rgba(255,255,255,0.08)';
+                        this.style.background = 'rgba(15, 23, 42, 0.4)';
+                    }
+                };
+                
+                div.onclick = function() {
+                    if (isActive) return;
+                    
+                    const userData = getShopUser();
+                    if (userData) {
+                        userData.skin = skinId;
+                        saveShopUser(userData);
+                        
+                        loadEquipment();
+                        updatePlayerSkin();
+                        
+                        if (document.getElementById('shop-content').style.display === 'block') {
+                            loadShop();
+                        }
+                        
+                        if (typeof showNotification === 'function') {
+                            showNotification(`✅ Đã chuyển sang ${skin.name}`, 'success', 1500);
+                        }
+                    }
+                };
+                
+                skinContainer.appendChild(div);
+            });
+        }
+    }
+    
+    // ===== XÚC XẮC =====
+    const diceContainer = document.getElementById('equip-dice-list');
+    if (diceContainer) {
+        const diceSection = document.getElementById('equip-dice-section');
+        if (diceSection) {
+            diceSection.style.display = 'block';
+        }
+        
+        diceContainer.innerHTML = '';
+        
+        const ownedDice = user.ownedDice || ['dice_default'];
+        const currentDice = user.diceSkin || 'dice_default';
+        
+        // Đảm bảo dice_default luôn có
+        if (!ownedDice.includes('dice_default')) {
+            ownedDice.unshift('dice_default');
+        }
+        
+        // Cập nhật số lượng
+        const diceCount = document.getElementById('dice-count');
+        if (diceCount) diceCount.textContent = `(${ownedDice.length})`;
+        
+        ownedDice.forEach(skinId => {
             const skin = SKIN_LIST.find(s => s.id === skinId);
             if (!skin) return;
             
-            const isActive = currentSkin === skinId;
+            const isActive = currentDice === skinId;
             
             const div = document.createElement('div');
-            div.className = `equip-item-card ${isActive ? 'active' : ''}`;
-            div.innerHTML = `
-                <span class="icon">${skin.icon}</span>
-                <span class="name">${skin.name}</span>
-                ${isActive ? '<span class="badge">✅ Đang dùng</span>' : ''}
+            div.style.cssText = `
+                background: ${isActive ? 'rgba(250, 204, 21, 0.15)' : 'rgba(15, 23, 42, 0.4)'};
+                border: ${isActive ? '2px solid #facc15' : '1px solid rgba(255,255,255,0.08)'};
+                border-radius: 10px;
+                padding: 12px 8px;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.3s;
+                position: relative;
+                min-height: 80px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
             `;
+            
+            let preview = '';
+            if (skin.id === 'dice_ice') {
+                preview = '🎲❄️';
+            } else if (skin.id === 'dice_rainbow') {
+                preview = '🎲🌈';
+            } else {
+                preview = '🎲';
+            }
+            
+            div.innerHTML = `
+                <span style="font-size: 32px; display: block; margin-bottom: 4px;">${preview}</span>
+                <span style="color: ${isActive ? '#facc15' : '#f8fafc'}; font-size: 12px; font-weight: ${isActive ? 'bold' : 'normal'};">${skin.name}</span>
+                ${isActive ? '<span style="font-size: 10px; color: #facc15; margin-top: 2px;">✅ Đang dùng</span>' : ''}
+            `;
+            
+            div.onmouseover = function() {
+                if (!isActive) {
+                    this.style.border = '1px solid rgba(56, 189, 248, 0.3)';
+                    this.style.background = 'rgba(15, 23, 42, 0.7)';
+                }
+            };
+            div.onmouseout = function() {
+                if (!isActive) {
+                    this.style.border = '1px solid rgba(255,255,255,0.08)';
+                    this.style.background = 'rgba(15, 23, 42, 0.4)';
+                }
+            };
             
             div.onclick = function() {
                 if (isActive) return;
                 
-                // Đổi skin
                 const userData = getShopUser();
                 if (userData) {
-                    userData.skin = skinId;
+                    userData.diceSkin = skinId;
                     saveShopUser(userData);
                     
-                    // Cập nhật UI
                     loadEquipment();
-                    updatePlayerSkin();
+                    updateDiceSkin();
                     
-                    // Cập nhật shop nếu đang mở
                     if (document.getElementById('shop-content').style.display === 'block') {
                         loadShop();
                     }
                     
-                    // Thông báo
                     if (typeof showNotification === 'function') {
-                        showNotification(`✅ Đã chuyển sang skin ${skin.name}!`, 'success', 2000);
+                        showNotification(`✅ Đã chuyển sang ${skin.name}`, 'success', 1500);
                     }
                 }
             };
             
-            skinContainer.appendChild(div);
+            diceContainer.appendChild(div);
         });
     }
-    
-    // ===== LOAD XÚC XẮC (sau này) =====
-    // if (user.ownedDice && user.ownedDice.length > 0) {
-    //     document.getElementById('equip-dice-section').style.display = 'block';
-    //     // ... code hiển thị xúc xắc
-    // }
-    
-    // ===== LOAD BÀN CỜ (sau này) =====
-    // if (user.ownedBoard && user.ownedBoard.length > 0) {
-    //     document.getElementById('equip-board-section').style.display = 'block';
-    //     // ... code hiển thị bàn cờ
-    // }
 }
 // ===== SHOW FUNCTIONS =====
 function showEquipment() {
@@ -1149,14 +1540,18 @@ window.onload = function() {
     if (user) {
         const u = JSON.parse(user);
         
-        // 🔥 LUÔN Ở TRONG GAME (KHÔNG CẦN ĐĂNG NHẬP LẠI)
         document.getElementById("login-screen").style.display = "none";
         document.getElementById("lobby-screen").style.display = "flex";
         
-        // Gọi initLobby để cập nhật dữ liệu từ database
         initLobby(u);
+        
+        // 🆕 GỌI UPDATE DICE SKIN NGAY
+        if (typeof updateDiceSkin === 'function') {
+            setTimeout(() => {
+                updateDiceSkin();
+            }, 300);
+        }
     } else {
-        // Nếu chưa có user, hiển thị màn hình đăng nhập
         document.getElementById("login-screen").style.display = "flex";
         document.getElementById("lobby-screen").style.display = "none";
     }

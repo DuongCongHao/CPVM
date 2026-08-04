@@ -115,6 +115,9 @@ function executeDiceAnimation(d1, d2) {
         moveStepByStep(d1 + d2, d1, d2);
         return;
     }
+    if (window._pendingDiceSkin) {
+        updateDiceSkin();
+    }
 
     // Tạo hiệu ứng xoay tít mù ngẫu nhiên trước khi dừng
     const randomX = Math.floor(Math.random() * 360) + 720;
@@ -265,4 +268,92 @@ function reduceTeleportCooldown(playerId) {
 // Thêm vào sau khi di chuyển xong:
 if (currentTurn === myPlayerNumber) {
     reduceTeleportCooldown(currentTurn);
+}
+// ===== ÁP DỤNG SKIN CHO XÚC XẮC =====
+function applyDiceSkin(skinId) {
+    const cube1 = document.getElementById('cube1');
+    const cube2 = document.getElementById('cube2');
+    if (!cube1 || !cube2) return;
+
+    // Xóa class skin cũ
+    cube1.className = 'cube';
+    cube2.className = 'cube';
+
+    // Áp dụng skin mới
+    if (skinId === 'dice_ice') {
+        cube1.classList.add('dice-ice');
+        cube2.classList.add('dice-ice');
+    } else if (skinId === 'dice_rainbow') {
+        cube1.classList.add('dice-rainbow');
+        cube2.classList.add('dice-rainbow');
+    }
+}
+
+// ===== LẤY SKIN XÚC XẮC HIỆN TẠI =====
+function getCurrentDiceSkin() {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    if (!user) return 'dice_default';
+    return user.diceSkin || 'dice_default';
+}
+
+function updateDiceSkin() {
+    const user = getShopUser();
+    if (!user) return;
+    
+    const diceSkinId = user.diceSkin || 'dice_default';
+    const cube1 = document.getElementById('cube1');
+    const cube2 = document.getElementById('cube2');
+    if (!cube1 || !cube2) return;
+
+    // Xóa class skin cũ
+    cube1.className = 'cube';
+    cube2.className = 'cube';
+
+    // Áp dụng skin mới
+    if (diceSkinId === 'dice_ice') {
+        cube1.classList.add('dice-ice');
+        cube2.classList.add('dice-ice');
+    } else if (diceSkinId === 'dice_rainbow') {
+        cube1.classList.add('dice-rainbow');
+        cube2.classList.add('dice-rainbow');
+    }
+    // dice_default không có class đặc biệt → mặc định
+}
+
+// ===== MUA SKIN XÚC XẮC =====
+function buyDiceSkin(skinId) {
+    const user = getShopUser();
+    if (!user) {
+        alert('Vui lòng đăng nhập!');
+        return;
+    }
+    
+    const skin = SKIN_LIST.find(s => s.id === skinId);
+    if (!skin) {
+        alert('Không tìm thấy skin!');
+        return;
+    }
+    
+    if (!user.ownedDice) user.ownedDice = [];
+    if (user.ownedDice.includes(skinId)) {
+        alert('Bạn đã sở hữu skin này!');
+        return;
+    }
+    
+    const currentCoin = user.coin || user.coins || 0;
+    if (currentCoin < skin.price) {
+        alert(`❌ Không đủ coin! Cần ${skin.price} Coin. Bạn có ${currentCoin} Coin.`);
+        return;
+    }
+    
+    user.coin = currentCoin - skin.price;
+    user.coins = user.coin;
+    user.ownedDice.push(skinId);
+    user.diceSkin = skinId;
+    
+    saveShopUser(user);
+    loadShop();
+    updateDiceSkin();
+    
+    alert(`🎉 Đã mua thành công ${skin.name}!`);
 }

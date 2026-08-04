@@ -845,6 +845,13 @@
                 console.log("✅ Đã áp dụng skin vào bàn cờ");
             }, 150);
         }
+        // ===== 🆕 SAU KHI VẼ XONG, ÁP DỤNG SKIN XÚC XẮC =====
+        if (typeof updateDiceSkin === 'function') {
+            setTimeout(() => {
+                updateDiceSkin();
+                console.log("✅ Đã áp dụng dice skin trong initializeBoard");
+            }, 150);
+        }
     }
     function syncGameToRemote() {
 

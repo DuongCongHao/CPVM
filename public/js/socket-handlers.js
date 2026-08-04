@@ -503,21 +503,32 @@ if (typeof socket !== 'undefined' && socket) {
         // ===== KHỞI TẠO BÀN CỜ =====
         initializeBoard();
         
-        // ===== ĐỢI 1 GIÂY ĐỂ RANK VỀ RỒI MỚI PHÂN ĐỊNH LƯỢT =====
+        // ✅ ÁP DỤNG SKIN XÚC XẮC (KHÔNG ẢNH HƯỞNG ĐẾN LOGIC)
+        /*if (typeof updateDiceSkin === 'function') {
+            setTimeout(() => {
+                updateDiceSkin();
+                console.log("✅ Đã áp dụng dice skin trong startGame");
+            }, 100);
+        }*/
+        
+        // ===== ĐỢI 1.5 GIÂY ĐỂ SKIN VÀ UI ỔN ĐỊNH, RỒI MỚI PHÂN ĐỊNH LƯỢT =====
         setTimeout(() => {
             // Cập nhật rank lần cuối
             if (typeof updateRankDisplay === 'function') {
                 updateRankDisplay();
             }
             
-            // Xác định lượt đi
+            // ✅ GỌI DETERMINE TURN (SẼ BẬT NÚT ROLL)
             if (typeof determineTurn === 'function') {
+                console.log("🎲 Gọi determineTurn từ startGame");
                 determineTurn();
+            } else {
+                console.error("❌ Hàm determineTurn không tồn tại!");
             }
             
             console.log("✅ Đã hoàn tất khởi tạo game!");
             console.log(`💣 Bom hạt nhân tại ô: ${window.nuclearBombIndex}`);
-        }, 1000);
+        }, 1500); // Tăng lên 1500ms để đảm bảo
     });
     // ===== THIÊN TAI XUẤT HIỆN =====
     socket.off('lightningSummoned').on('lightningSummoned', (data) => {

@@ -220,6 +220,7 @@ let buyDecisionSeconds = 10;
 
 // ===== HIỂN THỊ THÔNG BÁO =====
 function showNotification(title, desc, color, confirmCallback, showTwoButtons = true, cancelCallback = null) {
+    console.trace("SHOW NOTIFICATION");
     // 🛠️ CHECK: Xử lý giải thoát mạch game khi dẫm vào ô đặc biệt
     if (typeof currentTurn !== 'undefined' && players[currentTurn]) {
         let currentPos = players[currentTurn].pos;
@@ -277,9 +278,9 @@ function showNotification(title, desc, color, confirmCallback, showTwoButtons = 
     
     panel.style.display = 'flex';
     pendingAction = confirmCallback;
-    
-    // Nếu có 2 nút lựa chọn thì bắt đầu đếm
-    if(showTwoButtons) {
+
+    // Chỉ popup trong game mới được đếm ngược
+    if (showTwoButtons && isMyTurn) {
         startBuyDecisionTimer();
     }
 }
@@ -314,6 +315,8 @@ function startBuyDecisionTimer(){
 }
 
 function handleDecision(isYes) {
+    console.log("handleDecision", isYes);
+    console.trace();
     if(buyDecisionTimer){
         clearInterval(buyDecisionTimer);
         buyDecisionTimer=null;

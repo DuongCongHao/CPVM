@@ -281,7 +281,7 @@ router.post("/update-result", async (req, res) => {
 // ========================
 router.post("/update-skin", async (req, res) => {
     try {
-        const { userId, owned_skins, current_skin } = req.body;
+        const { userId, owned_skins, current_skin, owned_dice, dice_skin, coin } = req.body;
 
         if (!userId) {
             return res.status(400).json({
@@ -293,13 +293,28 @@ router.post("/update-skin", async (req, res) => {
         console.log("📝 Cập nhật skin cho user:", userId);
         console.log("   owned_skins:", owned_skins);
         console.log("   current_skin:", current_skin);
+        console.log("   owned_dice:", owned_dice);
+        console.log("   dice_skin:", dice_skin);
+        console.log("   coin:", coin);
+
+        const updateData = {
+            owned_skins: owned_skins || ['skin_default'],
+            current_skin: current_skin || 'skin_default',
+            owned_dice: owned_dice || []
+        };
+
+        if (dice_skin !== undefined) {
+            updateData.dice_skin = dice_skin;
+        }
+
+        // 🆕 CẬP NHẬT COIN NẾU CÓ
+        if (coin !== undefined) {
+            updateData.coin = coin;
+        }
 
         const { data, error } = await supabase
             .from("users")
-            .update({
-                owned_skins: owned_skins || ['skin_default'],
-                current_skin: current_skin || 'skin_default'
-            })
+            .update(updateData)
             .eq("id", userId)
             .select();
 
@@ -311,7 +326,7 @@ router.post("/update-skin", async (req, res) => {
             });
         }
 
-        console.log("✅ Cập nhật skin thành công!");
+        console.log("✅ Cập nhật skin thành công! Dữ liệu mới:", data);
 
         res.json({
             success: true,
@@ -346,7 +361,7 @@ router.get("/user/:username", async (req, res) => {
         // 🔥 TÌM THEO CẢ username VÀ display_name
         const { data: user, error } = await supabase
             .from("users")
-            .select("id, username, display_name, level, exp, points, rank, coin, avatar, owned_skins, current_skin, owned_dice, owned_board")
+            .select("id, username, display_name, level, exp, points, rank, coin, avatar, owned_skins, current_skin, owned_dice, dice_skin, owned_board")
             .or(`username.eq.${username},display_name.eq.${username}`)
             .maybeSingle();
 
@@ -374,6 +389,7 @@ router.get("/user/:username", async (req, res) => {
             owned_skins: user.owned_skins || ['skin_default'],
             current_skin: user.current_skin || 'skin_default',
             owned_dice: user.owned_dice || [],
+            dice_skin: user.dice_skin || 'dice_default',
             owned_board: user.owned_board || []
         });
 
