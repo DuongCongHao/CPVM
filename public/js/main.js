@@ -268,6 +268,11 @@
         if (btnJoin) btnJoin.disabled = false;
     }
 
+   // ===== BIẾN TOÀN CỤC =====
+    let matchmakingTimer = null;
+    let matchmakingSeconds = 0;
+
+// ===== HÀM BẮT ĐẦU TÌM TRẬN (GHÉP NGẪU NHIÊN) =====
     function startQuickMatch() {
         const username = getValidUsername();
         if (!username) return;
@@ -281,15 +286,54 @@
         if (socket && socket.connected) {
             disableLobbyButtons();
 
-            const lobbyStatus = document.getElementById('lobby-status');
-            if (lobbyStatus) {
-                lobbyStatus.innerHTML = "⏳ Đang tìm kiếm đối thủ phù hợp trên hệ thống...<br>Vui lòng đợi người chơi khác vào trận.";
+            // Reset bộ đếm
+            matchmakingSeconds = 0;
+            if (matchmakingTimer) {
+                clearInterval(matchmakingTimer);
+                matchmakingTimer = null;
             }
 
-            // ✅ SỬA: GỬI userId LÀ USERNAME (KHÔNG PHẢI ID)
+            const lobbyStatus = document.getElementById('lobby-status');
+            if (lobbyStatus) {
+                lobbyStatus.innerHTML = `
+                    ⏳ Đang tìm kiếm đối thủ... <strong id="matchmaking-timer">0s</strong>
+                    <br><br>
+                    <button id="cancel-matchmaking-btn" style="
+                        background: #ef4444;
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        padding: 6px 16px;
+                        font-size: 13px;
+                        font-weight: bold;
+                        cursor: pointer;
+                        margin-top: 8px;
+                        transition: all 0.2s;
+                    ">❌ Hủy tìm trận</button>
+                `;
+
+                // Bắt đầu đếm giây
+                matchmakingTimer = setInterval(() => {
+                    matchmakingSeconds++;
+                    const timerEl = document.getElementById('matchmaking-timer');
+                    if (timerEl) {
+                        timerEl.textContent = `${matchmakingSeconds}s`;
+                    }
+                }, 1000);
+
+                // Gán sự kiện hủy
+                const cancelBtn = document.getElementById('cancel-matchmaking-btn');
+                if (cancelBtn) {
+                    cancelBtn.onclick = function() {
+                        cancelMatchmaking('quick');
+                    };
+                }
+            }
+
+            // Gửi yêu cầu ghép trận
             socket.emit('request-quick-match', {
                 name: user.display_name || user.username || username,
-                userId: user.username,  // ← ✅ USERNAME ĐĂNG NHẬP
+                userId: user.username,
                 skin: user.skin || 'skin_default'
             });
 
@@ -311,23 +355,60 @@
 
         if (socket && socket.connected) {
             disableLobbyButtons();
+            isSearching = true;
 
             const lobbyStatus = document.getElementById('lobby-status');
             if (lobbyStatus) {
-                lobbyStatus.innerHTML = "⚙️ Đang gửi yêu cầu khởi tạo phòng riêng tư lên Server...";
+                lobbyStatus.innerHTML = `
+                    ⚙️ Đang gửi yêu cầu khởi tạo phòng riêng tư lên Server...
+                `;
+                lobbyStatus.style.color = '#facc15';
+                showCancelButton(); // ✅ Hiển thị nút hủy
             }
 
-            // ✅ SỬA: GỬI userId LÀ USERNAME
             socket.emit('request-create-room', {
                 name: user.display_name || user.username || username,
-                userId: user.username,  // ← ✅ USERNAME ĐĂNG NHẬP
+                userId: user.username,
                 skin: user.skin || 'skin_default'
             });
 
         } else {
             alert("❌ Thất bại: Mất kết nối máy chủ, không thể tạo phòng riêng tư!");
             enableLobbyButtons();
+            isSearching = false;
         }
+    }
+
+    // ===== HỦY TÌM TRẬN / TẠO PHÒNG =====
+    function cancelMatchmaking(type) {
+        console.log(`❌ Người chơi hủy ${type === 'quick' ? 'tìm trận' : 'tạo phòng'}`);
+
+        // Dừng bộ đếm
+        if (matchmakingTimer) {
+            clearInterval(matchmakingTimer);
+            matchmakingTimer = null;
+            matchmakingSeconds = 0;
+        }
+
+        // Xóa nút hủy
+        const cancelBtn = document.getElementById('cancel-matchmaking-btn');
+        if (cancelBtn) cancelBtn.remove();
+
+        // Cập nhật trạng thái
+        const lobbyStatus = document.getElementById('lobby-status');
+        if (lobbyStatus) {
+            lobbyStatus.innerHTML = '🟢 Đã hủy. Sẵn sàng tham gia đấu trường!';
+        }
+
+        // Gửi sự kiện hủy lên server
+        if (socket && socket.connected) {
+            socket.emit('cancel-matchmaking', {
+                type: type
+            });
+        }
+
+        // Bật lại các nút
+        enableLobbyButtons();
     }
     function joinRoomWithId() {
         const username = getValidUsername();
@@ -2595,10 +2676,77 @@ function checkAndPlaySkinEffects() {
                 // Fallback cho các hàm cũ
                 if (skinId === 'skin_phoenix') {
                     playPhoenixEffectGlobal();
-                } else if (skinId === 'skin_dragon') {
+                } else if (skinId === 'skin_dragon') {s
                     playDragonEffectGlobal();
                 }
             }
         }, 800);
     }
+}
+// Thêm biến toàn cục
+let isSearching = false;
+
+// Hàm hiển thị nút hủy
+function showCancelButton() {
+    const statusEl = document.getElementById('lobby-status');
+    if (!statusEl) return;
+    // Xóa nút cũ nếu có
+    const oldBtn = document.getElementById('cancel-queue-btn');
+    if (oldBtn) oldBtn.remove();
+    
+    const cancelBtn = document.createElement('button');
+    cancelBtn.id = 'cancel-queue-btn';
+    cancelBtn.className = 'cancel-queue-btn';
+    cancelBtn.textContent = '✕';
+    cancelBtn.title = 'Hủy tìm trận';
+    cancelBtn.onclick = cancelSearching;
+    cancelBtn.style.cssText = `
+        position: absolute;
+        top: 5px;
+        right: 10px;
+        background: #ef4444;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(239, 68, 68, 0.4);
+    `;
+    cancelBtn.onmouseover = () => { cancelBtn.style.transform = 'scale(1.1)'; };
+    cancelBtn.onmouseout = () => { cancelBtn.style.transform = 'scale(1)'; };
+    statusEl.style.position = 'relative';
+    statusEl.appendChild(cancelBtn);
+}
+
+// Hàm ẩn nút hủy
+function hideCancelButton() {
+    const btn = document.getElementById('cancel-queue-btn');
+    if (btn) btn.remove();
+    isSearching = false;
+}
+
+// Hàm hủy tìm trận
+function cancelSearching() {
+    if (!socket || !socket.connected) {
+        hideCancelButton();
+        return;
+    }
+    // Gửi yêu cầu hủy lên server
+    socket.emit('cancel-queue');
+    // Cập nhật UI
+    const statusEl = document.getElementById('lobby-status');
+    if (statusEl) {
+        statusEl.innerHTML = '❌ Đã hủy tìm trận.';
+        statusEl.style.color = '#ef4444';
+    }
+    hideCancelButton();
+    enableLobbyButtons();
+    isSearching = false;
 }

@@ -60,48 +60,44 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
                     const enemy = players[enemyId];
                     // Kiểm tra: đối thủ đang đứng ở ô vừa bước vào
                     if (enemy && enemy.pos === p.pos) {
-                        const cell = cellsData[p.pos];
-                        const isEnemySafe = (cell.owner === enemyId);
+                        // 🔥 SỬA: BỎ ĐIỀU KIỆN KIỂM TRA ĐẤT, LUÔN ÁM SÁT
+                        // Thực hiện ám sát: trừ 250 tiền của đối thủ
+                        const assassinateAmount = 250;
+                        enemy.money -= assassinateAmount;
                         
-                        if (!isEnemySafe) {
-                            // Thực hiện ám sát: trừ 250 tiền của đối thủ
-                            const assassinateAmount = 250;
-                            enemy.money -= assassinateAmount;
-                            
-                            // Log nổi bật trên máy kẻ ám sát
-                            addLog(`🗡️🔥 <strong style="color: #ef4444;">${p.name} (TÀNG HÌNH) ĐÃ ÁM SÁT ${enemy.name}! Mất ${assassinateAmount}$!</strong>`);
-                            
-                            // Gửi sự kiện ám sát cho cả 2 máy
+                        // Log nổi bật trên máy kẻ ám sát
+                        addLog(`🗡️🔥 <strong style="color: #ef4444;">${p.name} (TÀNG HÌNH) ĐÃ ÁM SÁT ${enemy.name}! Mất ${assassinateAmount}$!</strong>`);
+                        
+                        // Gửi sự kiện ám sát cho cả 2 máy
+                        if (socket && socket.connected) {
+                            socket.emit('syncAssassination', {
+                                targetId: enemyId,
+                                assassinId: movePlayer,
+                                amount: assassinateAmount,
+                                pos: p.pos
+                            });
+                            console.log(`🗡️ Đã gửi syncAssassination: ${p.name} → ${enemy.name} (-${assassinateAmount}$)`);
+                        }
+                        
+                        // Gọi hiệu ứng nổi bật trên máy hiện tại (kẻ ám sát)
+                        if (typeof showAssassinationEffect === 'function') {
+                            showAssassinationEffect(enemyId, movePlayer, assassinateAmount);
+                        }
+                        
+                        // Cập nhật UI
+                        updateUI();
+                        
+                        // Kiểm tra nếu đối thủ phá sản
+                        if (enemy.money < 0) {
+                            addLog(`💀 ${enemy.name} đã bị ám sát và phá sản!`);
                             if (socket && socket.connected) {
-                                socket.emit('syncAssassination', {
-                                    targetId: enemyId,
-                                    assassinId: movePlayer,
-                                    amount: assassinateAmount,
-                                    pos: p.pos
-                                });
-                                console.log(`🗡️ Đã gửi syncAssassination: ${p.name} → ${enemy.name} (-${assassinateAmount}$)`);
+                                socket.emit("gameOver", { winnerId: movePlayer, reason: "money" });
+                            } else {
+                                gameOver(movePlayer, "money");
                             }
-                            
-                            // Gọi hiệu ứng nổi bật trên máy hiện tại (kẻ ám sát)
-                            if (typeof showAssassinationEffect === 'function') {
-                                showAssassinationEffect(enemyId, movePlayer, assassinateAmount);
-                            }
-                            
-                            // Cập nhật UI
-                            updateUI();
-                            
-                            // Kiểm tra nếu đối thủ phá sản
-                            if (enemy.money < 0) {
-                                addLog(`💀 ${enemy.name} đã bị ám sát và phá sản!`);
-                                if (socket && socket.connected) {
-                                    socket.emit("gameOver", { winnerId: movePlayer, reason: "money" });
-                                } else {
-                                    gameOver(movePlayer, "money");
-                                }
-                                // Dừng di chuyển vì game kết thúc
-                                isMoving = false;
-                                return;
-                            }
+                            // Dừng di chuyển vì game kết thúc
+                            isMoving = false;
+                            return;
                         }
                     }
                 }
@@ -116,7 +112,22 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
                     // ===== KIỂM TRA TÀNG HÌNH =====
                     if (window.isInvisible && window.invisiblePlayer === movePlayer) {
                         // ===== XÓA TÀNG HÌNH TRÊN MÁY MÌNH =====
-                        // Không cần làm gì vì máy mình vẫn thấy
+                        // Reset tất cả slot của player này (xóa ảo ảnh)
+                        for (let i = 0; i < TOTAL_CELLS; i++) {
+                            const slot = document.getElementById(`slot-p${movePlayer}-${i}`);
+                            if (slot) {
+                                slot.style.display = '';
+                                slot.style.opacity = '1';
+                                slot.classList.remove('invisible-skill');
+                                slot.dataset.invisible = 'false';
+                                const avatar = slot.querySelector('.p-avatar');
+                                if (avatar) {
+                                    avatar.style.textShadow = '';
+                                    avatar.style.filter = '';
+                                    avatar.style.opacity = '1';
+                                }
+                            }
+                        }
                         
                         // ===== GỬI ĐỒNG BỘ HIỆN LẠI CHO ĐỐI THỦ =====
                         if (socket && socket.connected) {
@@ -135,7 +146,7 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
                     }
                     
                     // ================================================================
-                    // 💣 KIỂM TRA BOM KHI QUA START (THÊM VÀO)
+                    // 💣 KIỂM TRA BOM KHI QUA START
                     // ================================================================
                     if (window.bombData && window.bombData.active && window.bombData.targetId === movePlayer) {
                         // Gỡ bom (không nổ)
@@ -217,41 +228,37 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
                     const enemyId = movePlayer === 1 ? 2 : 1;
                     const enemy = players[enemyId];
                     if (enemy && enemy.pos === p.pos) {
-                        const cell = cellsData[p.pos];
-                        const isEnemySafe = (cell.owner === enemyId);
+                        // 🔥 SỬA: BỎ ĐIỀU KIỆN KIỂM TRA ĐẤT, LUÔN ÁM SÁT
+                        const assassinateAmount = 250;
+                        enemy.money -= assassinateAmount;
                         
-                        if (!isEnemySafe) {
-                            const assassinateAmount = 250;
-                            enemy.money -= assassinateAmount;
-                            
-                            addLog(`🗡️🔥 <strong style="color: #ef4444;">${p.name} (TÀNG HÌNH) ĐÃ ÁM SÁT ${enemy.name}! Mất ${assassinateAmount}$!</strong>`);
-                            
+                        addLog(`🗡️🔥 <strong style="color: #ef4444;">${p.name} (TÀNG HÌNH) ĐÃ ÁM SÁT ${enemy.name}! Mất ${assassinateAmount}$!</strong>`);
+                        
+                        if (socket && socket.connected) {
+                            socket.emit('syncAssassination', {
+                                targetId: enemyId,
+                                assassinId: movePlayer,
+                                amount: assassinateAmount,
+                                pos: p.pos
+                            });
+                            console.log(`🗡️ Đã gửi syncAssassination: ${p.name} → ${enemy.name} (-${assassinateAmount}$)`);
+                        }
+                        
+                        if (typeof showAssassinationEffect === 'function') {
+                            showAssassinationEffect(enemyId, movePlayer, assassinateAmount);
+                        }
+                        
+                        updateUI();
+                        
+                        if (enemy.money < 0) {
+                            addLog(`💀 ${enemy.name} đã bị ám sát và phá sản!`);
                             if (socket && socket.connected) {
-                                socket.emit('syncAssassination', {
-                                    targetId: enemyId,
-                                    assassinId: movePlayer,
-                                    amount: assassinateAmount,
-                                    pos: p.pos
-                                });
-                                console.log(`🗡️ Đã gửi syncAssassination: ${p.name} → ${enemy.name} (-${assassinateAmount}$)`);
+                                socket.emit("gameOver", { winnerId: movePlayer, reason: "money" });
+                            } else {
+                                gameOver(movePlayer, "money");
                             }
-                            
-                            if (typeof showAssassinationEffect === 'function') {
-                                showAssassinationEffect(enemyId, movePlayer, assassinateAmount);
-                            }
-                            
-                            updateUI();
-                            
-                            if (enemy.money < 0) {
-                                addLog(`💀 ${enemy.name} đã bị ám sát và phá sản!`);
-                                if (socket && socket.connected) {
-                                    socket.emit("gameOver", { winnerId: movePlayer, reason: "money" });
-                                } else {
-                                    gameOver(movePlayer, "money");
-                                }
-                                isMoving = false;
-                                return;
-                            }
+                            isMoving = false;
+                            return;
                         }
                     }
                 }
@@ -285,7 +292,7 @@ function moveStepByStep(totalSteps, d1, d2, isDirectJump = false, callback = nul
             }
 
             // ================================================================
-            // 💣 KIỂM TRA BOM SAU KHI DI CHUYỂN XONG (THÊM VÀO)
+            // 💣 KIỂM TRA BOM SAU KHI DI CHUYỂN XONG
             // ================================================================
             if (window.bombCheckAfterMove && window.bombData && window.bombData.active) {
                 window.bombCheckAfterMove = false;

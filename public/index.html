@@ -594,9 +594,9 @@
                         </div>
                     </div>
                     
-                    <!-- Trạng thái -->
-                    <div id="lobby-status" style="margin-top: 15px; padding: 10px; border-radius: 8px; background: #1e293b; color: #94a3b8; text-align: center; font-size: 14px;">
+                    <div id="lobby-status" style="margin-top: 15px; padding: 10px; border-radius: 8px; background: #1e293b; color: #94a3b8; text-align: center; font-size: 14px; position: relative;">
                         🟢 Sẵn sàng tham gia đấu trường
+                        <!-- Nút hủy sẽ được hiển thị ở đây bằng JavaScript -->
                     </div>
                     
                     <!-- Nút quay lại -->
@@ -957,7 +957,8 @@
                 <li>🕸️ Ô Mạng Nhện: mất 1 lượt.</li>
 
                 <li>⚡ Ô Sấm Sét: mất 50% số tiền hiện có.</li>
-                <li>☢️ Ô Phóng Xạ: đi vào hoặc cả 2 người chơi đi đến vòng 3 sẽ phát nổ mất 10% tiền và tạo ra 3 ô đất nhiễm phóng xạ kéo dài đến vòng 5, mỗi lượt xúc xắc trừ 25$ kéo dài 3 lượt</li>
+                <li>☢️ Ô Phóng Xạ: đi vào hoặc cả 2 người chơi đi đến vòng 3 sẽ phát nổ tạo ra 3 ô đất nhiễm phóng xạ kéo dài đến vòng 5, mỗi lượt xúc xắc trừ 25$ kéo dài 3 lượt</li>
+                <li>🌀 Dịch chuyển: cho phép người chơi dịch chuyển đến ô đất bất kì mà bản thân sở hữu</li>
 
                 <li>💀 Hết tiền là thua ngay lập tức.</li>
 
@@ -967,7 +968,7 @@
 
                 <li>🎴 Thẻ bài ngẫu nhiên:
                     <ul>
-                        <li>➡️ Tàng hình: tàng hình và dịch chuyển đến ô bất kỳ, nếu còn trạng thái tàng hình mà đi qua đối thủ đang không trong đất của bản thân thì sẽ tung ám sát -250$.</li>
+                        <li>➡️ Tàng hình: tàng hình và dịch chuyển đến ô bất kỳ, nếu còn trạng thái tàng hình mà đi qua đối thủ thì sẽ tung ám sát -250$.</li>
                         <li>⚡ Sét đánh: bắn sét vào đối thủ -5% tiền và bật ngược lại 3 ô.</li>
                         <li>👹 Hắc ám truy sát: tạo ra thực thể hắc ám ở sau đối thủ 5 ô, sẽ lấy số xúc xắc được của mình để truy đuổi đối thủ trong 3 lượt, nếu bắt được sẽ hút 10% tiền và mất một ô đất ngẫu nhiên</li>
                         <li>🔄 Đổi vị trí với đối thủ.</li>

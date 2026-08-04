@@ -324,6 +324,44 @@ io.on('connection', (socket) => {
         // 🆕 GỬI CHO CẢ 2 MÁY TRONG PHÒNG
         io.to(roomId).emit('syncDarkChaseEnd', data);
     });
+    // ===== HỦY TÌM TRẬN / TẠO PHÒNG =====
+    socket.on('cancel-matchmaking', (data) => {
+        console.log(`❌ Người chơi ${socket.id} hủy ${data.type === 'quick' ? 'tìm trận' : 'tạo phòng'}`);
+        
+        // Xóa socket khỏi hàng đợi quick match
+        quickMatchQueue = quickMatchQueue.filter(s => s.id !== socket.id);
+        
+        // Nếu đang ở phòng chờ (chưa có đối thủ) thì xóa phòng
+        const roomId = socket.roomId;
+        if (roomId && rooms[roomId] && rooms[roomId].status === 'waiting') {
+            if (rooms[roomId].timer) clearInterval(rooms[roomId].timer);
+            delete rooms[roomId];
+            socket.leave(roomId);
+            socket.roomId = null;
+        }
+        
+        // Gửi xác nhận
+        socket.emit('cancel-confirmed', { success: true });
+    });
+    // Xử lý hủy tìm trận
+    socket.on('cancel-queue', () => {
+        // Xóa socket khỏi hàng đợi quick match
+        quickMatchQueue = quickMatchQueue.filter(s => s.id !== socket.id);
+        // Gửi phản hồi cho client
+        socket.emit('queue-cancelled', { success: true });
+        console.log(`🚫 Người chơi ${socket.id} đã hủy tìm trận.`);
+    });
+    // ===== RELAY ÁM SÁT (TÀNG HÌNH) =====
+    socket.on('syncAssassination', (data) => {
+        const roomId = socket.roomId;
+        if (!roomId) {
+            console.warn('⚠️ Không tìm thấy roomId cho syncAssassination');
+            return;
+        }
+        
+        console.log(`🗡️ [Phòng ${roomId}] Relay ám sát: ${data.assassinId} → ${data.targetId} (-${data.amount}$)`);
+        io.to(roomId).emit('syncAssassination', data);
+    });
     // ===== RELAY BOM =====
     socket.on('syncBombPlanted', (data) => {
         const roomId = socket.roomId;

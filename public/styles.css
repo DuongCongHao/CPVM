@@ -3258,3 +3258,20 @@ body.hao-shake {
         display: none;
     }
 }
+.cancel-queue-btn {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #ef4444;
+    font-size: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    padding: 0 5px;
+    line-height: 1;
+}
+.cancel-queue-btn:hover {
+    color: #dc2626;
+    transform: scale(1.2);
+}

@@ -15,7 +15,31 @@ if (typeof socket !== 'undefined' && socket) {
         
         const lobbyStatus = document.getElementById('lobby-status');
         if (lobbyStatus) {
-            lobbyStatus.innerHTML = `Mã phòng của bạn: <strong style="color:#f59e0b; font-size:18px;">${roomId}</strong><br>Hãy gửi mã này cho bạn bè để cùng tham gia. Đang chờ người chơi thứ 2...`;
+            lobbyStatus.innerHTML = `
+                Mã phòng của bạn: <strong style="color:#f59e0b; font-size:18px;">${roomId}</strong>
+                <br>Hãy gửi mã này cho bạn bè để cùng tham gia. Đang chờ người chơi thứ 2...
+                <br><br>
+                <button id="cancel-matchmaking-btn" style="
+                    background: #ef4444;
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    padding: 6px 16px;
+                    font-size: 13px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    margin-top: 8px;
+                    transition: all 0.2s;
+                ">❌ Hủy tạo phòng</button>
+            `;
+            
+            // Gán sự kiện hủy
+            const cancelBtn = document.getElementById('cancel-matchmaking-btn');
+            if (cancelBtn) {
+                cancelBtn.onclick = function() {
+                    cancelMatchmaking('create');
+                };
+            }
         }
     });
     // ============================================
@@ -213,6 +237,11 @@ if (typeof socket !== 'undefined' && socket) {
     });
     // ===== NHẬN THÔNG TIN PHÒNG =====
     socket.on('room-joined', (data) => {
+        if (matchmakingTimer) {
+            clearInterval(matchmakingTimer);
+            matchmakingTimer = null;
+            matchmakingSeconds = 0;
+        }
         if (data.players) {
             window.players = {};
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
@@ -252,6 +281,18 @@ if (typeof socket !== 'undefined' && socket) {
             // Cập nhật rank
             if (typeof updateRankDisplay === 'function') {
                 updateRankDisplay();
+            }
+
+            // ================================================================
+            // 🆕 XÓA NÚT HỦY TÌM TRẬN KHI ĐÃ VÀO PHÒNG
+            // ================================================================
+            const cancelBtn = document.getElementById('cancel-matchmaking-btn');
+            if (cancelBtn) cancelBtn.remove();
+
+            // Cập nhật trạng thái lobby
+            const lobbyStatus = document.getElementById('lobby-status');
+            if (lobbyStatus) {
+                lobbyStatus.innerHTML = '✅ Đã vào phòng! Đang chờ bắt đầu trận đấu...';
             }
         }
     });
@@ -657,71 +698,71 @@ if (typeof socket !== 'undefined' && socket) {
     });
     // ===== ĐỒNG BỘ BOM =====
 
-// Khi gài bom
-socket.on('syncBombPlanted', (data) => {
-    console.log('💣 Nhận đồng bộ gài bom:', data);
-    window.bombData = {
-        targetId: data.targetId,
-        ownerId: data.ownerId,
-        turnsLeft: data.turnsLeft,
-        active: true,
-        plantedAt: Date.now()
-    };
-    addLog(`💣 ${data.ownerName} đã gài bom vào người ${data.targetName}! (Còn ${data.turnsLeft} lượt)`);
-    
-    // Cảnh báo cho người bị gài
-    if (myPlayerNumber === data.targetId) {
-        showNotification('💣 CẢNH BÁO! Bạn đang mang bom!', 'danger', 3000);
-        // Hiệu ứng đỏ trên thanh turn
-        const turnTxt = document.getElementById('turn-txt');
-        if (turnTxt) {
-            turnTxt.style.background = '#ef4444';
-            turnTxt.style.animation = 'bombWarning 0.5s infinite alternate';
-        }
-    }
-    updateUI();
-});
-
-// Khi bom đếm ngược
-socket.on('syncBombCountdown', (data) => {
-    if (window.bombData && window.bombData.targetId === data.targetId) {
-        window.bombData.turnsLeft = data.turnsLeft;
-        addLog(`💣 Bom còn ${data.turnsLeft} lượt xúc xắc`);
-    }
-});
-
-// Khi bom nổ
-socket.on('syncBombExploded', (data) => {
-    console.log('💥 Nhận đồng bộ bom nổ:', data);
-    // Cập nhật dữ liệu
-    if (data.players) {
-        for (let i = 1; i <= 2; i++) {
-            if (data.players[i]) {
-                players[i].money = data.players[i].money;
-                players[i].pos = data.players[i].pos;
+    // Khi gài bom
+    socket.on('syncBombPlanted', (data) => {
+        console.log('💣 Nhận đồng bộ gài bom:', data);
+        window.bombData = {
+            targetId: data.targetId,
+            ownerId: data.ownerId,
+            turnsLeft: data.turnsLeft,
+            active: true,
+            plantedAt: Date.now()
+        };
+        addLog(`💣 ${data.ownerName} đã gài bom vào người ${data.targetName}! (Còn ${data.turnsLeft} lượt)`);
+        
+        // Cảnh báo cho người bị gài
+        if (myPlayerNumber === data.targetId) {
+            showNotification('💣 CẢNH BÁO! Bạn đang mang bom!', 'danger', 3000);
+            // Hiệu ứng đỏ trên thanh turn
+            const turnTxt = document.getElementById('turn-txt');
+            if (turnTxt) {
+                turnTxt.style.background = '#ef4444';
+                turnTxt.style.animation = 'bombWarning 0.5s infinite alternate';
             }
         }
-    }
-    if (data.cellsData) {
-        cellsData = data.cellsData;
-    }
-    
-    // Hiệu ứng nổ
-    if (typeof showBombExplosionEffect === 'function') {
-        showBombExplosionEffect(data.affectedCells[1], data.affectedCells[0], data.affectedCells[2]);
-    }
-    
-    addLog(`💥💥💥 BOM PHÁT NỔ!`);
-    if (data.penalty) {
-        addLog(`💰 Mất ${data.penalty}$`);
-    }
-    
-    initializeBoard();
-    updateUI();
-    
-    // Reset bombData
-    window.bombData = null;
-});
+        updateUI();
+    });
+
+    // Khi bom đếm ngược
+    socket.on('syncBombCountdown', (data) => {
+        if (window.bombData && window.bombData.targetId === data.targetId) {
+            window.bombData.turnsLeft = data.turnsLeft;
+            addLog(`💣 Bom còn ${data.turnsLeft} lượt xúc xắc`);
+        }
+    });
+
+    // Khi bom nổ
+    socket.on('syncBombExploded', (data) => {
+        console.log('💥 Nhận đồng bộ bom nổ:', data);
+        // Cập nhật dữ liệu
+        if (data.players) {
+            for (let i = 1; i <= 2; i++) {
+                if (data.players[i]) {
+                    players[i].money = data.players[i].money;
+                    players[i].pos = data.players[i].pos;
+                }
+            }
+        }
+        if (data.cellsData) {
+            cellsData = data.cellsData;
+        }
+        
+        // Hiệu ứng nổ
+        if (typeof showBombExplosionEffect === 'function') {
+            showBombExplosionEffect(data.affectedCells[1], data.affectedCells[0], data.affectedCells[2]);
+        }
+        
+        addLog(`💥💥💥 BOM PHÁT NỔ!`);
+        if (data.penalty) {
+            addLog(`💰 Mất ${data.penalty}$`);
+        }
+        
+        initializeBoard();
+        updateUI();
+        
+        // Reset bombData
+        window.bombData = null;
+    });
 
     // Khi bom được gỡ
     socket.on('syncBombDefused', (data) => {
@@ -784,6 +825,17 @@ socket.on('syncBombExploded', (data) => {
         
         console.log(`🗡️ [Phòng ${roomId}] Relay ám sát: ${data.assassinId} → ${data.targetId} (-${data.amount}$)`);
         io.to(roomId).emit('syncAssassination', data);
+    });
+    socket.on('queue-cancelled', (data) => {
+        console.log('✅ Đã hủy tìm trận thành công:', data);
+        const lobbyStatus = document.getElementById('lobby-status');
+        if (lobbyStatus) {
+            lobbyStatus.innerHTML = '🟢 Đã hủy. Sẵn sàng tham gia đấu trường!';
+            lobbyStatus.style.color = '#94a3b8';
+        }
+        hideCancelButton();
+        enableLobbyButtons();
+        isSearching = false;
     });
     // ===== NHẬN KẾT QUẢ TRẬN ĐẤU TỪ SERVER =====
     socket.on('matchResult', (data) => {
@@ -872,6 +924,15 @@ socket.on('syncBombExploded', (data) => {
     socket.on('room-error', (data) => {
         console.log('❌ LỖI PHÒNG:', data);
         alert(data.message);
+        if (matchmakingTimer) {
+            clearInterval(matchmakingTimer);
+            matchmakingTimer = null;
+            matchmakingSeconds = 0;
+        }
+        
+        // 🆕 XÓA NÚT HỦY TÌM TRẬN KHI CÓ LỖI
+        const cancelBtn = document.getElementById('cancel-matchmaking-btn');
+        if (cancelBtn) cancelBtn.remove();
         
         const lobbyStatus = document.getElementById('lobby-status');
         if (lobbyStatus) {
