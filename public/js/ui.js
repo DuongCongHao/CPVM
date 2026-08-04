@@ -185,6 +185,9 @@ function updateUI() {
     if (typeof updateTeleportUI === 'function') {
         updateTeleportUI();
     }
+
+    // ===== 🆕 CẬP NHẬT HIỆU ỨNG NHẤP NHÁY NHÂN VẬT MANG BOM =====
+    updateBombBlink();
 }
 // ===== NHẬT KÝ TRẬN ĐẤU =====
 function addLog(text) {

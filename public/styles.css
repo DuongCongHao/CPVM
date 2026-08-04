@@ -3582,3 +3582,40 @@ body.hao-shake {
     background: #facc15;
     border-radius: 10px;
 }
+/* ===== BOM BLINK ON CHARACTER ===== */
+.p-avatar.bomb-blink {
+    animation: bombCharacterBlink 0.5s ease-in-out infinite alternate !important;
+    filter: drop-shadow(0 0 20px #ef4444) drop-shadow(0 0 40px #dc2626) !important;
+}
+
+@keyframes bombCharacterBlink {
+    0% {
+        opacity: 0.3;
+        transform: scale(0.85);
+        filter: drop-shadow(0 0 5px #ef4444);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.15);
+        filter: drop-shadow(0 0 30px #ef4444) drop-shadow(0 0 60px #dc2626);
+    }
+    100% {
+        opacity: 0.3;
+        transform: scale(0.85);
+        filter: drop-shadow(0 0 5px #ef4444);
+    }
+}
+
+/* Hiệu ứng rung nhẹ cho ô có nhân vật mang bom */
+.cell.has-bomb-character {
+    animation: cellBombPulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes cellBombPulse {
+    0% {
+        box-shadow: inset 0 0 10px rgba(239, 68, 68, 0.1);
+    }
+    100% {
+        box-shadow: inset 0 0 30px rgba(239, 68, 68, 0.3), 0 0 20px rgba(239, 68, 68, 0.2);
+    }
+}

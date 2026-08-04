@@ -1414,22 +1414,30 @@
         window.gameStarted = false;
         window.isMoving = true;
         
+        // ===== 🚨 HIỂN THỊ POPUP NGAY LẬP TỨC =====
+        // Vô hiệu hóa tất cả nút ngay lập tức
+        if (typeof disableAllButtons === 'function') {
+            disableAllButtons();
+        } else {
+            // Fallback: vô hiệu hóa thủ công
+            const rollBtn = document.getElementById('roll-btn');
+            if (rollBtn) {
+                rollBtn.disabled = true;
+                rollBtn.innerText = "⏳ KẾT THÚC";
+            }
+            const skillBtn = document.getElementById('use-skill-btn');
+            if (skillBtn) {
+                skillBtn.disabled = true;
+            }
+            const teleportBtn = document.getElementById('teleport-btn');
+            if (teleportBtn) {
+                teleportBtn.disabled = true;
+            }
+        }
+        
         // Ẩn nút rời trận
         if (typeof hideLeaveButton === 'function') {
             hideLeaveButton();
-        }
-        
-        // Vô hiệu hóa nút roll
-        const rollBtn = document.getElementById('roll-btn');
-        if (rollBtn) {
-            rollBtn.disabled = true;
-            rollBtn.innerText = "⏳ KẾT THÚC";
-        }
-        
-        // Vô hiệu hóa nút skill
-        const skillBtn = document.getElementById('use-skill-btn');
-        if (skillBtn) {
-            skillBtn.disabled = true;
         }
         
         // Ẩn thông báo mua đất
@@ -1467,6 +1475,29 @@
         const isWin = (myPlayerNumber === winnerId);
         console.log(`🏆 Bạn có thắng không? ${isWin}`);
         
+        // ===== 🔥 TẠO DỮ LIỆU TẠM CHO POPUP =====
+        const tempMatchData = {
+            winnerId: winnerId,
+            isWinner: isWin,
+            reason: reason,
+            totalRounds: Math.max(players[1]?.rounds || 0, players[2]?.rounds || 0),
+            reward: {
+                winner: { exp: 150, coins: 50, points: 25 },
+                loser: { exp: 75, coins: 25, points: -20 }
+            }
+        };
+        
+        // ===== 🚨 HIỂN THỊ POPUP NGAY LẬP TỨC (KHÔNG CHỜ SERVER) =====
+        // Gọi showMatchResultAnimation ngay lập tức với dữ liệu tạm
+        if (typeof showMatchResultAnimation === 'function') {
+            // Dùng setTimeout 0 để đẩy lên đầu event loop
+            setTimeout(() => {
+                showMatchResultAnimation(isWin, currentUser, tempMatchData);
+            }, 0);
+        } else {
+            showSimpleGameOver(winnerId);
+        }
+        
         // ===== 🔥 CHỈ NGƯỜI THẮNG GỬI GAMEOVER LÊN SERVER =====
         if (isWin) {
             if (window._gameOverSent) {
@@ -1485,29 +1516,57 @@
             console.log("🚪 Bạn là người thua, không gửi gameOver lên server!");
         }
         
-        // ✅ FALLBACK: Nếu sau 5s không nhận được matchResult, tự hiển thị (CHO CẢ THẮNG VÀ THUA)
+        // ✅ FALLBACK: Nếu sau 3s không nhận được matchResult từ server,
+        // giữ nguyên popup đã hiển thị (không cần làm gì thêm)
         setTimeout(() => {
             if (!window._gameOverReceived) {
-                console.log("⏰ Timeout: Không nhận được matchResult, tự hiển thị kết quả...");
-                const fallbackData = {
-                    winnerId: winnerId,
-                    isWinner: isWin,
-                    reason: reason,
-                    totalRounds: 0,
-                    reward: {
-                        winner: { exp: 150, coins: 50, points: 25 },
-                        loser: { exp: 75, coins: 25, points: -20 }
-                    }
-                };
-                if (typeof showMatchResultAnimation === 'function') {
-                    showMatchResultAnimation(isWin, currentUser, fallbackData);
-                } else {
-                    showSimpleGameOver(winnerId);
-                }
+                console.log("⏰ Không nhận được matchResult từ server, giữ popup hiện tại");
+                // Không làm gì vì popup đã hiển thị rồi
             }
-        }, 5000);
+        }, 3000);
         
         window._gameOverProcessing = false;
+    }
+    // ===== 🆕 HÀM VÔ HIỆU HÓA TẤT CẢ NÚT =====
+    function disableAllButtons() {
+        console.log("🛑 Đang vô hiệu hóa tất cả nút bấm...");
+        
+        // Vô hiệu hóa nút roll
+        const rollBtn = document.getElementById('roll-btn');
+        if (rollBtn) {
+            rollBtn.disabled = true;
+            rollBtn.innerText = "⏳ KẾT THÚC";
+            rollBtn.style.cursor = "not-allowed";
+        }
+        
+        // Vô hiệu hóa nút skill
+        const skillBtn = document.getElementById('use-skill-btn');
+        if (skillBtn) {
+            skillBtn.disabled = true;
+            skillBtn.style.cursor = "not-allowed";
+        }
+        
+        // Vô hiệu hóa nút dịch chuyển
+        const teleportBtn = document.getElementById('teleport-btn');
+        if (teleportBtn) {
+            teleportBtn.disabled = true;
+            teleportBtn.style.cursor = "not-allowed";
+        }
+        
+        // Vô hiệu hóa nút rời trận
+        const leaveBtn = document.getElementById('btn-leave-game');
+        if (leaveBtn) {
+            leaveBtn.disabled = true;
+            leaveBtn.style.cursor = "not-allowed";
+        }
+        
+        // Vô hiệu hóa tất cả nút trong notification panel
+        document.querySelectorAll('#notify-panel button').forEach(btn => {
+            btn.disabled = true;
+            btn.style.cursor = "not-allowed";
+        });
+        
+        console.log("✅ Đã vô hiệu hóa tất cả nút bấm");
     }
     // ===== HIỂN THỊ GAME OVER ĐƠN GIẢN (FALLBACK) =====
     function showSimpleGameOver(winnerId) {
@@ -1626,8 +1685,7 @@
         console.log("📊 isWin:", isWin);
         console.log("📊 matchData:", matchData);
         
-        // 🔥 HIỂN THỊ OVERLAY NGAY LẬP TỨC (ƯU TIÊN HÀNG ĐẦU)
-        // Sử dụng setTimeout 0 để đẩy việc hiển thị lên đầu event loop
+        // ===== 🚨 HIỂN THỊ OVERLAY NGAY LẬP TỨC =====
         const gameOverOverlay = document.getElementById("game-over-overlay");
         if (gameOverOverlay) {
             // Đảm bảo overlay hiển thị ngay cả khi DOM chưa kịp cập nhật
@@ -1636,9 +1694,30 @@
             gameOverOverlay.classList.remove("hidden");
             // Force reflow để đảm bảo trình duyệt áp dụng ngay
             void gameOverOverlay.offsetHeight;
+            console.log("✅ Đã hiển thị game-over-overlay");
         } else {
             console.error("❌ Không tìm thấy game-over-overlay!");
             return;
+        }
+
+        // ===== 🛑 VÔ HIỆU HÓA TẤT CẢ NÚT =====
+        if (typeof disableAllButtons === 'function') {
+            disableAllButtons();
+        } else {
+            // Fallback: vô hiệu hóa thủ công
+            const rollBtn = document.getElementById('roll-btn');
+            if (rollBtn) {
+                rollBtn.disabled = true;
+                rollBtn.innerText = "⏳ KẾT THÚC";
+            }
+            const skillBtn = document.getElementById('use-skill-btn');
+            if (skillBtn) {
+                skillBtn.disabled = true;
+            }
+            const teleportBtn = document.getElementById('teleport-btn');
+            if (teleportBtn) {
+                teleportBtn.disabled = true;
+            }
         }
 
         // Ẩn tất cả modal có thể đang hiển thị
@@ -1646,7 +1725,7 @@
         if (typeof closeBuyModal === 'function') closeBuyModal();
         if (typeof hideBuyModal === 'function') hideBuyModal();
 
-        // ===== LẤY PHẦN THƯỞNG TỪ SERVER =====
+        // ===== LẤY PHẦN THƯỞNG TỪ SERVER (HOẶC DỮ LIỆU TẠM) =====
         let expGained = 0;
         let coinsGained = 0;
         let pointsGained = 0;
@@ -1670,14 +1749,14 @@
         
         console.log("📊 Phần thưởng:", { expGained, coinsGained, pointsGained });
 
-        // 🔥 LẤY DỮ LIỆU USER
+        // ===== LẤY DỮ LIỆU USER =====
         let currentPts = currentUserData?.points || 0;
         let totalExp = currentUserData?.exp || 0;
         let currentCoins = currentUserData?.coin || currentUserData?.coins || 0;
         let playerName = currentUserData?.display_name || currentUserData?.username || "Bạn";
         let userId = currentUserData?.id || currentUserData?.username;
 
-        // 🔥 LẤY CÁC ELEMENT
+        // ===== LẤY CÁC ELEMENT =====
         const titleEl = document.getElementById("match-status-title");
         const winnerTextEl = document.getElementById("winner-text");
         const rankIconEl = document.getElementById("rank-icon");
@@ -1692,12 +1771,15 @@
         if (titleEl) {
             titleEl.innerText = isWin ? "🏆 VICTORY!" : "💀 DEFEAT!";
             titleEl.style.color = isWin ? "#4efe80" : "#ff4757";
+            console.log(`✅ Đã cập nhật title: ${titleEl.innerText}`);
         }
         
         if (winnerTextEl) {
+            const winnerName = matchData?.winnerId ? players[matchData.winnerId]?.name : playerName;
             winnerTextEl.innerText = isWin ? 
                 `🎉 ${playerName} đã chiến thắng! (${matchData?.totalRounds || 0} vòng)` : 
                 `💀 ${playerName} đã thất bại! (${matchData?.totalRounds || 0} vòng)`;
+            console.log(`✅ Đã cập nhật winner-text: ${winnerTextEl.innerText}`);
         }
 
         // ===== B. RANK ICON =====
@@ -1705,6 +1787,7 @@
         if (rankIconEl) {
             rankIconEl.src = initialRank.icon;
             rankIconEl.alt = initialRank.name;
+            console.log(`✅ Đã cập nhật rank icon: ${initialRank.name}`);
         }
         if (rankPtsEl) rankPtsEl.innerText = currentPts;
         if (coinRewardEl) coinRewardEl.innerText = `+${coinsGained} Coin`;
@@ -2258,7 +2341,53 @@ function handleChatEnter(e) {
         sendChatMessage();
     }
 }
-
+function updateBombBlink() {
+    // Xóa hiệu ứng cũ
+    document.querySelectorAll('.p-avatar.bomb-blink').forEach(el => {
+        el.classList.remove('bomb-blink');
+    });
+    document.querySelectorAll('.cell.has-bomb-character').forEach(el => {
+        el.classList.remove('has-bomb-character');
+    });
+    document.querySelectorAll('.slot-p1.bomb-slot, .slot-p2.bomb-slot').forEach(el => {
+        el.classList.remove('bomb-slot');
+    });
+    
+    // ✅ KIỂM TRA CÓ BOM ĐANG ACTIVE KHÔNG
+    if (!window.bombData || !window.bombData.active) {
+        console.log('🔴 Không có bom active, xóa hiệu ứng');
+        return;
+    }
+    
+    const targetId = window.bombData.targetId;
+    const targetPos = players[targetId]?.pos;
+    
+    console.log(`💣 Có bom! Player ${targetId} tại ô ${targetPos}`);
+    
+    if (targetPos === undefined || targetPos === null) return;
+    
+    // Tìm slot của người chơi
+    const slotId = `slot-p${targetId}-${targetPos}`;
+    const slot = document.getElementById(slotId);
+    if (!slot) {
+        console.log(`⚠️ Không tìm thấy slot ${slotId}`);
+        return;
+    }
+    
+    // Thêm hiệu ứng
+    slot.classList.add('bomb-slot');
+    const avatar = slot.querySelector('.p-avatar');
+    if (avatar) {
+        avatar.classList.add('bomb-blink');
+        console.log(`✅ Đã thêm bomb-blink cho Player ${targetId}`);
+    }
+    
+    // Thêm hiệu ứng cho ô
+    const cell = document.getElementById(`cell-${targetPos}`);
+    if (cell) {
+        cell.classList.add('has-bomb-character');
+    }
+}
 // ===== HIỂN THỊ CHỦ ĐỀ SKIN VIP =====
 function showSkinEffectText(title, subtitle, color1, color2, icon) {
     const textDiv = document.createElement('div');
