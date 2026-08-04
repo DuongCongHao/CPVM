@@ -253,12 +253,6 @@ function reduceTeleportCooldown(playerId) {
         if (player.teleportCooldown === 0) {
             player.teleportAvailable = true;
             addLog(`🌀 ${player.name} đã hồi chiêu Dịch Chuyển!`);
-            // Hiển thị thông báo
-            if (playerId === myPlayerNumber) {
-                if (typeof showNotification === 'function') {
-                    showNotification('🌀 Dịch Chuyển đã sẵn sàng!', 'success', 2000);
-                }
-            }
         }
     }
     updateTeleportUI();

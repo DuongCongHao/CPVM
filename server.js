@@ -1257,9 +1257,26 @@ io.on('connection', (socket) => {
     });
     
 
+    // Thêm biến toàn cục ở đầu file server.js
+    const processedGameOver = new Set();
+
+// Handler gameOver
     socket.on("gameOver", async (data) => {
         const roomId = socket.roomId;
         if (!roomId || !rooms[roomId]) return;
+
+        // ===== 🛡️ CHỐNG XỬ LÝ GAMEOVER 2 LẦN =====
+        const gameKey = `${roomId}_${data.winnerId}`;
+        if (processedGameOver.has(gameKey)) {
+            console.log(`⚠️ GameOver ${gameKey} đã xử lý rồi, bỏ qua!`);
+            return;
+        }
+        processedGameOver.add(gameKey);
+        
+        // Xóa key sau 10s để phòng trường hợp phòng mới
+        setTimeout(() => {
+            processedGameOver.delete(gameKey);
+        }, 10000);
 
         if (finishedRooms.has(roomId)) {
             console.log("⚠️ GAMEOVER đã xử lý rồi, bỏ qua:", roomId);

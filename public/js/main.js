@@ -1077,6 +1077,12 @@
         if (players[1].rounds >= 7 || players[2].rounds >= 7) {
             console.log("🏁 PHÁT HIỆN VÒNG 7! KẾT THÚC NGAY LẬP TỨC!");
             
+            // ===== 🛡️ CHỐNG GỌI 2 LẦN =====
+            if (window._gameOverProcessing) {
+                console.log("⛔ Đang xử lý gameOver, bỏ qua!");
+                return;
+            }
+            
             // Đánh dấu game đang kết thúc
             window.gameEnding = true;
             window.isMoving = true;
@@ -1123,25 +1129,52 @@
                 winnerId = players[1].money >= players[2].money ? 1 : 2;
             }
             
-            // 🔥 GỌI GAMEOVER VÀ THOÁT NGAY (KHÔNG GỬI SYNCACTIONDATA)
-            gameOver(winnerId, "value_compare");
+            // ===== 🛡️ CHỈ NGƯỜI THẮNG HOẶC CHỦ PHÒNG GỌI GAMEOVER =====
+            // Tránh cả 2 người cùng gọi
+            const isWinner = (myPlayerNumber === winnerId);
+            const isHost = (myPlayerNumber === 1); // Player 1 là host
+            
+            // Chỉ gọi gameOver nếu là người thắng HOẶC là host
+            // Như vậy đảm bảo chỉ 1 người gửi lên server
+            if (isWinner || isHost) {
+                console.log(`📤 ${isWinner ? 'Người thắng' : 'Host'} gọi gameOver`);
+                gameOver(winnerId, "value_compare");
+            } else {
+                console.log(`⏳ Người thua chờ kết quả từ server...`);
+                // Đánh dấu đã kết thúc nhưng không gọi gameOver
+                window.gameEnding = true;
+                // Vẫn vô hiệu hóa nút bấm
+                disableAllButtons();
+            }
             return;
         }
 
         // 🔥 KIỂM TRA HẾT TIỀN
         if (players[1].money < 0) {
             console.log("💀 P1 HẾT TIỀN!");
-            if (!window.gameEnding) {
+            if (!window.gameEnding && !window._gameOverProcessing) {
                 window.gameEnding = true;
-                gameOver(2, "money");
+                // 🛡️ CHỐNG GỌI 2 LẦN - Chỉ người bị âm tiền mới gọi
+                if (myPlayerNumber === 1) {
+                    gameOver(2, "money");
+                } else {
+                    // Nếu là máy đối thủ, đánh dấu và chờ
+                    disableAllButtons();
+                    window.gameEnding = true;
+                }
             }
             return;
         }
         if (players[2].money < 0) {
             console.log("💀 P2 HẾT TIỀN!");
-            if (!window.gameEnding) {
+            if (!window.gameEnding && !window._gameOverProcessing) {
                 window.gameEnding = true;
-                gameOver(1, "money");
+                if (myPlayerNumber === 2) {
+                    gameOver(1, "money");
+                } else {
+                    disableAllButtons();
+                    window.gameEnding = true;
+                }
             }
             return;
         }
@@ -1408,7 +1441,28 @@
             return;
         }
         window._gameOverProcessing = true;
-        
+        // ===== 🛡️ CHỐNG GỬI GAMEOVER 2 LẦN LÊN SERVER =====
+        if (window._gameOverSent) {
+            console.log("⛔ Đã gửi gameOver rồi, bỏ qua!");
+            // Vẫn hiển thị popup nhưng không gửi lại
+            const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+            const isWin = (myPlayerNumber === winnerId);
+            const tempMatchData = {
+                winnerId: winnerId,
+                isWinner: isWin,
+                reason: reason,
+                totalRounds: Math.max(players[1]?.rounds || 0, players[2]?.rounds || 0),
+                reward: {
+                    winner: { exp: 150, coins: 50, points: 25 },
+                    loser: { exp: 75, coins: 25, points: -20 }
+                }
+            };
+            if (typeof showMatchResultAnimation === 'function' && currentUser) {
+                showMatchResultAnimation(isWin, currentUser, tempMatchData);
+            }
+            window._gameOverProcessing = false;
+            return;
+        }
         // 🔥 ĐÁNH DẤU GAME ĐÃ KẾT THÚC - DỪNG MỌI HÀNH ĐỘNG
         window.gameEnding = true;
         window.gameStarted = false;

@@ -20,7 +20,23 @@ function updateUI() {
         console.warn("⚠️ UI elements chưa được render!");
         return;
     }
-    
+    // Reset toàn bộ token trước khi vẽ lại
+    for (let i = 0; i < TOTAL_CELLS; i++) {
+
+        const p1Slot = document.getElementById(`slot-p1-${i}`);
+        if (p1Slot) {
+            p1Slot.style.display = "";
+            p1Slot.style.opacity = "";
+            p1Slot.classList.remove("moving");
+        }
+
+        const p2Slot = document.getElementById(`slot-p2-${i}`);
+        if (p2Slot) {
+            p2Slot.style.display = "";
+            p2Slot.style.opacity = "";
+            p2Slot.classList.remove("moving");
+        }
+    }
     // ===== TÍNH GIÁ TRỊ ĐẤT =====
     const p1LandValue = calculateTotalLandValue(1);
     const p2LandValue = calculateTotalLandValue(2);

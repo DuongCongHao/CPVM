@@ -1085,16 +1085,7 @@ if (typeof socket !== 'undefined' && socket) {
             players[playerNum].pos = pos;
         }
         
-        // Ẩn ở vị trí cũ
-        if (oldPos !== undefined) {
-            let oldSlot = document.getElementById(`slot-p${playerNum}-${oldPos}`);
-            if (oldSlot) {
-                oldSlot.style.display = 'none';
-                oldSlot.style.opacity = '0';
-                oldSlot.classList.remove('has-p1', 'has-p2');
-                oldSlot.dataset.invisible = 'true';
-            }
-        }
+        
         
         // Ẩn ở vị trí mới
         let newSlot = document.getElementById(`slot-p${playerNum}-${pos}`);
@@ -1131,27 +1122,7 @@ if (typeof socket !== 'undefined' && socket) {
             console.log(`👻 Đã cập nhật vị trí đối thủ ${playerNum} về ô ${pos}`);
         }
         
-        // ===== HIỆN LẠI NHÂN VẬT CỦA ĐỐI THỦ (XÓA ẢO ẢNH) =====
-        console.log('👻 Hiện lại nhân vật đối thủ!');
         
-        // Reset toàn bộ slot của đối thủ về trạng thái bình thường
-        for (let i = 0; i < TOTAL_CELLS; i++) {
-            let slot = document.getElementById(`slot-p${playerNum}-${i}`);
-            if (!slot) continue;
-
-            // Xóa tất cả thuộc tính ẩn
-            delete slot.dataset.invisible;
-            slot.classList.remove('invisible-skill');
-            slot.style.display = '';
-            slot.style.opacity = '';
-
-            const avatar = slot.querySelector('.p-avatar');
-            if (avatar) {
-                avatar.style.textShadow = '';
-                avatar.style.filter = '';
-                avatar.style.opacity = '';
-            }
-        }
         
         // Reset biến toàn cục
         window.isInvisible = false;
