@@ -3069,3 +3069,103 @@ function cancelSearching() {
     enableLobbyButtons();
     isSearching = false;
 }
+// ===== BẬT/TẮT ÂM THANH =====
+let isMuted = false;
+
+function toggleSound() {
+    isMuted = !isMuted;
+    
+    if (isMuted) {
+        // Tắt tất cả âm thanh
+        if (audioGame && audioGame.bgm) {
+            audioGame.bgm.pause();
+        }
+        Object.values(audioGame).forEach(track => {
+            if (track && track !== audioGame.bgm) {
+                track.pause();
+                track.currentTime = 0;
+            }
+        });
+        console.log("🔇 Đã tắt âm thanh");
+    } else {
+        // Bật âm thanh
+        if (gameStarted && audioGame && audioGame.bgm) {
+            audioGame.bgm.play().catch(() => {});
+        }
+        console.log("🔊 Đã bật âm thanh");
+    }
+    
+    // Cập nhật nút trong settings
+    updateSettingsSoundButton();
+}
+// ===== SETTINGS =====
+function toggleSettings() {
+    const modal = document.getElementById('settings-modal');
+    if (modal.style.display === 'flex') {
+        closeSettings();
+    } else {
+        openSettings();
+    }
+}
+
+function openSettings() {
+    const modal = document.getElementById('settings-modal');
+    modal.style.display = 'flex';
+    // Cập nhật trạng thái nút âm thanh
+    updateSettingsSoundButton();
+}
+
+function closeSettings() {
+    const modal = document.getElementById('settings-modal');
+    modal.style.display = 'none';
+}
+
+function toggleSoundFromSettings() {
+    // Gọi hàm toggleSound đã có
+    if (typeof toggleSound === 'function') {
+        toggleSound();
+        updateSettingsSoundButton();
+    }
+}
+
+function updateSettingsSoundButton() {
+    const btn = document.getElementById('settings-sound-btn');
+    if (!btn) return;
+    if (isMuted) {
+        btn.innerHTML = '🔇 Âm thanh (Tắt)';
+        btn.style.color = '#94a3b8';
+        btn.style.borderColor = 'rgba(148,163,184,0.2)';
+    } else {
+        btn.innerHTML = '🔊 Âm thanh (Bật)';
+        btn.style.color = '#facc15';
+        btn.style.borderColor = 'rgba(250,204,21,0.2)';
+    }
+}
+
+function confirmLeaveGame() {
+    closeSettings();
+    // Gọi hàm leaveGame đã có
+    if (typeof leaveGame === 'function') {
+        leaveGame();
+    }
+}
+
+// Hiển thị nút settings khi vào game (thay vì nút rời trận)
+function showSettingsButton() {
+    const btn = document.getElementById('btn-settings');
+    if (btn) btn.style.display = 'flex';
+    // Ẩn nút rời trận cũ
+    const leaveBtn = document.getElementById('btn-leave-game');
+    if (leaveBtn) leaveBtn.style.display = 'none';
+}
+
+// Gọi showSettingsButton() thay vì showLeaveButton()
+function showLeaveButton() {
+    showSettingsButton();
+}
+
+// Khi ẩn, ẩn cả nút settings
+function hideLeaveButton() {
+    const btn = document.getElementById('btn-settings');
+    if (btn) btn.style.display = 'none';
+}

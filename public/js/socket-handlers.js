@@ -307,7 +307,7 @@ if (typeof socket !== 'undefined' && socket) {
         if (typeof displayRoomId === 'function') displayRoomId(roomId);
         if (typeof addLog === 'function') addLog(`🚪 Bạn đã tham gia vào phòng [${roomId}].`);
         if (typeof showLeaveButton === 'function') {
-            showLeaveButton();
+            showSettingsButton();
         }
         const lobbyStatus = document.getElementById('lobby-status');
         if (lobbyStatus) {

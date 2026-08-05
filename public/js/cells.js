@@ -266,7 +266,7 @@ function triggerGiftAction() {
 
     if (chosenAction === "money_plus") {
         p.money += 200;
-        showSingleNotification("🎁 HỘP QUÀ MAY MẮN", `Bạn mở được phong bao tài lộc! Nhận ngay <strong>+200$</strong> tiền thưởng mặt.`, '#3b82f6', () => {
+        showSingleNotification("🎁 HỘP QUÀ MAY MẮN", `Bạn đã được Hảo Khóc Thét lì xì! Nhận ngay <strong>+200$</strong> tiền thưởng mặt.`, '#3b82f6', () => {
             addLog(`🎁 🎉 Quà tặng: <strong>${p.name}</strong> bốc trúng rương vàng nhận <strong>+200$</strong>.`);
             updateUI();
             if (typeof syncGameToRemote === 'function') syncGameToRemote();
@@ -297,8 +297,8 @@ function triggerGiftAction() {
             let randomIdx = enemyCellIndices[Math.floor(Math.random() * enemyCellIndices.length)];
             cellsData[randomIdx].owner = giftPlayer;
             
-            showSingleNotification("👑 SIÊU QUÀ ĐẶC QUYỀN", `Bạn nhận được Sắc lệnh tịch thu! Chiếm quyền sở hữu <strong>Khu Đất số ${randomIdx}</strong> của đối thủ hoàn toàn <strong>MIỄN PHÍ</strong>!`, '#10b981', () => {
-                addLog(`🎁 👑 Quà đặc quyền: <strong>${p.name}</strong> tước đoạt thành công Khu Đất số ${randomIdx} của đối thủ miễn phí.`);
+            showSingleNotification("👑 SIÊU QUÀ ĐẶC QUYỀN", `Bạn như thực dân Pháp! Chiếm quyền sở hữu <strong>Khu Đất số ${randomIdx}</strong> của đối thủ hoàn toàn <strong>MIỄN PHÍ</strong>!`, '#10b981', () => {
+                addLog(`🎁 👑 Quà đặc quyền: <strong>${p.name}</strong> ăn cắp thành công Khu Đất số ${randomIdx} của đối thủ miễn phí.`);
                 updateUI();
                 if (typeof syncGameToRemote === 'function') syncGameToRemote();
                 finishGift(() => endTurn());
@@ -311,7 +311,7 @@ function triggerGiftAction() {
         }
     } 
     else if (chosenAction === "go_forward") {
-        showSingleNotification("🚀 DỊCH CHUYỂN TIẾN", `Sức mạnh phản lực phóng bạn **Tiến lên phía trước 2 ô**!`, '#38bdf8', () => {
+        showSingleNotification("🚀 DỊCH CHUYỂN TIẾN", `Bạn bị chó đuổi nên tiến thêm 2 ô`, '#38bdf8', () => {
             addLog(`🎁 🚀 <strong>${p.name}</strong> được đẩy tiến thêm 2 ô.`);
             updateUI();
             if (typeof syncGameToRemote === 'function') syncGameToRemote();
@@ -326,7 +326,7 @@ function triggerGiftAction() {
         });
     } 
     else if (chosenAction === "go_backward") {
-        showSingleNotification("⏳ DỊCH CHUYỂN LÙI", `Bạn dẫm phải vết nứt thời gian, bị **Lùi lại phía sau 2 ô**!`, '#f43f5e', () => {
+        showSingleNotification("⏳ DỊCH CHUYỂN LÙI", `Bạn dẫm phải cục cứt chó, bị **Lùi lại phía sau 2 ô**!`, '#f43f5e', () => {
             addLog(`🎁 ⏳ <strong>${p.name}</strong> bị kéo lùi về sau 2 ô.`);
             updateUI();
             if (typeof syncGameToRemote === 'function') syncGameToRemote();
@@ -367,21 +367,71 @@ function applyCellEffectForPlayer(playerId) {
         addLog(`🕸️ ${p.name} bị mắc mạng nhện và sẽ mất lượt kế tiếp!`);
         updateUI();
         if (typeof syncGameToRemote === 'function') syncGameToRemote();
+        // Đồng bộ skipNextTurn qua socket để máy đối thủ cập nhật
+        if (socket && socket.connected) {
+            socket.emit('syncActionData', { players: players, cellsData: cellsData });
+        }
         return;
     }
 
     // Thiên tai sấm sét
     if (window.lightningIndex !== null && pos === Number(window.lightningIndex)) {
+        // ===== XỬ LÝ THIÊN TAI ĐẦY ĐỦ (GIỐNG NHƯ handleLandOnCell) =====
         const penalty = Math.floor(p.money * 0.5);
         p.money -= penalty;
         addLog(`⚡ ${p.name} bị sét đánh, mất ${penalty}$!`);
-        // Xóa thiên tai trên bàn cờ
+
+        // Xóa đất 2 bên (left và right)
+        const TOTAL_CELLS = cellsData.length;
+        let leftCell = (pos - 1 + TOTAL_CELLS) % TOTAL_CELLS;
+        let rightCell = (pos + 1) % TOTAL_CELLS;
+        let wipedNames = [];
+
+        [leftCell, rightCell].forEach(idx => {
+            if (idx !== 0 && 
+                idx !== Number(spiderWebIndex) && 
+                idx !== Number(window.nuclearBombIndex) &&
+                !cellsData[idx]?.isRadioactive) {
+                cellsData[idx].owner = null;
+                cellsData[idx].level = 1;
+                cellsData[idx].price = 100;
+                cellsData[idx].isUpgraded = false;
+                wipedNames.push(`Ô số ${idx}`);
+            }
+        });
+
+        if (wipedNames.length > 0) {
+            addLog(`💸 San phẳng đất tại: ${wipedNames.join(', ')}.`);
+        }
+
+        // Reset thiên tai
         window.lightningIndex = null;
+
+        // Vẽ lại bàn cờ và cập nhật UI
         initializeBoard();
         updateUI();
-        if (typeof syncGameToRemote === 'function') syncGameToRemote();
+
+        // Đồng bộ cho đối thủ
+        if (typeof syncGameToRemote === 'function') {
+            syncGameToRemote();
+        }
+
+        // Gửi sự kiện đồng bộ thiên tai đã được xử lý
+        if (socket && socket.connected) {
+            socket.emit('playerHitLightningSync', {
+                logs: [
+                    `⚡ ${p.name} bị sét đánh, mất ${penalty}$!`,
+                    `💸 San phẳng đất tại: ${wipedNames.join(', ')}.`
+                ],
+                playersUpdate: players,
+                cellsDataUpdate: cellsData
+            });
+        }
+
+        // Kiểm tra phá sản
         if (p.money < 0) {
             const enemy = playerId === 1 ? 2 : 1;
+            addLog(`💀 ${p.name} đã phá sản!`);
             if (socket && socket.connected) {
                 socket.emit("gameOver", { winnerId: enemy, reason: "money" });
             } else {
@@ -402,6 +452,15 @@ function applyCellEffectForPlayer(playerId) {
         p.radiationEffect = 3;
         addLog(`☢️ ${p.name} bị nhiễm phóng xạ!`);
         if (typeof syncGameToRemote === 'function') syncGameToRemote();
+        // Đồng bộ phóng xạ qua socket
+        if (socket && socket.connected) {
+            socket.emit('syncRadiationEffect', {
+                players: {
+                    1: { radiationEffect: players[1].radiationEffect || 0 },
+                    2: { radiationEffect: players[2].radiationEffect || 0 }
+                }
+            });
+        }
         updateUI();
         return;
     }

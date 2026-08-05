@@ -33,6 +33,10 @@ Object.values(audioGame).forEach(track => {
 
 // ===== HÀM PHỤ TRỢ PHÁT ÂM THANH CẢN NHANH =====
 function playSFX(audioTrack) {
+    // Kiểm tra nếu đang tắt âm thanh thì không phát
+    if (typeof isMuted !== 'undefined' && isMuted) {
+        return;
+    }
     if (audioTrack) {
         audioTrack.pause();
         audioTrack.currentTime = 0.001;
