@@ -1997,6 +1997,18 @@
                 // ✅ Đồng ý rời trận
                 console.log("🚪 Đang gửi yêu cầu rời phòng...");
                 
+                // ===== 🎵 TẮT NHẠC NỀN NGAY LẬP TỨC =====
+                if (audioGame && audioGame.bgm) {
+                    audioGame.bgm.pause();
+                    audioGame.bgm.currentTime = 0;
+                    console.log("🔇 Đã tắt nhạc nền khi rời trận");
+                }
+                // Tắt cả âm thanh chạy nếu đang phát
+                if (audioGame && audioGame.run) {
+                    audioGame.run.pause();
+                    audioGame.run.currentTime = 0;
+                }
+                
                 if (typeof showNotification === 'function') {
                     showNotification('🚪 Đang rời trận đấu...', 'warning', 2000);
                 }
@@ -2022,6 +2034,7 @@
                     if (typeof hideNotification === 'function') {
                         hideNotification();
                     }
+                    resetGameState();
                 }, 1500);
             },
             function() {
@@ -2032,6 +2045,122 @@
                 }
             }
         );
+    }
+    // ===== RESET TOÀN BỘ TRẠNG THÁI GAME =====
+    function resetGameState() {
+        console.log("🔄 Đang reset toàn bộ trạng thái game...");
+        
+        // Reset biến game
+        window.gameStarted = false;
+        window.gameEnding = false;
+        window.isMoving = false;
+        window.extraTurns = 0;
+        window.isInvisible = false;
+        window.invisiblePlayer = null;
+        window.invisiblePos = null;
+        window.darkChaseActive = false;
+        window.darkChaseOwner = null;
+        window.darkChaseTarget = null;
+        window.darkChasePos = null;
+        window.darkChaseTargetPos = null;
+        window.darkChaseTurns = 0;
+        window.darkChaseStarted = false;
+        window.darkChaseCaught = false;
+        window.darkChaseDice = 0;
+        window.bombData = null;
+        window.bombCheckAfterMove = false;
+        window._gameOverProcessing = false;
+        window._gameOverSent = false;
+        window._gameOverReceived = false;
+        window._bombExplodedThisTurn = false;
+        window._processingBomb = false;
+        window.isDeterminingTurn = false;
+        window.teleportSelecting = false;
+        window.nuclearBombDetonated = false;
+        window.nuclearBombIndex = null;
+        window.lightningIndex = null;
+        window.spiderWebIndex = null;
+        window.disasterSpawnedThisGame = false;
+        window.haoBossTriggered = false;
+        window.haoWarningPlayed = false;
+        window.extraTurns = 0;
+        window.skillUsedThisTurn = false;
+        
+        // Reset determineTurnData
+        determineTurnData = {
+            p1Roll: null,
+            p2Roll: null,
+            currentPlayer: 1
+        };
+        
+        // Reset players (giữ cấu trúc nhưng reset về mặc định)
+        // Lưu ý: Chỉ reset khi chưa có dữ liệu mới từ server
+        // Hàm này sẽ được gọi trước khi nhận dữ liệu mới
+        
+        // Reset cellsData (sẽ được cập nhật lại từ server)
+        // Không reset hoàn toàn vì server sẽ gửi dữ liệu mới
+        
+        // Reset UI elements
+        const turnTxt = document.getElementById('turn-txt');
+        if (turnTxt) {
+            turnTxt.innerText = "Đang khởi tạo trận đấu...";
+            turnTxt.style.background = '';
+            turnTxt.classList.remove('bomb-warning');
+        }
+        
+        const rollBtn = document.getElementById('roll-btn');
+        if (rollBtn) {
+            rollBtn.disabled = true;
+            rollBtn.innerText = "ĐỔ XÚC XẮC";
+        }
+        
+        const skillBtn = document.getElementById('use-skill-btn');
+        if (skillBtn) {
+            skillBtn.disabled = true;
+            skillBtn.innerText = "🎴 Kỹ năng";
+        }
+        
+        const teleportBtn = document.getElementById('teleport-btn');
+        if (teleportBtn) {
+            teleportBtn.disabled = true;
+        }
+        
+        // Xóa hiệu ứng bom blink
+        document.querySelectorAll('.p-avatar.bomb-blink').forEach(el => {
+            el.classList.remove('bomb-blink');
+        });
+        document.querySelectorAll('.cell.has-bomb-character').forEach(el => {
+            el.classList.remove('has-bomb-character');
+        });
+        document.querySelectorAll('.slot-p1.bomb-slot, .slot-p2.bomb-slot').forEach(el => {
+            el.classList.remove('bomb-slot');
+        });
+        
+        // Xóa dark chaser
+        removeDarkChaser();
+        
+        // Tắt nhạc nền
+        if (audioGame && audioGame.bgm) {
+            audioGame.bgm.pause();
+            audioGame.bgm.currentTime = 0;
+        }
+        if (audioGame && audioGame.run) {
+            audioGame.run.pause();
+            audioGame.run.currentTime = 0;
+        }
+        
+        // Ẩn notification
+        if (typeof hideNotification === 'function') {
+            hideNotification();
+        }
+        if (typeof closeBuyModal === 'function') {
+            closeBuyModal();
+        }
+        if (typeof hideBuyModal === 'function') {
+            hideBuyModal();
+        }
+        
+        console.log("✅ Đã reset toàn bộ trạng thái game");
     }
     // Hàm hiển thị chỉ số mới nhất lên Màn hình Sảnh
     function updateLobbyUI(userData) {

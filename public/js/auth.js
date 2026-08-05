@@ -1096,7 +1096,7 @@ function showEquipment() {
     document.getElementById('userinfo-content').style.display = 'none';
     
     // Hiển thị trang bị
-    document.getElementById('equipment-content').style.display = 'block';
+    document.getElementById('equipment-content').style.display = 'flex';
     
     if (typeof loadEquipment === 'function') {
         loadEquipment();
