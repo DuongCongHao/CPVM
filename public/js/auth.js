@@ -422,26 +422,44 @@ function updatePlayerSkin() {
         return;
     }
     
-    // ✅ LẤY SKIN CỦA PLAYER 1 TỪ window.players (DỮ LIỆU TỪ SERVER)
-    // Nếu chưa có, mới dùng user.skin
-    let player1SkinId = 'skin_default';
-    let player2SkinId = 'skin_default';
-    
-    if (window.players && window.players[1]) {
-        player1SkinId = window.players[1].skin || user.skin || 'skin_default';
-    } else {
-        player1SkinId = user.skin || 'skin_default';
+    // ===== 🛡️ ĐẢM BẢO SKIN KHÔNG BỊ MẤT =====
+    // Nếu window.players chưa có hoặc bị mất skin, khôi phục từ localStorage
+    if (!window.players) {
+        window.players = {};
     }
     
-    if (window.players && window.players[2]) {
-        player2SkinId = window.players[2].skin || 'skin_default';
+    // Khôi phục skin cho player hiện tại (nếu bị mất)
+    if (!window.players[1]) {
+        window.players[1] = { skin: 'skin_default' };
+    }
+    if (!window.players[2]) {
+        window.players[2] = { skin: 'skin_default' };
+    }
+    
+    // Nếu skin của player hiện tại bị undefined hoặc rỗng, lấy từ user
+    if (myPlayerNumber === 1 && (!window.players[1].skin || window.players[1].skin === 'undefined')) {
+        window.players[1].skin = user.skin || 'skin_default';
+        console.log(`🔄 Khôi phục skin cho P1: ${window.players[1].skin}`);
+    }
+    if (myPlayerNumber === 2 && (!window.players[2].skin || window.players[2].skin === 'undefined')) {
+        window.players[2].skin = user.skin || 'skin_default';
+        console.log(`🔄 Khôi phục skin cho P2: ${window.players[2].skin}`);
+    }
+    
+    // Lấy skin của cả 2 người
+    let player1SkinId = window.players[1]?.skin || user.skin || 'skin_default';
+    let player2SkinId = window.players[2]?.skin || 'skin_default';
+    
+    // Nếu player 2 không có skin, gán mặc định
+    if (!player2SkinId || player2SkinId === 'undefined') {
+        player2SkinId = 'skin_default';
     }
     
     const SKIN_LIST = window.SKIN_LIST || [
         { id: 'skin_default', name: 'Mặc định', icon: '🏃‍♂️' },
         { id: 'skin_dragon', name: 'Rồng thần', icon: '🐉' },
         { id: 'skin_phoenix', name: 'Phượng hoàng', icon: '🦅' },
-        { id: 'skin_unicorn', name: 'Kỳ lân', icon: '🦄' }, // 🆕 THÊM DÒNG NÀY
+        { id: 'skin_unicorn', name: 'Kỳ lân', icon: '🦄' },
         { id: 'skin_ninja', name: 'Ninja', icon: '🥷' },
         { id: 'skin_wizard', name: 'Phù thủy', icon: '🧙' },
         { id: 'skin_robot', name: 'Robot', icon: '🤖' },
@@ -464,6 +482,18 @@ function updatePlayerSkin() {
             }
         }
         console.log(`✅ Đã cập nhật ${count}/36 ô cho Player 1 với skin ${skin1.name}`);
+    } else {
+        // Fallback nếu skin không tìm thấy
+        console.warn(`⚠️ Không tìm thấy skin ${player1SkinId}, dùng mặc định`);
+        for (let i = 0; i < 36; i++) {
+            const slot = document.getElementById(`slot-p1-${i}`);
+            if (slot) {
+                const avatar = slot.querySelector('.p-avatar');
+                if (avatar) {
+                    avatar.textContent = '🏃‍♂️';
+                }
+            }
+        }
     }
     
     // Áp dụng skin cho Player 2
@@ -482,6 +512,18 @@ function updatePlayerSkin() {
             }
         }
         console.log(`✅ Đã cập nhật ${count}/36 ô cho Player 2 với skin ${skin2.name}`);
+    } else {
+        // Fallback nếu skin không tìm thấy
+        console.warn(`⚠️ Không tìm thấy skin ${player2SkinId}, dùng mặc định`);
+        for (let i = 0; i < 36; i++) {
+            const slot = document.getElementById(`slot-p2-${i}`);
+            if (slot) {
+                const avatar = slot.querySelector('.p-avatar');
+                if (avatar) {
+                    avatar.textContent = '🏃‍♂️';
+                }
+            }
+        }
     }
 }
 function applySkinToGame(skinId) {
