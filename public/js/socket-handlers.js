@@ -912,7 +912,15 @@ if (typeof socket !== 'undefined' && socket) {
         }
         
         // 🔥 TỰ TÍNH isWinner DỰA TRÊN winnerId
-        const isWinner = (window.myPlayerNumber === data.winnerId);
+        const myNumber = Number(window.myPlayerNumber);
+        const winnerNumber = Number(data.winnerId);
+
+        const isWinner = myNumber === winnerNumber;
+
+        console.log("🏆 ===== KIỂM TRA WINNER =====");
+        console.log("myPlayerNumber:", window.myPlayerNumber, "=>", myNumber);
+        console.log("winnerId:", data.winnerId, "=>", winnerNumber);
+        console.log("isWinner:", isWinner);
         console.log(`🎬 isWinner = ${isWinner} (myPlayerNumber: ${window.myPlayerNumber}, winnerId: ${data.winnerId})`);
         
         // 🔥 ƯU TIÊN HIỂN THỊ POPUP NGAY LẬP TỨC

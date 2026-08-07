@@ -533,3 +533,194 @@
     box-shadow: 0 0 8px rgba(0, 150, 255, 0.35);
     border-color: rgba(0, 180, 255, 0.45) !important;
 }
+/* =========================================================
+   👑 BÀN CỜ HUYỀN THOẠI (board_level50)
+   ========================================================= */
+#game-screen:has(.board.board_level50) {
+    background:
+        radial-gradient(circle at 50% 45%, rgba(255, 215, 0, 0.15), transparent 30%),
+        radial-gradient(circle at 15% 80%, rgba(255, 200, 0, 0.12), transparent 25%),
+        radial-gradient(circle at 85% 20%, rgba(255, 180, 0, 0.10), transparent 25%),
+        linear-gradient(135deg, #1a0f00 0%, #2a1a00 25%, #1a0f00 50%, #2a1a00 75%, #1a0f00 100%);
+}
+
+#game-screen:has(.board.board_level50)::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse at 50% 50%, rgba(255, 215, 0, 0.10), transparent 55%),
+        radial-gradient(ellipse at 20% 90%, rgba(255, 200, 0, 0.08), transparent 35%),
+        radial-gradient(ellipse at 80% 10%, rgba(255, 180, 0, 0.06), transparent 35%);
+    animation: level50Ambient 4s ease-in-out infinite alternate;
+    z-index: 0;
+}
+@keyframes level50Ambient {
+    from { opacity: 0.4; }
+    to { opacity: 0.9; }
+}
+
+#game-screen:has(.board.board_level50) > h1 {
+    position: relative;
+    z-index: 2;
+    color: #ffd700;
+    text-shadow: 0 0 5px #ffcc00, 0 0 15px #ffaa00, 0 0 30px rgba(255, 200, 0, 0.8);
+}
+
+.board.board_level50 {
+    position: relative;
+    background:
+        radial-gradient(circle at 50% 50%, rgba(255, 215, 0, 0.25), transparent 35%),
+        radial-gradient(circle at 30% 70%, rgba(255, 200, 0, 0.18), transparent 30%),
+        radial-gradient(circle at 70% 30%, rgba(255, 180, 0, 0.15), transparent 30%),
+        linear-gradient(135deg, #1a0f00, #2a1a00, #1a0f00, #2a1a00);
+    border: 3px solid #ffd700 !important;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), 0 0 60px rgba(255, 200, 0, 0.3), inset 0 0 40px rgba(255, 215, 0, 0.15);
+    overflow: hidden;
+}
+
+.board.board_level50::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse at 50% 50%, rgba(255, 215, 0, 0.20), transparent 42%),
+        radial-gradient(ellipse at 20% 80%, rgba(255, 200, 0, 0.15), transparent 30%),
+        radial-gradient(ellipse at 80% 20%, rgba(255, 180, 0, 0.12), transparent 30%);
+    animation: level50Pulse 3s ease-in-out infinite alternate;
+    z-index: 0;
+}
+@keyframes level50Pulse {
+    from { opacity: 0.4; }
+    to { opacity: 0.9; }
+}
+
+.board.board_level50 .cell-center {
+    background:
+        radial-gradient(circle at center, rgba(255, 215, 0, 0.20), rgba(40, 25, 0, 0.82) 55%, rgba(20, 10, 0, 0.92) 100%);
+    box-shadow: inset 0 0 35px rgba(255, 215, 0, 0.25), inset 0 0 80px rgba(0, 0, 0, 0.55);
+    border-radius: inherit;
+}
+
+.board.board_level50 .cell {
+    background: linear-gradient(145deg, rgba(60, 40, 10, 0.94), rgba(30, 20, 5, 0.96)) !important;
+    border-color: rgba(255, 215, 0, 0.65) !important;
+    box-shadow: inset 0 0 10px rgba(255, 215, 0, 0.12), 0 0 5px rgba(255, 215, 0, 0.25);
+    overflow: hidden;
+}
+
+.board.board_level50 .cell::before {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    pointer-events: none;
+    background: linear-gradient(120deg, rgba(255, 215, 0, 0.10), transparent 45%, rgba(255, 200, 0, 0.08));
+    z-index: 0;
+    border-radius: inherit;
+}
+
+/* 8. P1 - ĐỎ (sửa lại thành màu đỏ) */
+.board.board_level50 .cell.owner-p1 {
+    background: linear-gradient(145deg, #ff6b6b 0%, #ef4444 35%, #b91c1c 70%, #450a0a 100%) !important;
+    border: 2px solid #fca5a5 !important;
+    box-shadow: inset 0 0 12px rgba(252, 165, 165, 0.55), inset 0 -8px 15px rgba(80, 0, 0, 0.35), 0 0 8px rgba(239, 68, 68, 0.8) !important;
+}
+
+/* 9. P2 - XANH (sửa lại thành màu xanh) */
+.board.board_level50 .cell.owner-p2 {
+    background: linear-gradient(145deg, #38bdf8 0%, #0284c7 35%, #075985 70%, #082f49 100%) !important;
+    border: 2px solid #7dd3fc !important;
+    box-shadow: inset 0 0 12px rgba(125, 211, 252, 0.55), inset 0 -8px 15px rgba(0, 40, 80, 0.35), 0 0 8px rgba(56, 189, 248, 0.8) !important;
+}
+
+.board.board_level50 .cell.owner-p1::before,
+.board.board_level50 .cell.owner-p2::before {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    pointer-events: none;
+    background: linear-gradient(120deg, rgba(255, 215, 0, 0.20), transparent 35%, rgba(255, 200, 0, 0.10) 70%, transparent);
+    z-index: 1;
+    border-radius: inherit;
+    animation: level50OwnerGlow 2.5s ease-in-out infinite alternate;
+}
+@keyframes level50OwnerGlow {
+    from { opacity: 0.3; }
+    to { opacity: 0.8; }
+}
+
+/* Các ô đặc biệt vẫn giữ nguyên màu đặc trưng */
+.board.board_level50 .cell.has-spider-web {
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.35), rgba(35, 10, 55, 0.95)) !important;
+    border-color: #c084fc !important;
+    box-shadow: inset 0 0 15px rgba(168, 85, 247, 0.4), 0 0 10px rgba(168, 85, 247, 0.6) !important;
+}
+.board.board_level50 .cell.has-lightning {
+    background: radial-gradient(circle, #fff700 0%, #ff9d00 25%, #7c2d12 65%, #1c0803 100%) !important;
+    border-color: #fde047 !important;
+    box-shadow: inset 0 0 20px rgba(255, 240, 0, 0.65), 0 0 15px rgba(255, 140, 0, 0.9) !important;
+}
+.board.board_level50 .cell.has-nuclear-bomb {
+    background: radial-gradient(circle, #ff3333, #8f0000 45%, #220000 100%) !important;
+    border-color: #ff4444 !important;
+    box-shadow: inset 0 0 20px rgba(255, 0, 0, 0.6), 0 0 15px rgba(255, 0, 0, 0.7) !important;
+    animation: level50NuclearGlow 1s infinite alternate;
+}
+@keyframes level50NuclearGlow {
+    from { box-shadow: inset 0 0 15px rgba(255, 0, 0, 0.5), 0 0 8px rgba(255, 0, 0, 0.5); }
+    to { box-shadow: inset 0 0 25px rgba(255, 60, 0, 0.8), 0 0 18px rgba(255, 30, 0, 0.9); }
+}
+.board.board_level50 .cell.is-radioactive {
+    background: radial-gradient(circle, #b6ff00 0%, #4d7c0f 35%, #172000 75%, #070a02 100%) !important;
+    border-color: #a3e635 !important;
+    box-shadow: inset 0 0 18px rgba(163, 230, 53, 0.55), 0 0 12px rgba(132, 204, 22, 0.7) !important;
+}
+
+.board.board_level50 .spider-icon,
+.board.board_level50 .lightning-icon,
+.board.board_level50 .nuclear-icon,
+.board.board_level50 .radioactive-icon {
+    filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.8));
+}
+
+/* Nút xúc xắc - vàng */
+#game-screen:has(.board.board_level50) #roll-btn {
+    background: linear-gradient(135deg, #ffd700, #f0b800 45%, #b8860b) !important;
+    border: 2px solid #ffed4a !important;
+    color: #1a0f00 !important;
+    text-shadow: 0 1px 3px rgba(255, 215, 0, 0.5);
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.65), inset 0 0 10px rgba(255, 215, 0, 0.25);
+}
+#game-screen:has(.board.board_level50) #roll-btn:hover:not(:disabled) {
+    filter: brightness(1.15);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.9), inset 0 0 15px rgba(255, 215, 0, 0.35);
+}
+
+/* Các nút khác tương tự với màu vàng */
+#game-screen:has(.board.board_level50) #use-skill-btn {
+    background: linear-gradient(135deg, #e8a800, #b8860b, #8b6508) !important;
+    border-color: #ffd700 !important;
+    color: #fff !important;
+}
+#game-screen:has(.board.board_level50) #teleport-btn {
+    background: linear-gradient(135deg, #d4a000, #b8860b, #8b6508) !important;
+    border-color: #ffd700 !important;
+    color: #fff !important;
+}
+
+/* Panel - vàng đen */
+#game-screen:has(.board.board_level50) .side-panel .status-card {
+    background: linear-gradient(145deg, rgba(40, 25, 5, 0.94), rgba(20, 12, 2, 0.96));
+    border-color: rgba(255, 215, 0, 0.35);
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.18), inset 0 0 15px rgba(255, 215, 0, 0.08);
+}
+#game-screen:has(.board.board_level50) .log-box {
+    background: linear-gradient(145deg, rgba(20, 12, 2, 0.95), rgba(40, 25, 5, 0.9)) !important;
+    border-color: rgba(255, 215, 0, 0.3) !important;
+}
+#game-screen:has(.board.board_level50) .room-display-tag {
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.35);
+    border-color: rgba(255, 215, 0, 0.45) !important;
+}

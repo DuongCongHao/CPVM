@@ -350,6 +350,7 @@ const SKIN_LIST = [
     { id: 'dice_vietnam', name: 'Xúc xắc Việt Nam', icon: '🎲', price: 5000, desc: 'Cờ đỏ sao vàng rực rỡ', rarity: 'legendary', category: 'dice' },
     // Thêm skin bàn cờ
     { id: 'board_default', name: 'Bàn cờ mặc định', icon: '🎯', price: 0, desc: 'Bàn cờ cơ bản', rarity: 'common', category: 'board' },
+    { id: 'board_level50', name: '👑 Bàn cờ Huyền Thoại', icon: '👑', price: 0, desc: 'Phần thưởng đặc biệt khi đạt cấp 50!', rarity: 'legendary', category: 'board' },
     { id: 'board_lava', name: '🌋 Bàn cờ Dung nham', icon: '🌋', price: 10000, desc: 'Bàn cờ lửa dung nham rực cháy', rarity: 'legendary', category: 'board' },
     { id: 'board_cyber', name: '💠 Bàn cờ Cyber', icon: '💠', price: 10000, desc: 'Bàn cờ công nghệ tương lai', rarity: 'rare', category: 'board' }
 ];
@@ -1990,7 +1991,11 @@ const LEVEL_REWARDS = {
     15: { type: 'coin', amount: 1000 },
     20: { type: 'coin', amount: 1000 },
     25: { type: 'coin', amount: 1000 },
-    30: { type: 'skin', skinId: 'skin_level30' }
+    30: { type: 'skin', skinId: 'skin_level30' },
+    35: { type: 'coin', amount: 1000 },
+    40: { type: 'coin', amount: 1000 },
+    45: { type: 'coin', amount: 1000 },
+    50: { type: 'skin', skinId: 'board_level50' }
 };
 
 // Lấy danh sách level đã nhận từ server
@@ -2096,7 +2101,7 @@ async function openRewardPopup() {
     `;
 
     // Danh sách quà theo cấp
-    for (let lv = 5; lv <= 30; lv += 5) {
+    for (let lv = 5; lv <= 50; lv += 5) {
         const reward = LEVEL_REWARDS[lv];
         if (!reward) continue;
         const isClaimed = claimedSet.has(lv);

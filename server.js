@@ -1341,81 +1341,209 @@ io.on('connection', (socket) => {
             return;
         }
         
-        // ===== 🏆 LƯU VÀO DATABASE (CHO TRƯỜNG HỢP THUA BÌNH THƯỜNG) =====
-        let winnerReward, loserReward;
+        // ===== 🏆 LẤY DỮ LIỆU MỚI NHẤT CỦA 2 NGƯỜI =====
+        let winnerReward;
+        let loserReward;
+
         try {
-            // ✅ SỬA: DÙNG /user/ THAY VÌ /user-id/
-            const winnerUserResponse = await axios.get(`http://localhost:${PORT}/api/user/${winner.userId}`);
+            // 🚀 LẤY DATABASE CỦA WINNER + LOSER CÙNG LÚC
+            const [winnerUserResponse, loserUserResponse] = await Promise.all([
+                axios.get(`http://localhost:${PORT}/api/user/${winner.userId}`),
+                axios.get(`http://localhost:${PORT}/api/user/${loser.userId}`)
+            ]);
+
             const winnerCurrentData = winnerUserResponse.data;
-            
+            const loserCurrentData = loserUserResponse.data;
+
+            // ============================================
+            // 🏆 TÍNH THƯỞNG WINNER
+            // ============================================
             if (winnerCurrentData && winnerCurrentData.success !== false) {
+
                 winnerReward = calculateRewards(true, winnerCurrentData);
-                console.log(`🏆 ${winner.name}: +${winnerReward.expGained} EXP, +${winnerReward.coinsGained} Coin, +${winnerReward.pointsGained} RP`);
-                
-                await axios.post(`${process.env.API_URL}/api/update-result`, {
+
+                console.log(
+                    `🏆 ${winner.name}: ` +
+                    `+${winnerReward.expGained} EXP, ` +
+                    `+${winnerReward.coinsGained} Coin, ` +
+                    `+${winnerReward.pointsGained} RP`
+                );
+
+            } else {
+
+                console.log(
+                    `⚠️ Không tìm thấy user ${winner.userId}`
+                );
+
+                winnerReward = {
+                    expGained: 150,
+                    coinsGained: 50,
+                    pointsGained: 25
+                };
+            }
+
+
+            // ============================================
+            // 💀 TÍNH THƯỞNG LOSER
+            // ============================================
+            if (loserCurrentData && loserCurrentData.success !== false) {
+
+                loserReward = calculateRewards(false, loserCurrentData);
+
+                console.log(
+                    `💀 ${loser.name}: ` +
+                    `+${loserReward.expGained} EXP, ` +
+                    `+${loserReward.coinsGained} Coin, ` +
+                    `${loserReward.pointsGained} RP`
+                );
+
+            } else {
+
+                console.log(
+                    `⚠️ Không tìm thấy user ${loser.userId}`
+                );
+
+                loserReward = {
+                    expGained: 75,
+                    coinsGained: 25,
+                    pointsGained: -20
+                };
+            }
+
+
+            // =====================================================
+            // 🚀 QUAN TRỌNG:
+            // GỬI KẾT QUẢ NGAY SAU KHI TÍNH ĐƯỢC REWARD
+            // KHÔNG CHỜ DATABASE UPDATE
+            // =====================================================
+
+            const matchResult = {
+                winnerId: data.winnerId,
+                winnerName: winner.name,
+                reason: data.reason,
+                totalRounds: totalRounds,
+
+                reward: {
+                    winner: {
+                        exp: winnerReward.expGained,
+                        coins: winnerReward.coinsGained,
+                        points: winnerReward.pointsGained
+                    },
+
+                    loser: {
+                        exp: loserReward.expGained,
+                        coins: loserReward.coinsGained,
+                        points: loserReward.pointsGained
+                    }
+                }
+            };
+
+            // 🔥 CẢ 2 NGƯỜI NHẬN NGAY
+            io.to(roomId).emit("matchResult", matchResult);
+
+            console.log(
+                `📤 Đã gửi matchResult NGAY cho cả phòng ${roomId}`
+            );
+
+
+            // =====================================================
+            // 💾 SAU ĐÓ MỚI UPDATE DATABASE
+            // Chạy song song, KHÔNG CHẶN POPUP
+            // =====================================================
+
+            Promise.all([
+
+                // 🏆 UPDATE WINNER
+                axios.post(`${process.env.API_URL}/api/update-result`, {
                     id: winnerCurrentData.id || winner.userId,
                     level: winnerReward.level,
                     exp: winnerReward.exp,
                     points: winnerReward.points,
                     rank: winnerReward.rank,
                     coins: winnerReward.coin
-                });
-                console.log(`✅ Đã lưu phần thưởng cho ${winner.name}`);
-            } else {
-                console.log(`⚠️ Không tìm thấy user ${winner.userId} để lưu phần thưởng`);
-                winnerReward = { expGained: 150, coinsGained: 50, pointsGained: 25 };
-            }
+                }),
 
-            const loserUserResponse = await axios.get(`http://localhost:${PORT}/api/user/${loser.userId}`);
-            const loserCurrentData = loserUserResponse.data;
-            
-            if (loserCurrentData && loserCurrentData.success !== false) {
-                loserReward = calculateRewards(false, loserCurrentData);
-                console.log(`💀 ${loser.name}: +${loserReward.expGained} EXP, +${loserReward.coinsGained} Coin, ${loserReward.pointsGained} RP`);
-                
-                await axios.post(`${process.env.API_URL}/api/update-result`, {
+                // 💀 UPDATE LOSER
+                axios.post(`${process.env.API_URL}/api/update-result`, {
                     id: loserCurrentData.id || loser.userId,
                     level: loserReward.level,
                     exp: loserReward.exp,
                     points: loserReward.points,
                     rank: loserReward.rank,
                     coins: loserReward.coin
-                });
-                console.log(`✅ Đã lưu phần thưởng cho ${loser.name}`);
-            } else {
-                console.log(`⚠️ Không tìm thấy user ${loser.userId} để lưu phần thưởng`);
-                loserReward = { expGained: 75, coinsGained: 25, pointsGained: -20 };
-            }
+                })
+
+            ])
+            .then(() => {
+
+                console.log(
+                    `💾 Đã cập nhật DATABASE cho cả winner và loser`
+                );
+
+            })
+            .catch(err => {
+
+                console.error(
+                    `❌ Lỗi cập nhật DATABASE:`,
+                    err.message
+                );
+
+            });
+
 
         } catch (err) {
-            console.error(`❌ Lỗi khi lưu phần thưởng:`, err.message);
-            // Fallback reward
-            winnerReward = winnerReward || { expGained: 150, coinsGained: 50, pointsGained: 25 };
-            loserReward = loserReward || { expGained: 75, coinsGained: 25, pointsGained: -20 };
-        }
 
-        // ===== 🆕 GỬI matchResult CHO CẢ PHÒNG (KHÔNG PHỤ THUỘC SOCKET CỤ THỂ) =====
-        const matchResult = {
-            winnerId: data.winnerId,
-            winnerName: winner.name,
-            reason: data.reason,
-            totalRounds: totalRounds,
-            reward: {
-                winner: {
-                    exp: winnerReward.expGained,
-                    coins: winnerReward.coinsGained,
-                    points: winnerReward.pointsGained
-                },
-                loser: {
-                    exp: loserReward.expGained,
-                    coins: loserReward.coinsGained,
-                    points: loserReward.pointsGained
+            console.error(
+                `❌ Lỗi khi lấy dữ liệu người chơi:`,
+                err.message
+            );
+
+
+            // =====================================================
+            // FALLBACK
+            // =====================================================
+
+            winnerReward = {
+                expGained: 150,
+                coinsGained: 50,
+                pointsGained: 25
+            };
+
+            loserReward = {
+                expGained: 75,
+                coinsGained: 25,
+                pointsGained: -20
+            };
+
+
+            const matchResult = {
+                winnerId: data.winnerId,
+                winnerName: winner.name,
+                reason: data.reason,
+                totalRounds: totalRounds,
+
+                reward: {
+                    winner: {
+                        exp: winnerReward.expGained,
+                        coins: winnerReward.coinsGained,
+                        points: winnerReward.pointsGained
+                    },
+
+                    loser: {
+                        exp: loserReward.expGained,
+                        coins: loserReward.coinsGained,
+                        points: loserReward.pointsGained
+                    }
                 }
-            }
-        };
+            };
 
-        io.to(roomId).emit("matchResult", matchResult);
-        console.log(`📤 Đã gửi matchResult cho phòng ${roomId}`);
+            // Vẫn cho người chơi thấy kết quả
+            io.to(roomId).emit("matchResult", matchResult);
+
+            console.log(
+                `📤 Đã gửi fallback matchResult cho phòng ${roomId}`
+            );
+        }
 
         // ================================================================
         // 🗑️ DỌN DẸP PHÒNG
