@@ -2571,7 +2571,7 @@ body.hao-shake {
 
     .board {
         width: min(65vw, 680px) !important;
-        margin-left: -20px !important;
+        /* margin-left: -20px !important; */
         flex-shrink: 0 !important;
     }
 
@@ -2609,53 +2609,64 @@ body.hao-shake {
 }
 
 /* Mobile vẫn giữ nguyên bố cục dọc */
-/* ===== TỐI ƯU CHO MOBILE: ĐẨY TOÀN BỘ GAME LÊN TRÊN ===== */
 @media (max-width: 768px) {
     /* 1. Ẩn tiêu đề */
     #game-screen > h1 {
         display: none !important;
     }
-    
-    /* 2. Reset body để tận dụng tối đa không gian */
+
+    /* 2. Reset body */
     body {
         padding: 5px 5px 0 5px !important;
         min-height: 100vh;
         overflow-y: auto;
     }
-    
-    /* 3. Đẩy container game lên trên, giảm khoảng cách */
+
+    /* 3. Container - căn giữa hoàn toàn */
     #game-screen .container {
-        margin-top: -15px !important;
-        padding-top: 0 !important;
-        gap: 6px !important;
+        display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
+        justify-content: flex-start !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 auto !important;
+        gap: 6px !important;
+        margin-top: -15px !important;
     }
-    
-    /* 4. Bàn cờ - giảm padding, đẩy lên trên */
+
+    /* 4. Bàn cờ - căn giữa tuyệt đối, reset mọi margin lệch */
     .board {
-        margin-top: 0 !important;
-        padding: 4px !important;
+        display: grid !important;
+        margin: 0 auto !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
         width: 96vw !important;
         max-width: 480px !important;
         aspect-ratio: 1 / 1 !important;
+        padding: 4px !important;
+        flex-shrink: 0 !important;
+        /* Đảm bảo không bị lệch do desktop */
+        margin-left: auto !important;
+        margin-right: auto !important;
     }
-    
-    /* 5. Side panel - giảm margin-top, đẩy lên trên */
+
+    /* 5. Side panel - căn giữa, thẳng hàng với board */
     .side-panel {
-        margin-top: -5px !important;
-        padding-top: 0 !important;
         width: 96vw !important;
         max-width: 430px !important;
+        margin: 0 auto !important;
+        padding-top: 0 !important;
         gap: 4px !important;
     }
-    
+
     /* 6. Status card - thu nhỏ padding */
     .status-card {
         padding: 6px 8px !important;
         margin-bottom: 4px !important;
     }
-    
+
     /* 7. Log box - thu nhỏ chiều cao */
     .log-box {
         height: 50px !important;
@@ -2664,7 +2675,7 @@ body.hao-shake {
         font-size: 9px !important;
         padding: 4px 6px !important;
     }
-    
+
     /* 8. Notification panel - đảm bảo hiển thị vừa tầm */
     .notification-panel {
         position: fixed !important;
@@ -2683,14 +2694,14 @@ body.hao-shake {
         box-shadow: 0 0 30px rgba(0,0,0,0.8) !important;
         margin: 0 !important;
     }
-    
+
     /* 9. Nút trong notification panel - dễ bấm hơn */
     .notification-panel .notify-btns button {
         padding: 10px 12px !important;
         font-size: 14px !important;
         min-height: 44px !important;
     }
-    
+
     /* 10. Giảm kích thước các ô, token, avatar */
     .cell {
         padding: 2px 1px !important;
@@ -2716,7 +2727,7 @@ body.hao-shake {
         font-size: 5px !important;
         padding: 0 3px !important;
     }
-    
+
     /* 11. Xúc xắc - thu nhỏ */
     .cube, .cube-face {
         width: 28px !important;
@@ -2728,7 +2739,7 @@ body.hao-shake {
     .face-4 { transform: rotateX(-90deg) translateZ(14px); }
     .face-5 { transform: rotateY(-90deg) translateZ(14px); }
     .face-6 { transform: rotateY(180deg) translateZ(14px); }
-    
+
     /* 12. Nút hành động - nhỏ gọn hơn */
     button.action-btn {
         padding: 6px 4px !important;
@@ -2738,14 +2749,14 @@ body.hao-shake {
     .action-buttons {
         gap: 4px !important;
     }
-    
+
     /* 13. Turn indicator - nhỏ hơn */
     .turn-indicator {
         font-size: 11px !important;
         padding: 4px 8px !important;
         margin-bottom: 4px !important;
     }
-    
+
     /* 14. Dice area - giảm gap */
     .dice-area {
         gap: 8px !important;

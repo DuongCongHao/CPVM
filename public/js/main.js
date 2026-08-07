@@ -1733,8 +1733,14 @@
 
     // 2. Hàm chạy animation
     // ===== HÀM CHẠY ANIMATION =====
-    // ===== HÀM CHẠY ANIMATION =====
+    window._resultPopupShown = false;
     async function showMatchResultAnimation(isWin, currentUserData, matchData) {
+        if (window._resultPopupShown) {
+            console.log("⛔ Popup đã hiển thị.");
+            return;
+        }
+
+        window._resultPopupShown = true;
         console.log("🎬 ===== BẮT ĐẦU ANIMATION =====");
         console.log("📊 isWin:", isWin);
         console.log("📊 matchData:", matchData);
@@ -1937,37 +1943,6 @@
             updateLobbyUI(updatedUserData);
         }
 
-        // ================================================================
-        // 🆕 GỬI DỮ LIỆU LÊN SERVER ĐỂ LƯU VÀO DATABASE
-        // ================================================================
-        if (userId) {
-            try {
-                const response = await fetch('/api/update-result', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        id: userId,
-                        level: finalLevel,
-                        exp: finalTotalExp,
-                        points: finalPoints,
-                        rank: finalRank,
-                        coins: finalCoins
-                    })
-                });
-                const result = await response.json();
-                if (result.success) {
-                    console.log('✅ Đã lưu dữ liệu vào database thành công!');
-                } else {
-                    console.error('❌ Lỗi lưu database:', result.message);
-                }
-            } catch (err) {
-                console.error('❌ Lỗi kết nối API:', err.message);
-            }
-        } else {
-            console.warn('⚠️ Không có userId để lưu database!');
-        }
 
         console.log("🎬 ===== ANIMATION HOÀN TẤT =====");
     }

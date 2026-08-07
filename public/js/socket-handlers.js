@@ -456,6 +456,10 @@ if (typeof socket !== 'undefined' && socket) {
 
         const overlay = document.getElementById('game-over-overlay');
         if (overlay) overlay.style.display = 'none';
+        window._resultPopupShown = false;
+        window._gameOverSent = false;
+        window._gameOverReceived = false;
+        window._gameOverProcessing = false;
 
         spiderWebIndex = data.spiderWebIndex;
         lightningIndex = data.lightningIndex || null;
