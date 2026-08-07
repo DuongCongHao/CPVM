@@ -345,9 +345,13 @@ const SKIN_LIST = [
     { id: 'skin_level30', name: 'Thiên sứ', icon: '👼', price: 0, desc: 'Phần thưởng đặc biệt khi đạt cấp 30!', rarity: 'rare' },
     // 🆕 SKIN XÚC XẮC
     { id: 'dice_default', name: 'Xúc xắc mặc định', icon: '🎲', price: 0, desc: 'Xúc xắc cơ bản', rarity: 'common', category: 'dice' },
-    { id: 'dice_ice', name: '🧊 Xúc xắc băng giá', icon: '🎲', price: 2000, desc: 'Xúc xắc băng giá với màu xanh dương', rarity: 'rare', category: 'dice' },
-    { id: 'dice_rainbow', name: '🌈 Xúc xắc cầu vồng', icon: '🎲', price: 3000, desc: 'Xúc xắc cầu vồng rực rỡ sắc màu', rarity: 'legendary', category: 'dice' },
-    { id: 'dice_vietnam', name: '🇻🇳 Xúc xắc Việt Nam', icon: '🎲', price: 5000, desc: 'Cờ đỏ sao vàng rực rỡ', rarity: 'legendary', category: 'dice' }
+    { id: 'dice_ice', name: 'Xúc xắc băng giá', icon: '🎲', price: 2000, desc: 'Xúc xắc băng giá với màu xanh dương', rarity: 'rare', category: 'dice' },
+    { id: 'dice_rainbow', name: 'Xúc xắc cầu vồng', icon: '🎲', price: 3000, desc: 'Xúc xắc cầu vồng rực rỡ sắc màu', rarity: 'legendary', category: 'dice' },
+    { id: 'dice_vietnam', name: 'Xúc xắc Việt Nam', icon: '🎲', price: 5000, desc: 'Cờ đỏ sao vàng rực rỡ', rarity: 'legendary', category: 'dice' },
+    // Thêm skin bàn cờ
+    { id: 'board_default', name: 'Bàn cờ mặc định', icon: '🎯', price: 0, desc: 'Bàn cờ cơ bản', rarity: 'common', category: 'board' },
+    { id: 'board_lava', name: '🌋 Bàn cờ Dung nham', icon: '🌋', price: 10000, desc: 'Bàn cờ lửa dung nham rực cháy', rarity: 'legendary', category: 'board' },
+    { id: 'board_cyber', name: '💠 Bàn cờ Cyber', icon: '💠', price: 10000, desc: 'Bàn cờ công nghệ tương lai', rarity: 'rare', category: 'board' }
 ];
 // ===== SHOP FUNCTIONS =====
 let shopFilter = 'all';
@@ -367,7 +371,7 @@ function getShopUser() {
         localStorage.setItem('currentUser', JSON.stringify(user));
         localStorage.setItem('user', JSON.stringify(user));
     }
-    // 🆕 THÊM DICE
+    // 🆕 DICE
     if (!user.ownedDice) {
         user.ownedDice = [];
         localStorage.setItem('currentUser', JSON.stringify(user));
@@ -375,6 +379,17 @@ function getShopUser() {
     }
     if (!user.diceSkin) {
         user.diceSkin = 'dice_default';
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        localStorage.setItem('user', JSON.stringify(user));
+    }
+    // 🆕 BOARD
+    if (!user.ownedBoard) {
+        user.ownedBoard = [];
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        localStorage.setItem('user', JSON.stringify(user));
+    }
+    if (!user.boardSkin) {
+        user.boardSkin = 'board_default';
         localStorage.setItem('currentUser', JSON.stringify(user));
         localStorage.setItem('user', JSON.stringify(user));
     }
@@ -400,7 +415,9 @@ function saveShopUser(user) {
                 current_skin: user.skin || 'skin_default',
                 owned_dice: user.ownedDice || [],
                 dice_skin: user.diceSkin || 'dice_default',
-                coin: user.coin || user.coins || 0 // 🆕 THÊM COIN
+                owned_board: user.ownedBoard || [],           // 🆕
+                board_skin: user.boardSkin || 'board_default', // 🆕
+                coin: user.coin || user.coins || 0
             })
         })
         .then(res => res.json())
@@ -594,13 +611,14 @@ function loadShop() {
     container.innerHTML = '';
     
     // ============================================================
-    // 🔥 FILTER 'all' - HIỂN THỊ TẤT CẢ (NHÂN VẬT + XÚC XẮC)
+    // 🔥 FILTER 'all' - HIỂN THỊ TẤT CẢ
     // ============================================================
     if (shopFilter === 'all') {
         // ---------- 1. SKIN NHÂN VẬT ----------
         SKIN_LIST.forEach(skin => {
             if (skin.id === 'skin_level30') return;
             if (skin.category === 'dice') return;
+            if (skin.category === 'board') return;
             
             const isOwned = user?.ownedSkins?.includes(skin.id) || false;
             const isEquipped = user?.skin === skin.id;
@@ -665,8 +683,8 @@ function loadShop() {
         });
         
         // ---------- 2. SKIN XÚC XẮC ----------
-        const divider = document.createElement('div');
-        divider.style.cssText = `
+        const diceDivider = document.createElement('div');
+        diceDivider.style.cssText = `
             grid-column: 1 / -1;
             color: #facc15;
             font-size: 14px;
@@ -676,8 +694,8 @@ function loadShop() {
             border-top: 1px solid rgba(255,255,255,0.1);
             margin-top: 8px;
         `;
-        divider.textContent = '🎲 XÚC XẮC';
-        container.appendChild(divider);
+        diceDivider.textContent = '🎲 XÚC XẮC';
+        container.appendChild(diceDivider);
         
         SKIN_LIST.filter(s => s.category === 'dice' && s.id !== 'dice_default').forEach(skin => {
             const isOwned = user?.ownedDice?.includes(skin.id) || false;
@@ -741,6 +759,81 @@ function loadShop() {
             
             container.appendChild(div);
         });
+        
+        // ---------- 3. SKIN BÀN CỜ ----------
+        const boardDivider = document.createElement('div');
+        boardDivider.style.cssText = `
+            grid-column: 1 / -1;
+            color: #facc15;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            padding: 12px 0 8px 0;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            margin-top: 8px;
+        `;
+        boardDivider.textContent = '🪐 BÀN CỜ';
+        container.appendChild(boardDivider);
+        
+        SKIN_LIST.filter(s => s.category === 'board' && s.id !== 'board_default').forEach(skin => {
+            const isOwned = user?.ownedBoard?.includes(skin.id) || false;
+            const isEquipped = user?.boardSkin === skin.id;
+            const canAfford = currentCoin >= skin.price;
+            
+            const div = document.createElement('div');
+            div.style.cssText = `
+                background: ${isEquipped ? 'rgba(250, 204, 21, 0.15)' : 'rgba(15, 23, 42, 0.5)'};
+                border: ${isEquipped ? '2px solid #facc15' : '1px solid rgba(255,255,255,0.08)'};
+                border-radius: 10px;
+                padding: 12px 8px;
+                text-align: center;
+                cursor: ${isOwned || canAfford ? 'pointer' : 'default'};
+                opacity: ${canAfford || isOwned ? 1 : 0.5};
+                transition: all 0.3s;
+                position: relative;
+            `;
+            
+            const equippedBadge = isEquipped ? '<div style="position:absolute;top:-5px;right:-5px;background:#facc15;color:#000;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:bold;">ĐANG DÙNG</div>' : '';
+            const ownedBadge = isOwned && !isEquipped ? '<div style="position:absolute;top:-5px;right:-5px;background:#34d399;color:#000;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:bold;">ĐÃ CÓ</div>' : '';
+            
+            div.innerHTML = `
+                ${equippedBadge}
+                ${ownedBadge}
+                <div style="font-size: 36px;">${skin.icon}</div>
+                <div style="color: #f8fafc; font-weight: bold; font-size: 13px;">${skin.name}</div>
+                <div style="color: #94a3b8; font-size: 11px;">${skin.desc}</div>
+                <div style="color: #facc15; font-size: 13px; margin-top: 4px;">
+                    ${skin.price} Coin
+                </div>
+                <div style="font-size: 10px; margin-top: 2px; color: ${isOwned ? '#34d399' : '#94a3b8'};">
+                    ${isOwned ? (isEquipped ? '✅ Đang dùng' : '✔️ Đã sở hữu') : (canAfford ? '💰 Mua ngay' : '❌ Chưa đủ coin')}
+                </div>
+            `;
+            
+            if (isOwned) {
+                div.onclick = () => {
+                    if (isEquipped) return;
+                    const userData = getShopUser();
+                    if (userData) {
+                        userData.boardSkin = skin.id;
+                        saveShopUser(userData);
+                        loadShop();
+                        if (typeof updateBoardSkin === 'function') {
+                            updateBoardSkin();
+                        }
+                        alert(`✅ Đã chuyển sang ${skin.name}!`);
+                    }
+                };
+            } else if (canAfford) {
+                div.onclick = () => {
+                    if (confirm(`Mua ${skin.name} với giá ${skin.price} Coin?`)) {
+                        buyBoardSkin(skin.id);
+                    }
+                };
+            }
+            
+            container.appendChild(div);
+        });
     
     // ============================================================
     // 🔥 FILTER 'skins' - CHỈ NHÂN VẬT
@@ -749,6 +842,7 @@ function loadShop() {
         SKIN_LIST.forEach(skin => {
             if (skin.id === 'skin_level30') return;
             if (skin.category === 'dice') return;
+            if (skin.category === 'board') return;
             
             const isOwned = user?.ownedSkins?.includes(skin.id) || false;
             const isEquipped = user?.skin === skin.id;
@@ -891,6 +985,81 @@ function loadShop() {
         }
     
     // ============================================================
+    // 🔥 FILTER 'board' - CHỈ BÀN CỜ
+    // ============================================================
+    } else if (shopFilter === 'board') {
+        SKIN_LIST.filter(s => s.category === 'board' && s.id !== 'board_default').forEach(skin => {
+            const isOwned = user?.ownedBoard?.includes(skin.id) || false;
+            const isEquipped = user?.boardSkin === skin.id;
+            const canAfford = currentCoin >= skin.price;
+            
+            const div = document.createElement('div');
+            div.style.cssText = `
+                background: ${isEquipped ? 'rgba(250, 204, 21, 0.15)' : 'rgba(15, 23, 42, 0.5)'};
+                border: ${isEquipped ? '2px solid #facc15' : '1px solid rgba(255,255,255,0.08)'};
+                border-radius: 10px;
+                padding: 12px 8px;
+                text-align: center;
+                cursor: ${isOwned || canAfford ? 'pointer' : 'default'};
+                opacity: ${canAfford || isOwned ? 1 : 0.5};
+                transition: all 0.3s;
+                position: relative;
+            `;
+            
+            const equippedBadge = isEquipped ? '<div style="position:absolute;top:-5px;right:-5px;background:#facc15;color:#000;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:bold;">ĐANG DÙNG</div>' : '';
+            const ownedBadge = isOwned && !isEquipped ? '<div style="position:absolute;top:-5px;right:-5px;background:#34d399;color:#000;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:bold;">ĐÃ CÓ</div>' : '';
+            
+            div.innerHTML = `
+                ${equippedBadge}
+                ${ownedBadge}
+                <div style="font-size: 36px;">${skin.icon}</div>
+                <div style="color: #f8fafc; font-weight: bold; font-size: 13px;">${skin.name}</div>
+                <div style="color: #94a3b8; font-size: 11px;">${skin.desc}</div>
+                <div style="color: #facc15; font-size: 13px; margin-top: 4px;">
+                    ${skin.price} Coin
+                </div>
+                <div style="font-size: 10px; margin-top: 2px; color: ${isOwned ? '#34d399' : '#94a3b8'};">
+                    ${isOwned ? (isEquipped ? '✅ Đang dùng' : '✔️ Đã sở hữu') : (canAfford ? '💰 Mua ngay' : '❌ Chưa đủ coin')}
+                </div>
+            `;
+            
+            if (isOwned) {
+                div.onclick = () => {
+                    if (isEquipped) return;
+                    const userData = getShopUser();
+                    if (userData) {
+                        userData.boardSkin = skin.id;
+                        saveShopUser(userData);
+                        loadShop();
+                        if (typeof updateBoardSkin === 'function') {
+                            updateBoardSkin();
+                        }
+                        alert(`✅ Đã chuyển sang ${skin.name}!`);
+                    }
+                };
+            } else if (canAfford) {
+                div.onclick = () => {
+                    if (confirm(`Mua ${skin.name} với giá ${skin.price} Coin?`)) {
+                        buyBoardSkin(skin.id);
+                    }
+                };
+            }
+            
+            container.appendChild(div);
+        });
+        
+        if (SKIN_LIST.filter(s => s.category === 'board' && s.id !== 'board_default').length === 0) {
+            const empty = document.createElement('div');
+            empty.style.cssText = 'grid-column: 1 / -1; text-align: center; color: #64748b; padding: 30px 10px;';
+            empty.innerHTML = `
+                <div style="font-size: 36px; margin-bottom: 10px;">🪐</div>
+                <div style="font-size: 14px;">Chưa có skin bàn cờ nào</div>
+                <div style="font-size: 12px; color: #94a3b8; margin-top: 5px;">Sẽ có thêm trong tương lai!</div>
+            `;
+            container.appendChild(empty);
+        }
+    
+    // ============================================================
     // 🔥 FILTER KHÁC
     // ============================================================
     } else {
@@ -914,7 +1083,133 @@ function filterShop(category) {
         loadShop();
     }
 }
+// ===== SKIN BÀN CỜ =====
+function applyBoardSkin(skinId) {
+    console.log('🔧 applyBoardSkin called with skinId:', skinId);
 
+    const board = document.getElementById('board');
+    const gameScreen = document.getElementById('game-screen');
+
+    if (!board) {
+        console.warn('⚠️ Board element not found!');
+        return;
+    }
+
+    // ==========================================
+    // RESET CLASS SKIN CŨ CỦA BOARD
+    // ==========================================
+
+    const currentClasses = board.className.split(/\s+/);
+
+    const remainingClasses = currentClasses.filter(c =>
+        c === 'board' ||
+        (
+            !c.startsWith('board_') &&
+            !c.startsWith('board-')
+        )
+    );
+
+    board.className = remainingClasses.join(' ').trim();
+
+    // ==========================================
+    // RESET SKIN CŨ CỦA GAME SCREEN
+    // ==========================================
+
+    if (gameScreen) {
+        const screenClasses = gameScreen.className.split(/\s+/);
+
+        const remainingScreenClasses = screenClasses.filter(c =>
+            !c.startsWith('board_') &&
+            !c.startsWith('board-')
+        );
+
+        gameScreen.className = remainingScreenClasses.join(' ').trim();
+    }
+
+    // ==========================================
+    // NẾU KHÔNG PHẢI DEFAULT → GẮN SKIN
+    // ==========================================
+
+    if (skinId && skinId !== 'board_default') {
+
+        // Gắn vào BOARD
+        board.classList.add(skinId);
+
+        // Gắn vào GAME SCREEN
+        if (gameScreen) {
+            gameScreen.classList.add(skinId);
+        }
+
+        console.log('🌋 Đã trang bị board skin:', skinId);
+
+    } else {
+
+        console.log('ℹ️ Đang sử dụng board skin mặc định');
+    }
+
+    console.log('📋 Board class:', board.className);
+
+    if (gameScreen) {
+        console.log('📋 Game screen class:', gameScreen.className);
+    }
+}
+
+function updateBoardSkin() {
+    console.log('🔄 updateBoardSkin called');
+    const user = getShopUser();
+    if (!user) {
+        console.warn('⚠️ No user found for board skin');
+        return;
+    }
+    const skinId = user.boardSkin || 'board_default';
+    console.log('🎯 Board skin from user:', skinId);
+    applyBoardSkin(skinId);
+}
+
+// Đưa ra toàn cục
+window.updateBoardSkin = updateBoardSkin;
+window.applyBoardSkin = applyBoardSkin;
+// ===== MUA SKIN BÀN CỜ =====
+function buyBoardSkin(skinId) {
+    const user = getShopUser();
+    if (!user) {
+        alert('Vui lòng đăng nhập!');
+        return;
+    }
+    
+    const skin = SKIN_LIST.find(s => s.id === skinId);
+    if (!skin) {
+        alert('Không tìm thấy skin!');
+        return;
+    }
+    
+    if (!user.ownedBoard) user.ownedBoard = [];
+    if (user.ownedBoard.includes(skinId)) {
+        alert('Bạn đã sở hữu skin này!');
+        return;
+    }
+    
+    const currentCoin = user.coin || user.coins || 0;
+    if (currentCoin < skin.price) {
+        alert(`❌ Không đủ coin! Cần ${skin.price} Coin. Bạn có ${currentCoin} Coin.`);
+        return;
+    }
+    
+    user.coin = currentCoin - skin.price;
+    user.coins = user.coin;
+    user.ownedBoard.push(skinId);
+    user.boardSkin = skinId;
+    
+    saveShopUser(user);
+    loadShop();
+    
+    // Áp dụng skin bàn cờ ngay nếu đang trong trận
+    if (typeof updateBoardSkin === 'function') {
+        updateBoardSkin();
+    }
+    
+    alert(`🎉 Đã mua thành công ${skin.name}!`);
+}
 function loadEquipment() {
     const user = getShopUser();
     if (!user) {
@@ -931,10 +1226,10 @@ function loadEquipment() {
         const ownedSkins = user.ownedSkins || ['skin_default'];
         const currentSkin = user.skin || 'skin_default';
         
-        // Lọc skin nhân vật (không phải dice)
+        // Lọc skin nhân vật (không phải dice, không phải board)
         const filteredSkins = ownedSkins.filter(id => {
             const skin = SKIN_LIST.find(s => s.id === id);
-            return skin && skin.category !== 'dice';
+            return skin && skin.category !== 'dice' && skin.category !== 'board';
         });
         
         // Cập nhật số lượng
@@ -1003,10 +1298,6 @@ function loadEquipment() {
                         if (document.getElementById('shop-content').style.display === 'block') {
                             loadShop();
                         }
-                        
-                        if (typeof showNotification === 'function') {
-                            showNotification(`✅ Đã chuyển sang ${skin.name}`, 'success', 1500);
-                        }
                     }
                 };
                 
@@ -1028,12 +1319,10 @@ function loadEquipment() {
         const ownedDice = user.ownedDice || ['dice_default'];
         const currentDice = user.diceSkin || 'dice_default';
         
-        // Đảm bảo dice_default luôn có
         if (!ownedDice.includes('dice_default')) {
             ownedDice.unshift('dice_default');
         }
         
-        // Cập nhật số lượng
         const diceCount = document.getElementById('dice-count');
         if (diceCount) diceCount.textContent = `(${ownedDice.length})`;
         
@@ -1043,7 +1332,6 @@ function loadEquipment() {
             
             const isActive = currentDice === skinId;
             
-            // Xác định class mini dice
             let miniClass = 'default';
             if (skin.id === 'dice_ice') miniClass = 'ice';
             else if (skin.id === 'dice_rainbow') miniClass = 'rainbow';
@@ -1100,15 +1388,126 @@ function loadEquipment() {
                         loadShop();
                     }
                     
-                    if (typeof showNotification === 'function') {
-                        showNotification(`✅ Đã chuyển sang ${skin.name}`, 'success', 1500);
-                    }
                 }
             };
             
             diceContainer.appendChild(div);
         });
     }
+    
+    // ===== BÀN CỜ =====
+    // Tạo section bàn cờ nếu chưa có
+    let boardSection = document.getElementById('equip-board-section');
+    if (!boardSection) {
+        const diceSection = document.getElementById('equip-dice-section');
+        boardSection = document.createElement('div');
+        boardSection.id = 'equip-board-section';
+        boardSection.style.cssText = 'margin-bottom: 15px;';
+        if (diceSection) {
+            diceSection.parentNode.insertBefore(boardSection, diceSection.nextSibling);
+        } else {
+            const equipContent = document.getElementById('equipment-content');
+            if (equipContent) {
+                equipContent.appendChild(boardSection);
+            }
+        }
+    }
+    boardSection.style.display = 'block';
+    
+    let boardContainer = document.getElementById('equip-board-list');
+    if (!boardContainer) {
+        boardContainer = document.createElement('div');
+        boardContainer.id = 'equip-board-list';
+        boardContainer.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px;';
+        boardSection.appendChild(boardContainer);
+        
+        const title = document.createElement('div');
+        title.style.cssText = 'grid-column: 1 / -1; color: #94a3b8; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);';
+        title.textContent = '🎯 BÀN CỜ';
+        boardContainer.appendChild(title);
+    }
+    
+    // Xóa các item cũ (giữ lại tiêu đề)
+    const oldItems = boardContainer.querySelectorAll('.board-equip-item');
+    oldItems.forEach(el => el.remove());
+    
+    // Lấy danh sách bàn cờ đã sở hữu (luôn có board_default)
+    const ownedBoards = user.ownedBoard || ['board_default'];
+    const currentBoard = user.boardSkin || 'board_default';
+    
+    // Đảm bảo board_default luôn có trong danh sách
+    if (!ownedBoards.includes('board_default')) {
+        ownedBoards.unshift('board_default');
+    }
+    
+    const boardCount = document.getElementById('board-count');
+    if (boardCount) boardCount.textContent = `(${ownedBoards.length})`;
+    
+    ownedBoards.forEach(skinId => {
+        const skin = SKIN_LIST.find(s => s.id === skinId);
+        if (!skin) return;
+        
+        const isActive = currentBoard === skinId;
+        
+        const div = document.createElement('div');
+        div.className = 'board-equip-item';
+        div.style.cssText = `
+            background: ${isActive ? 'rgba(250, 204, 21, 0.15)' : 'rgba(15, 23, 42, 0.4)'};
+            border: ${isActive ? '2px solid #facc15' : '1px solid rgba(255,255,255,0.08)'};
+            border-radius: 10px;
+            padding: 12px 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        `;
+        
+        div.innerHTML = `
+            <span style="font-size: 32px; display: block; margin-bottom: 4px;">${skin.icon}</span>
+            <span style="color: ${isActive ? '#facc15' : '#f8fafc'}; font-size: 12px; font-weight: ${isActive ? 'bold' : 'normal'};">${skin.name}</span>
+            ${isActive ? '<span style="font-size: 10px; color: #facc15; margin-top: 2px;">✅ Đang dùng</span>' : ''}
+        `;
+        
+        div.onmouseover = function() {
+            if (!isActive) {
+                this.style.border = '1px solid rgba(56, 189, 248, 0.3)';
+                this.style.background = 'rgba(15, 23, 42, 0.7)';
+            }
+        };
+        div.onmouseout = function() {
+            if (!isActive) {
+                this.style.border = '1px solid rgba(255,255,255,0.08)';
+                this.style.background = 'rgba(15, 23, 42, 0.4)';
+            }
+        };
+        
+        div.onclick = function() {
+            if (isActive) return;
+            
+            const userData = getShopUser();
+            if (userData) {
+                userData.boardSkin = skinId;
+                saveShopUser(userData);
+                
+                loadEquipment();
+                if (typeof updateBoardSkin === 'function') {
+                    updateBoardSkin();
+                }
+                
+                if (document.getElementById('shop-content').style.display === 'block') {
+                    loadShop();
+                }
+                
+            }
+        };
+        
+        boardContainer.appendChild(div);
+    });
 }
 // ===== SHOW FUNCTIONS =====
 function showEquipment() {

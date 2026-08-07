@@ -126,14 +126,46 @@ function updateUI() {
 
             el.style.borderTop = "none"; 
 
+            const board = document.getElementById("board");
+            const isLava = board && board.classList.contains("board_lava");
+
             if (cellsData[i] && cellsData[i].owner === 1) {
-                el.style.background = "linear-gradient(135deg, #7f1d1d, #ef4444)"; 
+
+                el.classList.add("owner-p1");
+                el.classList.remove("owner-p2");
+
                 el.style.color = "#ffffff";
+
+                // Bàn cờ mặc định giữ màu cũ
+                if (!isLava) {
+                    el.style.background =
+                        "linear-gradient(135deg, #7f1d1d, #ef4444)";
+                } else {
+                    // Lava để CSS .owner-p1 quyết định màu
+                    el.style.removeProperty("background");
+                }
+
             } else if (cellsData[i] && cellsData[i].owner === 2) {
-                el.style.background = "linear-gradient(135deg, #1e3a8a, #3b82f6)"; 
+
+                el.classList.add("owner-p2");
+                el.classList.remove("owner-p1");
+
                 el.style.color = "#ffffff";
+
+                // Bàn cờ mặc định giữ màu cũ
+                if (!isLava) {
+                    el.style.background =
+                        "linear-gradient(135deg, #1e3a8a, #3b82f6)";
+                } else {
+                    // Lava để CSS .owner-p2 quyết định màu
+                    el.style.removeProperty("background");
+                }
+
             } else {
-                el.style.background = ""; 
+
+                el.classList.remove("owner-p1", "owner-p2");
+
+                el.style.background = "";
                 el.style.color = "";
             }
         }

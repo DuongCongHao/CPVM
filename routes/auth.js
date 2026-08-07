@@ -149,7 +149,8 @@ router.post("/login", async (req, res) => {
                 owned_skins: user.owned_skins || ['skin_default'],
                 current_skin: user.current_skin || 'skin_default',
                 owned_dice: user.owned_dice || [],
-                owned_board: user.owned_board || []
+                owned_board: user.owned_board || [],
+                board_skin: user.board_skin || 'board_default'
             }
         });
 
@@ -281,7 +282,16 @@ router.post("/update-result", async (req, res) => {
 // ========================
 router.post("/update-skin", async (req, res) => {
     try {
-        const { userId, owned_skins, current_skin, owned_dice, dice_skin, coin } = req.body;
+        const { 
+            userId, 
+            owned_skins, 
+            current_skin, 
+            owned_dice, 
+            dice_skin, 
+            owned_board,      // 🆕
+            board_skin,       // 🆕
+            coin 
+        } = req.body;
 
         if (!userId) {
             return res.status(400).json({
@@ -295,19 +305,23 @@ router.post("/update-skin", async (req, res) => {
         console.log("   current_skin:", current_skin);
         console.log("   owned_dice:", owned_dice);
         console.log("   dice_skin:", dice_skin);
+        console.log("   owned_board:", owned_board);
+        console.log("   board_skin:", board_skin);
         console.log("   coin:", coin);
 
         const updateData = {
             owned_skins: owned_skins || ['skin_default'],
             current_skin: current_skin || 'skin_default',
-            owned_dice: owned_dice || []
+            owned_dice: owned_dice || [],
+            owned_board: owned_board || []
         };
 
         if (dice_skin !== undefined) {
             updateData.dice_skin = dice_skin;
         }
-
-        // 🆕 CẬP NHẬT COIN NẾU CÓ
+        if (board_skin !== undefined) {
+            updateData.board_skin = board_skin;
+        }
         if (coin !== undefined) {
             updateData.coin = coin;
         }
@@ -358,10 +372,9 @@ router.get("/user/:username", async (req, res) => {
 
         console.log(`📥 Lấy thông tin user: "${username}"`);
 
-        // 🔥 TÌM THEO CẢ username VÀ display_name
         const { data: user, error } = await supabase
             .from("users")
-            .select("id, username, display_name, level, exp, points, rank, coin, avatar, owned_skins, current_skin, owned_dice, dice_skin, owned_board")
+            .select("id, username, display_name, level, exp, points, rank, coin, avatar, owned_skins, current_skin, owned_dice, dice_skin, owned_board, board_skin")
             .or(`username.eq.${username},display_name.eq.${username}`)
             .maybeSingle();
 
@@ -390,7 +403,8 @@ router.get("/user/:username", async (req, res) => {
             current_skin: user.current_skin || 'skin_default',
             owned_dice: user.owned_dice || [],
             dice_skin: user.dice_skin || 'dice_default',
-            owned_board: user.owned_board || []
+            owned_board: user.owned_board || [],
+            board_skin: user.board_skin || 'board_default'
         });
 
     } catch (err) {

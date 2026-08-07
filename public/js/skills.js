@@ -485,8 +485,6 @@ function updateSkillUI(){
     }
 }
 // ===== RENDER BẢN THỂ HẮC ÁM =====
-// ===== RENDER BẢN THỂ HẮC ÁM (ICON QUỶ 👹) =====
-// ===== RENDER BẢN THỂ HẮC ÁM (ICON QUỶ 👹) =====
 function renderDarkChaser(pos, owner) {
     console.log(`🎨 renderDarkChaser: pos=${pos}, owner=${owner}, active=${window.darkChaseActive}`);
     

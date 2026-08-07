@@ -507,14 +507,6 @@ if (typeof socket !== 'undefined' && socket) {
         // ===== KHỞI TẠO BÀN CỜ =====
         initializeBoard();
         
-        // ✅ ÁP DỤNG SKIN XÚC XẮC (KHÔNG ẢNH HƯỞNG ĐẾN LOGIC)
-        /*if (typeof updateDiceSkin === 'function') {
-            setTimeout(() => {
-                updateDiceSkin();
-                console.log("✅ Đã áp dụng dice skin trong startGame");
-            }, 100);
-        }*/
-        
         // ===== ĐỢI 1.5 GIÂY ĐỂ SKIN VÀ UI ỔN ĐỊNH, RỒI MỚI PHÂN ĐỊNH LƯỢT =====
         setTimeout(() => {
             // Cập nhật rank lần cuối

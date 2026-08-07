@@ -1,0 +1,535 @@
+/* =========================================================
+   🌋 HALI VOLCANO BOARD SKIN (board_lava)
+   =========================================================
+   CHỈ ÁP DỤNG KHI BOARD CÓ CLASS .board_lava
+   ========================================================= */
+
+/* 1. GAME SCREEN */
+#game-screen:has(.board.board_lava) {
+    background:
+        radial-gradient(circle at 50% 45%, rgba(255, 90, 0, 0.18), transparent 28%),
+        radial-gradient(circle at 15% 80%, rgba(255, 40, 0, 0.18), transparent 25%),
+        radial-gradient(circle at 85% 20%, rgba(255, 120, 0, 0.15), transparent 25%),
+        linear-gradient(135deg, #090909 0%, #180b07 25%, #100806 50%, #210b05 75%, #080808 100%);
+}
+
+/* 2. AMBIENT LIGHT */
+#game-screen:has(.board.board_lava)::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse at 50% 50%, rgba(255, 75, 0, 0.12), transparent 55%),
+        radial-gradient(ellipse at 20% 90%, rgba(255, 30, 0, 0.10), transparent 35%),
+        radial-gradient(ellipse at 80% 10%, rgba(255, 140, 0, 0.08), transparent 35%);
+    animation: boardLavaAmbient 4s ease-in-out infinite alternate;
+    z-index: 0;
+}
+@keyframes boardLavaAmbient {
+    from { opacity: 0.55; }
+    to { opacity: 1; }
+}
+
+/* 3. HEADER */
+#game-screen:has(.board.board_lava) > h1 {
+    position: relative;
+    z-index: 2;
+    color: #fff7ed;
+    text-shadow: 0 0 5px #ff6a00, 0 0 12px #ff4500, 0 0 25px rgba(255, 60, 0, 0.8);
+}
+
+/* 4. BOARD LAVA */
+.board.board_lava {
+    position: relative;
+    background:
+        radial-gradient(circle at 50% 50%, rgba(255, 90, 0, 0.25), transparent 35%),
+        radial-gradient(circle at 30% 70%, rgba(255, 30, 0, 0.18), transparent 30%),
+        radial-gradient(circle at 70% 30%, rgba(255, 130, 0, 0.15), transparent 30%),
+        linear-gradient(135deg, #160806, #2a0b05, #100504, #2b0d05);
+    border-color: #ff5a00 !important;
+    box-shadow: 0 0 10px rgba(255, 69, 0, 0.8), 0 0 30px rgba(255, 50, 0, 0.35), inset 0 0 35px rgba(255, 70, 0, 0.18);
+    overflow: hidden;
+}
+
+/* 5. LAVA GLOW */
+.board.board_lava::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse at 50% 50%, rgba(255, 115, 0, 0.25), transparent 42%),
+        radial-gradient(ellipse at 20% 80%, rgba(255, 50, 0, 0.18), transparent 30%),
+        radial-gradient(ellipse at 80% 20%, rgba(255, 140, 0, 0.15), transparent 30%);
+    animation: boardLavaPulse 3s ease-in-out infinite alternate;
+    z-index: 0;
+}
+@keyframes boardLavaPulse {
+    from { opacity: 0.55; }
+    to { opacity: 1; }
+}
+
+/* 6. CENTER AREA */
+.board.board_lava .cell-center {
+    background:
+        radial-gradient(circle at center, rgba(255, 100, 0, 0.22), rgba(40, 10, 5, 0.82) 55%, rgba(8, 5, 4, 0.92) 100%);
+    box-shadow: inset 0 0 35px rgba(255, 70, 0, 0.25), inset 0 0 80px rgba(0, 0, 0, 0.55);
+    border-radius: inherit;
+}
+
+/* 7. NORMAL CELL */
+.board.board_lava .cell {
+    background:
+        linear-gradient(145deg, rgba(50, 20, 12, 0.94), rgba(20, 10, 7, 0.96)) !important;
+    border-color: rgba(255, 110, 30, 0.65) !important;
+    box-shadow: inset 0 0 10px rgba(255, 90, 0, 0.12), 0 0 5px rgba(255, 70, 0, 0.25);
+    overflow: hidden;
+}
+
+/* 8. CELL GLOW OVERLAY (giữ nguyên vị trí) */
+.board.board_lava .cell::before {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    pointer-events: none;
+    background: linear-gradient(120deg, rgba(255, 130, 30, 0.10), transparent 45%, rgba(255, 50, 0, 0.08));
+    z-index: 0;
+    border-radius: inherit;
+}
+
+.board.board_lava .cell.owner-p1 {
+    background:
+        linear-gradient(
+            145deg,
+            #ff6b6b 0%,
+            #ef4444 35%,
+            #b91c1c 70%,
+            #450a0a 100%
+        ) !important;
+
+    border: 2px solid #fca5a5 !important;
+
+    box-shadow:
+        inset 0 0 12px rgba(252, 165, 165, 0.55),
+        inset 0 -8px 15px rgba(80, 0, 0, 0.35),
+        0 0 8px rgba(239, 68, 68, 0.8);
+}
+
+.board.board_lava .cell.owner-p2 {
+    background:
+        linear-gradient(
+            145deg,
+            #38bdf8 0%,
+            #0284c7 35%,
+            #075985 70%,
+            #082f49 100%
+        ) !important;
+
+    border: 2px solid #7dd3fc !important;
+
+    box-shadow:
+        inset 0 0 12px rgba(125, 211, 252, 0.55),
+        inset 0 -8px 15px rgba(0, 40, 80, 0.35),
+        0 0 8px rgba(56, 189, 248, 0.8);
+}
+
+/* 11. GLOW OVERLAY P1 (giữ nguyên z-index) */
+.board.board_lava .cell.owner-p1::before {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    pointer-events: none;
+    background: linear-gradient(120deg, rgba(255, 255, 255, 0.18), transparent 35%, rgba(255, 120, 0, 0.08) 70%, transparent);
+    z-index: 1;
+    border-radius: inherit;
+    animation: boardLavaOwnerGlowP1 2.5s ease-in-out infinite alternate;
+}
+
+/* 12. GLOW OVERLAY P2 */
+.board.board_lava .cell.owner-p2::before {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    pointer-events: none;
+    background: linear-gradient(120deg, rgba(255, 255, 255, 0.18), transparent 35%, rgba(255, 120, 0, 0.08) 70%, transparent);
+    z-index: 1;
+    border-radius: inherit;
+    animation: boardLavaOwnerGlowP2 2.5s ease-in-out infinite alternate;
+}
+
+@keyframes boardLavaOwnerGlowP1 {
+    from { opacity: 0.35; }
+    to { opacity: 0.75; }
+}
+@keyframes boardLavaOwnerGlowP2 {
+    from { opacity: 0.35; }
+    to { opacity: 0.75; }
+}
+
+/* 13. TEXT / PRICE - đảm bảo nằm trên overlay */
+.board.board_lava .cell .cell-title,
+.board.board_lava .cell .cell-price {
+    position: relative;
+    z-index: 3;
+}
+
+/* 14. TOKEN - GIỮ NGUYÊN POSITION GỐC */
+.board.board_lava .cell .token-slot {
+    /* không thay đổi gì, giữ nguyên từ styles.css */
+}
+
+/* 15. GIFT BOX - GIỮ NGUYÊN POSITION GỐC */
+.board.board_lava .cell .gift-box {
+    /* không thay đổi gì, giữ nguyên từ styles.css */
+}
+
+/* 16. SPIDER WEB */
+.board.board_lava .cell.has-spider-web {
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.35), rgba(35, 10, 55, 0.95)) !important;
+    border-color: #c084fc !important;
+    box-shadow: inset 0 0 15px rgba(168, 85, 247, 0.4), 0 0 10px rgba(168, 85, 247, 0.6) !important;
+}
+
+/* 17. LIGHTNING */
+.board.board_lava .cell.has-lightning {
+    background: radial-gradient(circle, #fff700 0%, #ff9d00 25%, #7c2d12 65%, #1c0803 100%) !important;
+    border-color: #fde047 !important;
+    box-shadow: inset 0 0 20px rgba(255, 240, 0, 0.65), 0 0 15px rgba(255, 140, 0, 0.9) !important;
+}
+
+/* 18. NUCLEAR BOMB */
+.board.board_lava .cell.has-nuclear-bomb {
+    background: radial-gradient(circle, #ff3333, #8f0000 45%, #220000 100%) !important;
+    border-color: #ff4444 !important;
+    box-shadow: inset 0 0 20px rgba(255, 0, 0, 0.6), 0 0 15px rgba(255, 0, 0, 0.7) !important;
+    animation: boardLavaNuclearGlow 1s infinite alternate;
+}
+@keyframes boardLavaNuclearGlow {
+    from { box-shadow: inset 0 0 15px rgba(255, 0, 0, 0.5), 0 0 8px rgba(255, 0, 0, 0.5); }
+    to { box-shadow: inset 0 0 25px rgba(255, 60, 0, 0.8), 0 0 18px rgba(255, 30, 0, 0.9); }
+}
+
+/* 19. RADIOACTIVE */
+.board.board_lava .cell.is-radioactive {
+    background: radial-gradient(circle, #b6ff00 0%, #4d7c0f 35%, #172000 75%, #070a02 100%) !important;
+    border-color: #a3e635 !important;
+    box-shadow: inset 0 0 18px rgba(163, 230, 53, 0.55), 0 0 12px rgba(132, 204, 22, 0.7) !important;
+}
+
+/* 20. ICONS */
+.board.board_lava .spider-icon,
+.board.board_lava .lightning-icon,
+.board.board_lava .nuclear-icon,
+.board.board_lava .radioactive-icon {
+    filter: drop-shadow(0 0 5px rgba(255, 120, 0, 0.8));
+}
+
+/* 21. ROLL BUTTON */
+#game-screen:has(.board.board_lava) #roll-btn {
+    background: linear-gradient(135deg, #ffb000, #ff5a00 45%, #b91c00) !important;
+    border: 2px solid #ffb52e !important;
+    color: #fff !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 0 8px rgba(255, 100, 0, 0.65), inset 0 0 10px rgba(255, 190, 60, 0.25);
+    transition: box-shadow 0.25s ease, filter 0.25s ease;
+}
+#game-screen:has(.board.board_lava) #roll-btn:hover:not(:disabled) {
+    filter: brightness(1.15);
+    box-shadow: 0 0 15px rgba(255, 120, 0, 0.9), inset 0 0 15px rgba(255, 210, 80, 0.35);
+}
+
+/* 22. SKILL BUTTON */
+#game-screen:has(.board.board_lava) #use-skill-btn {
+    background: linear-gradient(135deg, #ff7a00, #d93600, #7f1d1d) !important;
+    border-color: #ff9f43 !important;
+    color: #fff !important;
+    box-shadow: 0 0 8px rgba(255, 80, 0, 0.55);
+}
+
+/* 23. TELEPORT BUTTON */
+#game-screen:has(.board.board_lava) #teleport-btn {
+    background: linear-gradient(135deg, #ff9d00, #e44700, #7c2d12) !important;
+    border-color: #ffad42 !important;
+    color: #fff !important;
+    box-shadow: 0 0 8px rgba(255, 100, 0, 0.55);
+}
+
+/* 24. PANEL */
+#game-screen:has(.board.board_lava) .side-panel .status-card {
+    background: linear-gradient(145deg, rgba(35, 12, 7, 0.94), rgba(15, 7, 5, 0.96));
+    border-color: rgba(255, 100, 30, 0.35);
+    box-shadow: 0 0 10px rgba(255, 60, 0, 0.18), inset 0 0 15px rgba(255, 70, 0, 0.08);
+}
+
+/* 25. LOG */
+#game-screen:has(.board.board_lava) .log-box {
+    background: linear-gradient(145deg, rgba(15, 7, 5, 0.95), rgba(35, 10, 5, 0.9)) !important;
+    border-color: rgba(255, 90, 20, 0.3) !important;
+}
+
+/* 26. ROOM TAG */
+#game-screen:has(.board.board_lava) .room-display-tag {
+    box-shadow: 0 0 8px rgba(255, 80, 0, 0.35);
+    border-color: rgba(255, 100, 30, 0.45) !important;
+}
+/* =========================================================
+   💠 HALI CYBER BOARD SKIN (board_cyber)
+   =========================================================
+   CHỈ ÁP DỤNG KHI BOARD CÓ CLASS .board_cyber
+   ========================================================= */
+
+/* 1. GAME SCREEN */
+#game-screen:has(.board.board_cyber) {
+    background:
+        radial-gradient(circle at 50% 45%, rgba(0, 200, 255, 0.12), transparent 28%),
+        radial-gradient(circle at 15% 80%, rgba(0, 100, 255, 0.10), transparent 25%),
+        radial-gradient(circle at 85% 20%, rgba(0, 150, 255, 0.08), transparent 25%),
+        linear-gradient(135deg, #050510 0%, #0a0a20 25%, #080818 50%, #0c0c28 75%, #050510 100%);
+}
+
+/* 2. AMBIENT LIGHT */
+#game-screen:has(.board.board_cyber)::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse at 50% 50%, rgba(0, 180, 255, 0.10), transparent 55%),
+        radial-gradient(ellipse at 20% 90%, rgba(0, 100, 255, 0.08), transparent 35%),
+        radial-gradient(ellipse at 80% 10%, rgba(0, 200, 255, 0.06), transparent 35%);
+    animation: cyberAmbient 4s ease-in-out infinite alternate;
+    z-index: 0;
+}
+@keyframes cyberAmbient {
+    from { opacity: 0.5; }
+    to { opacity: 1; }
+}
+
+/* 3. HEADER */
+#game-screen:has(.board.board_cyber) > h1 {
+    position: relative;
+    z-index: 2;
+    color: #e0f2fe;
+    text-shadow: 0 0 5px #00aaff, 0 0 12px #0088ff, 0 0 25px rgba(0, 100, 255, 0.8);
+}
+
+/* 4. BOARD CYBER */
+.board.board_cyber {
+    position: relative;
+    background:
+        radial-gradient(circle at 50% 50%, rgba(0, 150, 255, 0.20), transparent 35%),
+        radial-gradient(circle at 30% 70%, rgba(0, 100, 255, 0.15), transparent 30%),
+        radial-gradient(circle at 70% 30%, rgba(0, 200, 255, 0.12), transparent 30%),
+        linear-gradient(135deg, #080820, #0d0d2a, #060618, #0a0a24);
+    border-color: #00ccff !important;
+    box-shadow: 0 0 10px rgba(0, 180, 255, 0.6), 0 0 30px rgba(0, 100, 255, 0.3), inset 0 0 35px rgba(0, 150, 255, 0.15);
+    overflow: hidden;
+}
+
+/* 5. CYBER GLOW */
+.board.board_cyber::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse at 50% 50%, rgba(0, 180, 255, 0.20), transparent 42%),
+        radial-gradient(ellipse at 20% 80%, rgba(0, 120, 255, 0.15), transparent 30%),
+        radial-gradient(ellipse at 80% 20%, rgba(0, 200, 255, 0.12), transparent 30%);
+    animation: cyberPulse 3s ease-in-out infinite alternate;
+    z-index: 0;
+}
+@keyframes cyberPulse {
+    from { opacity: 0.5; }
+    to { opacity: 1; }
+}
+
+/* 6. CENTER AREA */
+.board.board_cyber .cell-center {
+    background:
+        radial-gradient(circle at center, rgba(0, 150, 255, 0.15), rgba(10, 10, 40, 0.80) 55%, rgba(5, 5, 20, 0.92) 100%);
+    box-shadow: inset 0 0 35px rgba(0, 150, 255, 0.20), inset 0 0 80px rgba(0, 0, 0, 0.50);
+    border-radius: inherit;
+}
+
+/* 7. NORMAL CELL */
+.board.board_cyber .cell {
+    background:
+        linear-gradient(145deg, rgba(15, 20, 40, 0.92), rgba(8, 10, 25, 0.96)) !important;
+    border-color: rgba(0, 180, 255, 0.50) !important;
+    box-shadow: inset 0 0 10px rgba(0, 150, 255, 0.10), 0 0 5px rgba(0, 150, 255, 0.20);
+    overflow: hidden;
+}
+
+/* 8. CELL GLOW OVERLAY */
+.board.board_cyber .cell::before {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    pointer-events: none;
+    background: linear-gradient(120deg, rgba(0, 200, 255, 0.08), transparent 45%, rgba(0, 100, 255, 0.06));
+    z-index: 0;
+    border-radius: inherit;
+}
+
+/* 9. P1 - XANH (giữ nguyên nhưng thêm neon) */
+.board.board_cyber .cell.owner-p1 {
+    background:
+        linear-gradient(145deg, #38bdf8 0%, #0284c7 35%, #075985 70%, #082f49 100%) !important;
+    border: 2px solid #7dd3fc !important;
+    box-shadow:
+        inset 0 0 12px rgba(125, 211, 252, 0.55),
+        inset 0 -8px 15px rgba(0, 40, 80, 0.35),
+        0 0 8px rgba(56, 189, 248, 0.8) !important;
+}
+
+/* 10. P2 - ĐỎ (giữ nguyên) */
+.board.board_cyber .cell.owner-p2 {
+    background:
+        linear-gradient(145deg, #ff6b6b 0%, #ef4444 35%, #b91c1c 70%, #450a0a 100%) !important;
+    border: 2px solid #fca5a5 !important;
+    box-shadow:
+        inset 0 0 12px rgba(252, 165, 165, 0.55),
+        inset 0 -8px 15px rgba(80, 0, 0, 0.35),
+        0 0 8px rgba(239, 68, 68, 0.8) !important;
+}
+
+/* 11. GLOW OVERLAY P1 (neon xanh) */
+.board.board_cyber .cell.owner-p1::before {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    pointer-events: none;
+    background: linear-gradient(120deg, rgba(0, 200, 255, 0.20), transparent 35%, rgba(0, 255, 255, 0.08) 70%, transparent);
+    z-index: 1;
+    border-radius: inherit;
+    animation: cyberOwnerGlowP1 2.5s ease-in-out infinite alternate;
+}
+@keyframes cyberOwnerGlowP1 {
+    from { opacity: 0.3; }
+    to { opacity: 0.7; }
+}
+
+/* 12. GLOW OVERLAY P2 (neon đỏ) */
+.board.board_cyber .cell.owner-p2::before {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    pointer-events: none;
+    background: linear-gradient(120deg, rgba(255, 100, 100, 0.20), transparent 35%, rgba(255, 0, 0, 0.08) 70%, transparent);
+    z-index: 1;
+    border-radius: inherit;
+    animation: cyberOwnerGlowP2 2.5s ease-in-out infinite alternate;
+}
+@keyframes cyberOwnerGlowP2 {
+    from { opacity: 0.3; }
+    to { opacity: 0.7; }
+}
+
+/* 13. TEXT / PRICE */
+.board.board_cyber .cell .cell-title,
+.board.board_cyber .cell .cell-price {
+    position: relative;
+    z-index: 3;
+}
+
+/* 14. TOKEN - GIỮ NGUYÊN */
+.board.board_cyber .cell .token-slot {
+    /* giữ nguyên */
+}
+
+/* 15. GIFT BOX - GIỮ NGUYÊN */
+.board.board_cyber .cell .gift-box {
+    /* giữ nguyên */
+}
+
+/* 16. SPIDER WEB - xanh tím cyber */
+.board.board_cyber .cell.has-spider-web {
+    background: radial-gradient(circle, rgba(100, 150, 255, 0.35), rgba(20, 30, 60, 0.95)) !important;
+    border-color: #7dd3fc !important;
+    box-shadow: inset 0 0 15px rgba(100, 150, 255, 0.4), 0 0 10px rgba(100, 150, 255, 0.6) !important;
+}
+
+/* 17. LIGHTNING - xanh neon */
+.board.board_cyber .cell.has-lightning {
+    background: radial-gradient(circle, #00ccff 0%, #0088ff 25%, #002266 65%, #000022 100%) !important;
+    border-color: #00ddff !important;
+    box-shadow: inset 0 0 20px rgba(0, 200, 255, 0.65), 0 0 15px rgba(0, 150, 255, 0.9) !important;
+}
+
+/* 18. NUCLEAR BOMB - đỏ cam */
+.board.board_cyber .cell.has-nuclear-bomb {
+    background: radial-gradient(circle, #ff4444, #aa0000 45%, #220000 100%) !important;
+    border-color: #ff6666 !important;
+    box-shadow: inset 0 0 20px rgba(255, 0, 0, 0.6), 0 0 15px rgba(255, 0, 0, 0.7) !important;
+    animation: cyberNuclearGlow 1s infinite alternate;
+}
+@keyframes cyberNuclearGlow {
+    from { box-shadow: inset 0 0 15px rgba(255, 0, 0, 0.5), 0 0 8px rgba(255, 0, 0, 0.5); }
+    to { box-shadow: inset 0 0 25px rgba(255, 60, 0, 0.8), 0 0 18px rgba(255, 30, 0, 0.9); }
+}
+
+/* 19. RADIOACTIVE - xanh lá neon */
+.board.board_cyber .cell.is-radioactive {
+    background: radial-gradient(circle, #88ff00 0%, #44aa00 35%, #002200 75%, #000a00 100%) !important;
+    border-color: #99ff33 !important;
+    box-shadow: inset 0 0 18px rgba(100, 255, 0, 0.55), 0 0 12px rgba(100, 255, 0, 0.7) !important;
+}
+
+/* 20. ICONS - màu xanh neon */
+.board.board_cyber .spider-icon,
+.board.board_cyber .lightning-icon,
+.board.board_cyber .nuclear-icon,
+.board.board_cyber .radioactive-icon {
+    filter: drop-shadow(0 0 5px rgba(0, 200, 255, 0.8));
+}
+
+/* 21. ROLL BUTTON - xanh neon */
+#game-screen:has(.board.board_cyber) #roll-btn {
+    background: linear-gradient(135deg, #00bbff, #0088ff 45%, #0044aa) !important;
+    border: 2px solid #66ddff !important;
+    color: #fff !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 0 8px rgba(0, 150, 255, 0.65), inset 0 0 10px rgba(100, 200, 255, 0.25);
+    transition: box-shadow 0.25s ease, filter 0.25s ease;
+}
+#game-screen:has(.board.board_cyber) #roll-btn:hover:not(:disabled) {
+    filter: brightness(1.15);
+    box-shadow: 0 0 15px rgba(0, 200, 255, 0.9), inset 0 0 15px rgba(100, 220, 255, 0.35);
+}
+
+/* 22. SKILL BUTTON - xanh tím */
+#game-screen:has(.board.board_cyber) #use-skill-btn {
+    background: linear-gradient(135deg, #0088ff, #0055cc, #002288) !important;
+    border-color: #4499ff !important;
+    color: #fff !important;
+    box-shadow: 0 0 8px rgba(0, 100, 255, 0.55);
+}
+
+/* 23. TELEPORT BUTTON - xanh dương */
+#game-screen:has(.board.board_cyber) #teleport-btn {
+    background: linear-gradient(135deg, #0099ff, #0066dd, #0033aa) !important;
+    border-color: #44aaff !important;
+    color: #fff !important;
+    box-shadow: 0 0 8px rgba(0, 120, 255, 0.55);
+}
+
+/* 24. PANEL */
+#game-screen:has(.board.board_cyber) .side-panel .status-card {
+    background: linear-gradient(145deg, rgba(15, 20, 45, 0.94), rgba(8, 10, 30, 0.96));
+    border-color: rgba(0, 150, 255, 0.35);
+    box-shadow: 0 0 10px rgba(0, 100, 255, 0.18), inset 0 0 15px rgba(0, 150, 255, 0.08);
+}
+
+/* 25. LOG */
+#game-screen:has(.board.board_cyber) .log-box {
+    background: linear-gradient(145deg, rgba(8, 10, 30, 0.95), rgba(15, 20, 45, 0.9)) !important;
+    border-color: rgba(0, 150, 255, 0.3) !important;
+}
+
+/* 26. ROOM TAG */
+#game-screen:has(.board.board_cyber) .room-display-tag {
+    box-shadow: 0 0 8px rgba(0, 150, 255, 0.35);
+    border-color: rgba(0, 180, 255, 0.45) !important;
+}
