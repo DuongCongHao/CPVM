@@ -3440,6 +3440,26 @@ body.hao-shake {
     from { opacity: 0; transform: translate(-50%, -45%) scale(0.95); }
     to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
+/* ===== SKIN XÚC XẮC VIỆT NAM ===== */
+.dice-vietnam .cube-face {
+    background: linear-gradient(135deg, #da251d, #b81d14) !important;
+    border-color: #ffd700 !important;
+    color: #ffd700 !important;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    box-shadow: inset 0 0 20px rgba(255, 215, 0, 0.2), 0 0 15px rgba(255, 215, 0, 0.1);
+}
+
+.dice-vietnam .cube-face::after {
+    content: '⭐';
+    position: absolute;
+    font-size: 12px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.9;
+    color: #ffd700;
+    text-shadow: 0 0 10px #ffd700;
+}
 /* ===== SKIN XÚC XẮC BĂNG GIÁ ===== */
 .dice-ice .cube-face {
     background: linear-gradient(135deg, #e0f7fa, #b3e5fc) !important;
@@ -3459,13 +3479,15 @@ body.hao-shake {
 }
 
 /* ===== SKIN XÚC XẮC CẦU VỒNG ===== */
+/* ===== SKIN XÚC XẮC CẦU VỒNG ===== */
 .dice-rainbow .cube-face {
     border-color: #8b5cf6 !important;
     color: #1e293b !important;
-    text-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
-    animation: rainbowDice 2s linear infinite;
+    text-shadow: 0 0 10px rgba(139, 92, 246, 0.3) !important;
+    animation: rainbowDice 2s linear infinite !important;
     background: linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb, #a29bfe, #fd79a8) !important;
     background-size: 300% 300% !important;
+    box-shadow: inset 0 0 20px rgba(139, 92, 246, 0.2), 0 0 15px rgba(139, 92, 246, 0.1) !important;
 }
 
 @keyframes rainbowDice {
@@ -3481,13 +3503,80 @@ body.hao-shake {
     top: 2px;
     right: 3px;
     opacity: 0.6;
+    pointer-events: none;
 }
-
 /* ===== SKIN MẶC ĐỊNH ===== */
 .cube:not(.dice-ice):not(.dice-rainbow) .cube-face {
     background: #f8fafc;
     border-color: #0f172a;
     color: #0f172a;
+}
+/* ===== MINI PREVIEW XÚC XẮC TRONG SHOP ===== */
+.mini-dice {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 4px auto;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 18px;
+    font-weight: 900;
+    border: 2px solid #0f172a;
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.15);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+/* Skin mặc định */
+.mini-dice.default {
+    background: #f8fafc;
+    color: #0f172a;
+}
+
+/* Skin băng giá */
+.mini-dice.ice {
+    background: linear-gradient(135deg, #e0f7fa, #b3e5fc);
+    border-color: #0288d1;
+    color: #01579b;
+    box-shadow: inset 0 0 20px rgba(2, 136, 209, 0.2), 0 0 15px rgba(2, 136, 209, 0.1);
+}
+
+/* Skin cầu vồng */
+.mini-dice.rainbow {
+    background: linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb, #a29bfe, #fd79a8);
+    background-size: 300% 300%;
+    border-color: #8b5cf6;
+    color: #1e293b;
+    animation: rainbowDice 2s linear infinite;
+}
+
+/* Skin Việt Nam */
+.mini-dice.vietnam {
+    background: linear-gradient(135deg, #da251d, #b81d14);
+    border-color: #ffd700;
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    box-shadow: inset 0 0 20px rgba(255, 215, 0, 0.2), 0 0 15px rgba(255, 215, 0, 0.1);
+}
+
+.mini-dice.vietnam::after {
+    content: '⭐';
+    position: absolute;
+    font-size: 12px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.9;
+    color: #ffd700;
+    text-shadow: 0 0 10px #ffd700;
+    pointer-events: none;
+}
+
+@keyframes rainbowDice {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 /* ===== TRANG BỊ (EQUIPMENT) - RESPONSIVE ===== */
 

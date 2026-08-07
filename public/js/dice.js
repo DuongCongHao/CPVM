@@ -265,22 +265,27 @@ if (currentTurn === myPlayerNumber) {
 }
 // ===== ÁP DỤNG SKIN CHO XÚC XẮC =====
 function applyDiceSkin(skinId) {
+    console.log('🔄 applyDiceSkin - skinId:', skinId);
     const cube1 = document.getElementById('cube1');
     const cube2 = document.getElementById('cube2');
-    if (!cube1 || !cube2) return;
-
-    // Xóa class skin cũ
+    if (!cube1 || !cube2) {
+        console.warn('⚠️ Cube not found');
+        return;
+    }
     cube1.className = 'cube';
     cube2.className = 'cube';
-
-    // Áp dụng skin mới
     if (skinId === 'dice_ice') {
         cube1.classList.add('dice-ice');
         cube2.classList.add('dice-ice');
     } else if (skinId === 'dice_rainbow') {
         cube1.classList.add('dice-rainbow');
         cube2.classList.add('dice-rainbow');
+    } else if (skinId === 'dice_vietnam') {
+        cube1.classList.add('dice-vietnam');
+        cube2.classList.add('dice-vietnam');
+        console.log('🇻🇳 Đã thêm class dice-vietnam');
     }
+    console.log('✅ Cube1 class:', cube1.className);
 }
 
 // ===== LẤY SKIN XÚC XẮC HIỆN TẠI =====
@@ -310,6 +315,9 @@ function updateDiceSkin() {
     } else if (diceSkinId === 'dice_rainbow') {
         cube1.classList.add('dice-rainbow');
         cube2.classList.add('dice-rainbow');
+    } else if (diceSkinId === 'dice_vietnam') {  // THÊM DÒNG NÀY
+        cube1.classList.add('dice-vietnam');
+        cube2.classList.add('dice-vietnam');
     }
     // dice_default không có class đặc biệt → mặc định
 }

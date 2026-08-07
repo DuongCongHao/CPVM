@@ -346,7 +346,8 @@ const SKIN_LIST = [
     // 🆕 SKIN XÚC XẮC
     { id: 'dice_default', name: 'Xúc xắc mặc định', icon: '🎲', price: 0, desc: 'Xúc xắc cơ bản', rarity: 'common', category: 'dice' },
     { id: 'dice_ice', name: '🧊 Xúc xắc băng giá', icon: '🎲', price: 2000, desc: 'Xúc xắc băng giá với màu xanh dương', rarity: 'rare', category: 'dice' },
-    { id: 'dice_rainbow', name: '🌈 Xúc xắc cầu vồng', icon: '🎲', price: 3000, desc: 'Xúc xắc cầu vồng rực rỡ sắc màu', rarity: 'legendary', category: 'dice' }
+    { id: 'dice_rainbow', name: '🌈 Xúc xắc cầu vồng', icon: '🎲', price: 3000, desc: 'Xúc xắc cầu vồng rực rỡ sắc màu', rarity: 'legendary', category: 'dice' },
+    { id: 'dice_vietnam', name: '🇻🇳 Xúc xắc Việt Nam', icon: '🎲', price: 5000, desc: 'Cờ đỏ sao vàng rực rỡ', rarity: 'legendary', category: 'dice' }
 ];
 // ===== SHOP FUNCTIONS =====
 let shopFilter = 'all';
@@ -664,7 +665,6 @@ function loadShop() {
         });
         
         // ---------- 2. SKIN XÚC XẮC ----------
-        // Thêm divider
         const divider = document.createElement('div');
         divider.style.cssText = `
             grid-column: 1 / -1;
@@ -679,11 +679,15 @@ function loadShop() {
         divider.textContent = '🎲 XÚC XẮC';
         container.appendChild(divider);
         
-        // ===== 🆕 LỌC BỎ dice_default (KHÔNG HIỂN THỊ TRONG CỬA HÀNG) =====
         SKIN_LIST.filter(s => s.category === 'dice' && s.id !== 'dice_default').forEach(skin => {
             const isOwned = user?.ownedDice?.includes(skin.id) || false;
             const isEquipped = user?.diceSkin === skin.id;
             const canAfford = currentCoin >= skin.price;
+            
+            let miniClass = 'default';
+            if (skin.id === 'dice_ice') miniClass = 'ice';
+            else if (skin.id === 'dice_rainbow') miniClass = 'rainbow';
+            else if (skin.id === 'dice_vietnam') miniClass = 'vietnam';
             
             const div = document.createElement('div');
             div.style.cssText = `
@@ -701,20 +705,11 @@ function loadShop() {
             const equippedBadge = isEquipped ? '<div style="position:absolute;top:-5px;right:-5px;background:#facc15;color:#000;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:bold;">ĐANG DÙNG</div>' : '';
             const ownedBadge = isOwned && !isEquipped ? '<div style="position:absolute;top:-5px;right:-5px;background:#34d399;color:#000;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:bold;">ĐÃ CÓ</div>' : '';
             
-            let dicePreview = '';
-            if (skin.id === 'dice_ice') {
-                dicePreview = '<div style="font-size:30px;margin-bottom:4px;color:#0288d1;">🎲❄️</div>';
-            } else if (skin.id === 'dice_rainbow') {
-                dicePreview = '<div style="font-size:30px;margin-bottom:4px;">🎲🌈</div>';
-            } else {
-                dicePreview = `<div style="font-size:30px;margin-bottom:4px;">${skin.icon}</div>`;
-            }
-            
             div.innerHTML = `
                 ${equippedBadge}
                 ${ownedBadge}
-                ${dicePreview}
-                <div style="color: #f8fafc; font-weight: bold; font-size: 13px;">${skin.name}</div>
+                <div class="mini-dice ${miniClass}">6</div>
+                <div style="color: #f8fafc; font-weight: bold; font-size: 13px; margin-top: 4px;">${skin.name}</div>
                 <div style="color: #94a3b8; font-size: 11px;">${skin.desc}</div>
                 <div style="color: #facc15; font-size: 13px; margin-top: 4px;">
                     ${skin.price} Coin
@@ -818,14 +813,18 @@ function loadShop() {
         });
     
     // ============================================================
-    // 🔥 FILTER 'dice' - CHỈ XÚC XẮC (LỌC BỎ dice_default)
+    // 🔥 FILTER 'dice' - CHỈ XÚC XẮC
     // ============================================================
     } else if (shopFilter === 'dice') {
-        // ===== 🆕 LỌC BỎ dice_default =====
         SKIN_LIST.filter(s => s.category === 'dice' && s.id !== 'dice_default').forEach(skin => {
             const isOwned = user?.ownedDice?.includes(skin.id) || false;
             const isEquipped = user?.diceSkin === skin.id;
             const canAfford = currentCoin >= skin.price;
+            
+            let miniClass = 'default';
+            if (skin.id === 'dice_ice') miniClass = 'ice';
+            else if (skin.id === 'dice_rainbow') miniClass = 'rainbow';
+            else if (skin.id === 'dice_vietnam') miniClass = 'vietnam';
             
             const div = document.createElement('div');
             div.style.cssText = `
@@ -843,20 +842,11 @@ function loadShop() {
             const equippedBadge = isEquipped ? '<div style="position:absolute;top:-5px;right:-5px;background:#facc15;color:#000;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:bold;">ĐANG DÙNG</div>' : '';
             const ownedBadge = isOwned && !isEquipped ? '<div style="position:absolute;top:-5px;right:-5px;background:#34d399;color:#000;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:bold;">ĐÃ CÓ</div>' : '';
             
-            let dicePreview = '';
-            if (skin.id === 'dice_ice') {
-                dicePreview = '<div style="font-size:30px;margin-bottom:4px;color:#0288d1;">🎲❄️</div>';
-            } else if (skin.id === 'dice_rainbow') {
-                dicePreview = '<div style="font-size:30px;margin-bottom:4px;">🎲🌈</div>';
-            } else {
-                dicePreview = `<div style="font-size:30px;margin-bottom:4px;">${skin.icon}</div>`;
-            }
-            
             div.innerHTML = `
                 ${equippedBadge}
                 ${ownedBadge}
-                ${dicePreview}
-                <div style="color: #f8fafc; font-weight: bold; font-size: 13px;">${skin.name}</div>
+                <div class="mini-dice ${miniClass}">6</div>
+                <div style="color: #f8fafc; font-weight: bold; font-size: 13px; margin-top: 4px;">${skin.name}</div>
                 <div style="color: #94a3b8; font-size: 11px;">${skin.desc}</div>
                 <div style="color: #facc15; font-size: 13px; margin-top: 4px;">
                     ${skin.price} Coin
@@ -889,7 +879,6 @@ function loadShop() {
             container.appendChild(div);
         });
         
-        // Nếu không có skin xúc xắc nào (không tính dice_default)
         if (SKIN_LIST.filter(s => s.category === 'dice' && s.id !== 'dice_default').length === 0) {
             const empty = document.createElement('div');
             empty.style.cssText = 'grid-column: 1 / -1; text-align: center; color: #64748b; padding: 30px 10px;';
@@ -902,7 +891,7 @@ function loadShop() {
         }
     
     // ============================================================
-    // 🔥 FILTER KHÁC - ĐANG PHÁT TRIỂN
+    // 🔥 FILTER KHÁC
     // ============================================================
     } else {
         container.innerHTML = `
@@ -1054,6 +1043,12 @@ function loadEquipment() {
             
             const isActive = currentDice === skinId;
             
+            // Xác định class mini dice
+            let miniClass = 'default';
+            if (skin.id === 'dice_ice') miniClass = 'ice';
+            else if (skin.id === 'dice_rainbow') miniClass = 'rainbow';
+            else if (skin.id === 'dice_vietnam') miniClass = 'vietnam';
+            
             const div = document.createElement('div');
             div.style.cssText = `
                 background: ${isActive ? 'rgba(250, 204, 21, 0.15)' : 'rgba(15, 23, 42, 0.4)'};
@@ -1071,17 +1066,8 @@ function loadEquipment() {
                 justify-content: center;
             `;
             
-            let preview = '';
-            if (skin.id === 'dice_ice') {
-                preview = '🎲❄️';
-            } else if (skin.id === 'dice_rainbow') {
-                preview = '🎲🌈';
-            } else {
-                preview = '🎲';
-            }
-            
             div.innerHTML = `
-                <span style="font-size: 32px; display: block; margin-bottom: 4px;">${preview}</span>
+                <div class="mini-dice ${miniClass}" style="width: 40px; height: 40px; font-size: 18px; margin: 0 auto 4px auto; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 2px solid #0f172a; box-shadow: inset 0 0 8px rgba(0,0,0,0.15);">6</div>
                 <span style="color: ${isActive ? '#facc15' : '#f8fafc'}; font-size: 12px; font-weight: ${isActive ? 'bold' : 'normal'};">${skin.name}</span>
                 ${isActive ? '<span style="font-size: 10px; color: #facc15; margin-top: 2px;">✅ Đang dùng</span>' : ''}
             `;
