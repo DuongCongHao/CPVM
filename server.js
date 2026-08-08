@@ -1447,48 +1447,54 @@ io.on('connection', (socket) => {
 
 
             // =====================================================
-            // 💾 SAU ĐÓ MỚI UPDATE DATABASE
-            // Chạy song song, KHÔNG CHẶN POPUP
+            // 💾 UPDATE DATABASE
+            // Popup đã được gửi trước nên không ảnh hưởng tốc độ popup
             // =====================================================
 
-            Promise.all([
+            try {
 
-                // 🏆 UPDATE WINNER
-                axios.post(`${process.env.API_URL}/api/update-result`, {
-                    id: winnerCurrentData.id || winner.userId,
-                    level: winnerReward.level,
-                    exp: winnerReward.exp,
-                    points: winnerReward.points,
-                    rank: winnerReward.rank,
-                    coins: winnerReward.coin
-                }),
+                console.log("💾 Bắt đầu cập nhật DATABASE...");
 
-                // 💀 UPDATE LOSER
-                axios.post(`${process.env.API_URL}/api/update-result`, {
-                    id: loserCurrentData.id || loser.userId,
-                    level: loserReward.level,
-                    exp: loserReward.exp,
-                    points: loserReward.points,
-                    rank: loserReward.rank,
-                    coins: loserReward.coin
-                })
+                const [winnerUpdate, loserUpdate] = await Promise.all([
 
-            ])
-            .then(() => {
+                    axios.post(`${process.env.API_URL}/api/update-result`, {
+                        id: winnerCurrentData.id || winner.userId,
+                        level: winnerReward.level,
+                        exp: winnerReward.exp,
+                        points: winnerReward.points,
+                        rank: winnerReward.rank,
+                        coins: winnerReward.coin
+                    }),
 
-                console.log(
-                    `💾 Đã cập nhật DATABASE cho cả winner và loser`
-                );
+                    axios.post(`${process.env.API_URL}/api/update-result`, {
+                        id: loserCurrentData.id || loser.userId,
+                        level: loserReward.level,
+                        exp: loserReward.exp,
+                        points: loserReward.points,
+                        rank: loserReward.rank,
+                        coins: loserReward.coin
+                    })
 
-            })
-            .catch(err => {
+                ]);
+
+                console.log("✅ WINNER DATABASE:", winnerUpdate.data);
+                console.log("✅ LOSER DATABASE:", loserUpdate.data);
+
+                console.log("💾 DATABASE ĐÃ CẬP NHẬT XONG");
+
+                // 🔥 BÁO CHO 2 CLIENT BIẾT DATABASE ĐÃ LƯU
+                io.to(roomId).emit("matchResultSaved");
+
+            } catch (err) {
 
                 console.error(
-                    `❌ Lỗi cập nhật DATABASE:`,
-                    err.message
+                    "❌ DATABASE UPDATE FAILED:",
+                    err.response?.data || err.message
                 );
 
-            });
+                // Báo cho client biết update thất bại
+                io.to(roomId).emit("matchResultSaveFailed");
+            }
 
 
         } catch (err) {
