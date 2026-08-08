@@ -597,31 +597,40 @@
     // ===============================
     // HIỆN CẢNH BÁO
     // ===============================
-    function showHaoBossWarning(){
+    function showHaoBossWarning() {
         const warning = document.getElementById("hao-warning");
-        if(!warning) return;
+        if (!warning) return;
 
-        // 🔥 KIỂM TRA ĐÃ HIỂN THỊ CHƯA (TRÁNH LẶP TRÊN CÙNG MÁY)
         if (warning.classList.contains('show')) {
             console.log("⚠️ Cảnh báo đã hiển thị, bỏ qua!");
             return;
         }
 
-        // phát âm thanh danger
-        if(audioGame && audioGame.danger){
+        // Phát âm thanh danger
+        if (audioGame && audioGame.danger) {
             audioGame.danger.currentTime = 0;
-            audioGame.danger.play().catch(()=>{});
+            audioGame.danger.volume = 1.0;
+            audioGame.danger.play().catch(() => {});
         }
 
-        // rung màn hình
+        // Rung màn hình
         document.body.classList.add("hao-shake");
 
-        // reset animation
+        // Flash nền đỏ
+        const flash = document.createElement('div');
+        flash.className = 'hao-flash';
+        document.body.appendChild(flash);
+        setTimeout(() => {
+            if (flash.parentNode) flash.remove();
+        }, 1500);
+
+        // Reset animation và hiển thị
         warning.classList.remove("show");
         void warning.offsetWidth;
         warning.classList.add("show");
 
-        setTimeout(()=>{
+        // Tắt hiệu ứng sau 3 giây
+        setTimeout(() => {
             warning.classList.remove("show");
             document.body.classList.remove("hao-shake");
         }, 3000);
@@ -629,20 +638,33 @@
 
     // SINH BỐ HẢO
     // ===============================
-    function spawnHaoBoss(){
+    function spawnHaoBoss() {
         const startCell = document.getElementById("cell-0");
-        if(!startCell) return;
-        
-        // 🔥 KIỂM TRA ĐÃ CÓ BỐ HẢO CHƯA (TRÁNH LẶP TRÊN CÙNG MÁY)
-        if(document.getElementById("hao-boss")) {
+        if (!startCell) return;
+
+        if (document.getElementById("hao-boss")) {
             console.log("⚠️ Bố Hảo đã tồn tại, bỏ qua!");
             return;
         }
 
         const boss = document.createElement("div");
         boss.id = "hao-boss";
-        boss.innerHTML = "💀";
+        boss.innerHTML = "👹"; // Dùng quỷ thay vì 💀
         startCell.appendChild(boss);
+
+        // Hiệu ứng xuất hiện từ nhỏ to
+        boss.style.transform = 'scale(0)';
+        boss.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        requestAnimationFrame(() => {
+            boss.style.transform = 'scale(1)';
+        });
+
+        // Âm thanh quái vật (nếu có)
+        if (audioGame && audioGame.dragon) {
+            audioGame.dragon.currentTime = 0;
+            audioGame.dragon.volume = 0.8;
+            audioGame.dragon.play().catch(() => {});
+        }
     }
 
 
@@ -2017,6 +2039,10 @@
                         hideNotification();
                     }
                     resetGameState();
+                    // 🎵 Phát nhạc lobby
+                    if (typeof playRandomLobbyMusic === 'function') {
+                        setTimeout(playRandomLobbyMusic, 400);
+                    }
                 }, 1500);
             },
             function() {
@@ -3059,20 +3085,30 @@ function toggleSound() {
     
     if (isMuted) {
         // Tắt tất cả âm thanh
-        if (audioGame && audioGame.bgm) {
-            audioGame.bgm.pause();
+        if (audioGame) {
+            if (audioGame.bgm) audioGame.bgm.pause();
+            if (audioGame.lobbyMusic1) audioGame.lobbyMusic1.pause();
+            if (audioGame.lobbyMusic2) audioGame.lobbyMusic2.pause();
+            // ... tắt các track khác nếu cần
+            Object.values(audioGame).forEach(track => {
+                if (track && track !== audioGame.bgm && track !== audioGame.lobbyMusic1 && track !== audioGame.lobbyMusic2) {
+                    track.pause();
+                    track.currentTime = 0;
+                }
+            });
         }
-        Object.values(audioGame).forEach(track => {
-            if (track && track !== audioGame.bgm) {
-                track.pause();
-                track.currentTime = 0;
-            }
-        });
         console.log("🔇 Đã tắt âm thanh");
     } else {
-        // Bật âm thanh
-        if (gameStarted && audioGame && audioGame.bgm) {
-            audioGame.bgm.play().catch(() => {});
+        // Bật lại: nếu đang ở lobby, phát lobby music; nếu đang trong game, phát bgm
+        if (document.getElementById('game-screen').style.display !== 'none' || window.gameStarted) {
+            if (audioGame && audioGame.bgm) {
+                audioGame.bgm.play().catch(() => {});
+            }
+        } else {
+            // Ở lobby, phát lobby music
+            if (typeof playRandomLobbyMusic === 'function') {
+                playRandomLobbyMusic();
+            }
         }
         console.log("🔊 Đã bật âm thanh");
     }
@@ -3114,6 +3150,33 @@ function updateSettingsSoundButton() {
     const btn = document.getElementById('settings-sound-btn');
     if (!btn) return;
     if (isMuted) {
+        btn.innerHTML = '🔇 Âm thanh (Tắt)';
+        btn.style.color = '#94a3b8';
+        btn.style.borderColor = 'rgba(148,163,184,0.2)';
+    } else {
+        btn.innerHTML = '🔊 Âm thanh (Bật)';
+        btn.style.color = '#facc15';
+        btn.style.borderColor = 'rgba(250,204,21,0.2)';
+    }
+}
+// ===== LOBBY SETTINGS =====
+function openLobbySettings() {
+    const modal = document.getElementById('lobby-settings-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        updateLobbySettingsSoundButton();
+    }
+}
+
+function closeLobbySettings() {
+    const modal = document.getElementById('lobby-settings-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+function updateLobbySettingsSoundButton() {
+    const btn = document.getElementById('lobby-settings-sound-btn');
+    if (!btn) return;
+    if (typeof isMuted !== 'undefined' && isMuted) {
         btn.innerHTML = '🔇 Âm thanh (Tắt)';
         btn.style.color = '#94a3b8';
         btn.style.borderColor = 'rgba(148,163,184,0.2)';

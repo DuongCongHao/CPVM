@@ -1258,122 +1258,151 @@ button.action-btn {
     }
 }
 
+/* ===== BỐ HẢO - CẢNH BÁO NGUY HIỂM ===== */
 #hao-warning {
-
     position: fixed;
-
-    left: -120%;
-
-    top: 42%;
-
+    left: -150%;
+    top: 50%;
     width: 100%;
-
     text-align: center;
-
-    font-size: 64px;
-
+    font-size: 72px;
     font-weight: 900;
-
-    color: white;
-
+    color: #fff;
     z-index: 999999;
-
     pointer-events: none;
-
     text-shadow:
-        0 0 15px red,
-        0 0 35px red,
-        0 0 60px red;
-
+        0 0 20px #ff0000,
+        0 0 40px #ff0000,
+        0 0 80px #ff0000,
+        0 0 160px #cc0000,
+        0 0 240px #aa0000;
+    letter-spacing: 6px;
+    transform: translateY(-50%);
+    font-family: 'Arial Black', sans-serif;
+    text-transform: uppercase;
+    user-select: none;
+    opacity: 0;
 }
 
 #hao-warning.show {
-
-    animation: haoSlide 3s linear forwards;
-
+    animation: haoSlideIn 3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-@keyframes haoSlide {
-
+@keyframes haoSlideIn {
     0% {
-        left: -120%;
+        left: -150%;
+        opacity: 0;
+        transform: translateY(-50%) scale(0.3) rotate(-10deg);
     }
-
-    20% {
+    15% {
         left: 0;
+        opacity: 1;
+        transform: translateY(-50%) scale(1.4) rotate(3deg);
     }
-
+    30% {
+        transform: translateY(-50%) scale(1) rotate(0);
+    }
     80% {
         left: 0;
+        opacity: 1;
+        transform: translateY(-50%) scale(1) rotate(0);
     }
-
     100% {
-        left: 120%;
+        left: 150%;
+        opacity: 0;
+        transform: translateY(-50%) scale(1.5) rotate(10deg);
     }
-
 }
 
+/* Thêm icon lửa và đầu lâu bao quanh chữ */
+#hao-warning::before {
+    content: '🔥';
+    position: absolute;
+    left: 5%;
+    top: -40%;
+    font-size: 80px;
+    opacity: 0.9;
+    animation: haoFire 0.7s ease-in-out infinite alternate;
+}
+#hao-warning::after {
+    content: '💀';
+    position: absolute;
+    right: 5%;
+    bottom: -40%;
+    font-size: 70px;
+    opacity: 0.9;
+    animation: haoFire 0.5s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes haoFire {
+    0% {
+        transform: scale(1) rotate(0deg);
+        opacity: 0.6;
+        filter: drop-shadow(0 0 10px #ff6600);
+    }
+    100% {
+        transform: scale(1.4) rotate(20deg);
+        opacity: 1;
+        filter: drop-shadow(0 0 30px #ff3300);
+    }
+}
+
+/* ===== HIỆU ỨNG FLASH NỀN ĐỎ ===== */
+.hao-flash {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 99998;
+    animation: haoRedFlash 0.3s ease-in-out 5;
+}
+
+@keyframes haoRedFlash {
+    0%, 100% {
+        background-color: rgba(0,0,0,0);
+    }
+    50% {
+        background-color: rgba(255,0,0,0.35);
+    }
+}
+
+/* ===== RUNG MÀN HÌNH MẠNH HƠN ===== */
 body.hao-shake {
-
-    animation: haoShake .12s infinite;
-
+    animation: haoShake 0.08s infinite;
 }
 
 @keyframes haoShake {
-
-    0% {
-        transform: translate(2px, 1px);
-    }
-
-    25% {
-        transform: translate(-2px, -1px);
-    }
-
-    50% {
-        transform: translate(2px, -2px);
-    }
-
-    75% {
-        transform: translate(-2px, 2px);
-    }
-
-    100% {
-        transform: translate(0, 0);
-    }
-
+    0% { transform: translate(5px, 3px) rotate(0.5deg); }
+    25% { transform: translate(-5px, -3px) rotate(-0.5deg); }
+    50% { transform: translate(5px, -3px) rotate(0.5deg); }
+    75% { transform: translate(-5px, 3px) rotate(-0.5deg); }
+    100% { transform: translate(0, 0) rotate(0); }
 }
 
+/* ===== ICON BỐ HẢO (QUÁI VẬT) ===== */
 #hao-boss {
-
     position: absolute;
-
-    right: 5px;
-    bottom: 5px;
-
-    font-size: 52px;
-
+    right: 10px;
+    bottom: 10px;
+    font-size: 90px;
     z-index: 100;
-
-    animation: haoBossFloat .8s infinite alternate;
-
-    filter: drop-shadow(0 0 12px red);
-
+    animation: haoBossFloat 0.5s ease-in-out infinite alternate;
+    filter:
+        drop-shadow(0 0 30px #ff0000)
+        drop-shadow(0 0 60px #cc0000)
+        drop-shadow(0 0 90px #aa0000);
+    transform-origin: bottom center;
+    user-select: none;
+    pointer-events: none;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes haoBossFloat {
-
-    from {
-
-        transform: translateY(0);
-
+    0% {
+        transform: translateY(0) scale(1) rotate(-5deg);
     }
-
-    to {
-
-        transform: translateY(-10px);
-
+    100% {
+        transform: translateY(-25px) scale(1.15) rotate(5deg);
     }
-
 }
 
 .help-modal {

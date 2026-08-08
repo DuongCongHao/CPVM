@@ -11,7 +11,10 @@ const audioGame = {
     phoenix: new Audio('audio/phoenix.mp3'),
     horse: new Audio('audio/horse.mp3'),
     bomb: new Audio('audio/bom.mp3'),
-    teleport: new Audio('audio/teleport.mp3')
+    teleport: new Audio('audio/teleport.mp3'),
+    lobbyMusic1: new Audio("audio/HaliCyber.mp3"),
+    lobbyMusic2: new Audio("audio/HaliCyberDeal.mp3"),
+    click: new Audio("audio/click.mp3"),
 };
 
 // ===== CẤU HÌNH ÂM LƯỢNG =====
@@ -25,6 +28,13 @@ audioGame.loseMoney.volume = 0.8;
 audioGame.lightning.volume = 1.0;
 audioGame.bomb.volume = 1.0;
 audioGame.teleport.volume = 0.8;
+// Cấu hình lobby music
+audioGame.lobbyMusic1.loop = true;
+audioGame.lobbyMusic1.volume = 0.35;
+audioGame.lobbyMusic2.loop = true;
+audioGame.lobbyMusic2.volume = 0.35;
+audioGame.click.volume = 0.4;
+audioGame.click.load();
 
 // ===== PRE-LOAD ÂM THANH =====
 Object.values(audioGame).forEach(track => { 
@@ -43,7 +53,14 @@ function playSFX(audioTrack) {
         audioTrack.play().catch(e => console.log("Chờ tương tác người dùng:", e));
     }
 }
-
+// ===== HÀM PHÁT ÂM THANH CLICK =====
+function playClickSound() {
+    if (typeof isMuted !== 'undefined' && isMuted) return;
+    if (audioGame && audioGame.click) {
+        audioGame.click.currentTime = 0;
+        audioGame.click.play().catch(() => {});
+    }
+}
 // ===== BẪY THEO DÕI BIẾN ĐỘNG TIỀN (MONEY WATCHER) =====
 let lastCheckedMoney = { 1: null, 2: null };
 
@@ -93,6 +110,29 @@ function startMoneyWatcher() {
         }
     }, 100); 
 }
+let currentLobbyMusic = null;
 
+function playRandomLobbyMusic() {
+    if (!audioGame.lobbyMusic1 || !audioGame.lobbyMusic2) return;
+    // Dừng nhạc cũ nếu có
+    if (currentLobbyMusic) {
+        currentLobbyMusic.pause();
+        currentLobbyMusic.currentTime = 0;
+    }
+    // Chọn ngẫu nhiên 1 trong 2
+    const random = Math.random() < 0.5 ? audioGame.lobbyMusic1 : audioGame.lobbyMusic2;
+    currentLobbyMusic = random;
+    random.loop = true;
+    random.volume = 0.35;
+    random.play().catch(e => console.log("Lobby music play error:", e));
+}
+
+function stopLobbyMusic() {
+    if (currentLobbyMusic) {
+        currentLobbyMusic.pause();
+        currentLobbyMusic.currentTime = 0;
+        currentLobbyMusic = null;
+    }
+}
 // ===== KÍCH HOẠT WATCHER =====
 startMoneyWatcher();

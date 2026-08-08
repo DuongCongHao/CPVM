@@ -184,13 +184,42 @@ loginBtn.onclick = async ()=>{
     }
 
 };
+    // ===== THÊM ÂM THANH CLICK CHO TẤT CẢ NÚT TRONG SẢNH =====
+    function initLobbyClickSound() {
+        const lobby = document.getElementById('lobby-screen');
+        if (!lobby) return;
+        
+        // Lắng nghe sự kiện click trên toàn bộ lobby (event delegation)
+        lobby.addEventListener('click', function(e) {
+            const target = e.target.closest('button, .lobby-card-item, .back-btn, .logout-btn, .leave-chat-btn, .shop-category-btn, .btn-lobby');
+            if (!target) return;
+            
+            // Không phát âm thanh nếu nút bị disabled
+            if (target.disabled) return;
+            
+            // Không phát nếu đang kéo thả hoặc click vào input bên trong
+            if (target.closest('input')) return;
+            
+            // Phát âm thanh click
+            if (typeof playClickSound === 'function') {
+                playClickSound();
+            }
+        });
+    }
     function initLobby(user){
         console.log("🔧 Init Lobby với user:", user);
         
         // ===== HIỂN THỊ LOBBY NGAY =====
         document.getElementById("login-screen").style.display = "none";
         document.getElementById("lobby-screen").style.display = "flex";
-        
+        // 🎵 Phát nhạc lobby ngẫu nhiên
+        if (typeof playRandomLobbyMusic === 'function') {
+            setTimeout(playRandomLobbyMusic, 300);
+        }
+        // 🎵 Thêm âm thanh click cho các nút trong sảnh
+        if (typeof initLobbyClickSound === 'function') {
+            setTimeout(initLobbyClickSound, 100);
+        }
         // ===== HIỂN THỊ NGAY DỮ LIỆU CŨ (ĐỂ KHÔNG BỊ TRẮNG) =====
         renderLobbyUI(user);
         

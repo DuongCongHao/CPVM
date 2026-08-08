@@ -164,7 +164,6 @@ function executeTeleport(targetPos) {
     player.teleportAvailable = false;
     player.teleportCooldown = player.teleportMaxCooldown;
     
-    addLog(`🌀 ${player.name} đã dịch chuyển từ ô ${oldPos} đến ô ${targetPos}!`);
     
     if (typeof showSkinEffectText === 'function') {
         showSkinEffectText(

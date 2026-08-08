@@ -220,7 +220,6 @@ if (typeof socket !== 'undefined' && socket) {
             players[playerId].teleportCooldown = data.cooldown;
             players[playerId].teleportAvailable = data.available;
             
-            addLog(`🌀 ${players[playerId].name} đã dịch chuyển đến ô ${data.targetPos}`);
             
             // ================================================================
             // 🎵 PHÁT ÂM THANH TELEPORT CHO CẢ 2 MÁY
@@ -450,7 +449,10 @@ if (typeof socket !== 'undefined' && socket) {
 
     socket.off('startGame').on('startGame', (data) => {
         console.log("🎮 Nhận startGame từ server:", data);
-        
+        // 🎵 Dừng nhạc lobby
+        if (typeof stopLobbyMusic === 'function') {
+            stopLobbyMusic();
+        }
         document.getElementById('lobby-screen').style.display = 'none';
         document.getElementById('game-screen').style.display = 'block';
 
