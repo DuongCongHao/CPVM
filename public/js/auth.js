@@ -382,8 +382,88 @@ const SKIN_LIST = [
     { id: 'board_level50', name: '👑 Bàn cờ Huyền Thoại', icon: '👑', price: 0, desc: 'Phần thưởng đặc biệt khi đạt cấp 50!', rarity: 'epic', category: 'board', previewClass: 'preview-board-level50' },
     { id: 'board_lava', name: '🌋 Bàn cờ Dung nham', icon: '🌋', price: 10000, desc: 'Bàn cờ lửa dung nham rực cháy', rarity: 'rare', category: 'board', previewClass: 'preview-board-lava' },
     { id: 'board_cyber', name: '💠 Bàn cờ Cyber', icon: '💠', price: 10000, desc: 'Bàn cờ công nghệ tương lai', rarity: 'rare', category: 'board', previewClass: 'preview-board-cyber' },
-    { id: 'board_legendary', name: '💎 Bàn cờ Neon', icon: '💎', price: 15000, desc: 'Bàn cờ lấp lánh sắc màu huyền thoại', rarity: 'legendary', category: 'board', previewClass: 'preview-board-neon', effect: 'Hiệu ứng ánh sáng chuyển động, popup đặc biệt' }
+    { id: 'board_legendary', name: '💎 Bàn cờ Neon', icon: '💎', price: 15000, desc: 'Bàn cờ lấp lánh sắc màu huyền thoại', rarity: 'legendary', category: 'board', previewClass: 'preview-board-neon', effect: 'Hiệu ứng ánh sáng chuyển động, popup đặc biệt' },
+    { id: 'board_anime', name: '🌸 Bàn cờ Anime', icon: '🌸', price: 25000, desc: 'Bàn cờ phong cách Anime dễ thương', rarity: 'legendary', category: 'board', previewClass: 'preview-board-anime', effect: 'Sáng rực rỡ, cánh hoa đào rơi' }
 ];
+/* =========================================================
+   🌸 TẠO CÁNH HOA ĐÀO CHO SKIN ANIME
+   ========================================================= */
+
+function createAnimePetals() {
+
+    // Chỉ chạy khi đang dùng skin anime
+    const board = document.querySelector('.board.board_anime');
+
+    if (!board) {
+        return;
+    }
+
+    // Không tạo trùng
+    if (document.querySelector('.anime-petal-layer')) {
+        return;
+    }
+
+    const layer = document.createElement('div');
+
+    layer.className = 'anime-petal-layer';
+
+    // Số lượng vừa phải
+    const petalCount = window.innerWidth <= 768 ? 14 : 20;
+
+    for (let i = 0; i < petalCount; i++) {
+
+        const petal = document.createElement('div');
+
+        petal.className = 'anime-petal';
+
+        // Vị trí ngang ngẫu nhiên
+        petal.style.left =
+            Math.random() * 100 + 'vw';
+
+        // Kích thước ngẫu nhiên
+        const size =
+            6 + Math.random() * 5;
+
+        petal.style.width =
+            size * 1.5 + 'px';
+
+        petal.style.height =
+            size + 'px';
+
+        // Độ trong suốt ngẫu nhiên
+        petal.style.opacity =
+            0.45 + Math.random() * 0.4;
+
+        // Thời gian rơi ngẫu nhiên
+        petal.style.animationDuration =
+            (8 + Math.random() * 8) + 's, ' +
+            (2 + Math.random() * 3) + 's';
+
+        // Cho hoa xuất hiện rải rác
+        petal.style.animationDelay =
+            (-Math.random() * 12) + 's';
+
+        // Một số cánh hơi trắng/hồng khác nhau
+        const colors = [
+            '#ffb6d2',
+            '#ffc1d9',
+            '#ff9fc4',
+            '#ffd1e2',
+            '#fda4c4'
+        ];
+
+        petal.style.background =
+            colors[Math.floor(Math.random() * colors.length)];
+
+        layer.appendChild(petal);
+    }
+
+    document.body.appendChild(layer);
+
+    console.log(
+        `🌸 Đã tạo ${petalCount} cánh hoa đào Anime`
+    );
+}
 // ===== SHOP FUNCTIONS =====
 let shopFilter = 'all';
 

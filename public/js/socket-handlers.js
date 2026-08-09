@@ -453,30 +453,129 @@ if (typeof socket !== 'undefined' && socket) {
 
     socket.off('startGame').on('startGame', (data) => {
         console.log("🎮 Nhận startGame từ server:", data);
-        // 🎵 Dừng nhạc lobby
-        if (typeof stopLobbyMusic === 'function') {
-            stopLobbyMusic();
-        }
-        document.getElementById('lobby-screen').style.display = 'none';
-        document.getElementById('game-screen').style.display = 'block';
 
-        const overlay = document.getElementById('game-over-overlay');
-        if (overlay) overlay.style.display = 'none';
+        // ================================================================
+        // 🔥 RESET TOÀN BỘ STATE CỦA TRẬN CŨ
+        // ================================================================
+        console.log("🆕 ===== ĐANG KHỞI TẠO TRẬN MỚI =====");
+
+        window.gameStarted = true;
+        window.gameEnding = false;
+        window.isMoving = false;
+
+        window.currentTurn = null;
+        window.extraTurns = 0;
+        window.skillUsedThisTurn = false;
+
+        // GameOver
         window._resultPopupShown = false;
         window._gameOverSent = false;
         window._gameOverReceived = false;
         window._gameOverProcessing = false;
+        // ================================================================
+        // 🔥 RESET TOÀN BỘ STATE CỦA TRẬN CŨ KHI BẮT ĐẦU TRẬN MỚI
+        // ================================================================
+        console.log("🆕 RESET STATE TRẬN CŨ → KHỞI TẠO TRẬN MỚI");
 
+        window.gameStarted = false;
+        window.gameEnding = false;
+        window.currentTurn = null;
+        window.isMoving = false;
+        window.extraTurns = 0;
+        window.skillUsedThisTurn = false;
+
+        for (let i = 1; i <= 2; i++) {
+            if (players[i]) {
+                // Vị trí về START
+                players[i].pos = 0;
+
+                // Số vòng về 0
+                players[i].rounds = 0;
+
+                // Reset skill
+                players[i].skillUsed = false;
+
+                // Reset trạng thái di chuyển
+                players[i].isMoving = false;
+
+                // Reset teleport
+                players[i].teleportCooldown = 0;
+                players[i].teleportMaxCooldown = 5;
+                players[i].teleportAvailable = true;
+            }
+        }
+
+        console.log("✅ STATE SAU KHI RESET:");
+        console.log("P1:", players[1]);
+        console.log("P2:", players[2]);
+        // Thiên tai
+        window.disasterSpawnedThisGame = false;
+
+        // Reset trạng thái bom
+        window.nuclearBombDetonated = false;
+
+        // Reset trạng thái di chuyển nếu các biến này tồn tại
+        window.movingPlayer = null;
+        window.isRolling = false;
+
+        console.log("✅ Đã reset state trận cũ");
+        console.log("   gameStarted =", window.gameStarted);
+        console.log("   gameEnding =", window.gameEnding);
+        console.log("   isMoving =", window.isMoving);
+        console.log("   _resultPopupShown =", window._resultPopupShown);
+        console.log("   _gameOverReceived =", window._gameOverReceived);
+        console.log("   disasterSpawnedThisGame =", window.disasterSpawnedThisGame);
+
+
+        // ================================================================
+        // 🎵 DỪNG NHẠC LOBBY
+        // ================================================================
+        if (typeof stopLobbyMusic === 'function') {
+            stopLobbyMusic();
+        }
+
+        document.getElementById('lobby-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'block';
+
+
+        // ================================================================
+        // 🧹 ẨN POPUP TRẬN CŨ
+        // ================================================================
+        const overlay = document.getElementById('game-over-overlay');
+
+        if (overlay) {
+            overlay.style.display = 'none';
+            overlay.classList.remove('show');
+            overlay.classList.remove('active');
+            overlay.classList.remove('visible');
+        }
+
+
+        // ================================================================
+        // ⚡ RESET THIÊN TAI
+        // ================================================================
         spiderWebIndex = data.spiderWebIndex;
         lightningIndex = data.lightningIndex || null;
-        
-        // 🆕 THÊM BOM HẠT NHÂN
+
+
+        // ================================================================
+        // 💣 KHỞI TẠO BOM HẠT NHÂN TRẬN MỚI
+        // ================================================================
         window.nuclearBombIndex = data.nuclearBombIndex || null;
         window.nuclearBombDetonated = data.nuclearBombDetonated || false;
 
-        // ===== ĐỒNG BỘ KỸ NĂNG =====
+        console.log(`💣 Bom hạt nhân trận mới tại ô: ${window.nuclearBombIndex}`);
+        console.log(`🕷️ Mạng nhện trận mới tại ô: ${spiderWebIndex}`);
+        console.log(`⚡ Sấm sét trận mới tại ô: ${lightningIndex}`);
+
+
+        // ================================================================
+        // 🎴 ĐỒNG BỘ KỸ NĂNG
+        // ================================================================
         gameStarted = true;
-        if(data.skills){
+
+        if (data.skills) {
+
             players[1].skill = skillCards[data.skills[1]];
             players[2].skill = skillCards[data.skills[2]];
 
@@ -484,53 +583,95 @@ if (typeof socket !== 'undefined' && socket) {
             console.log("P2 SKILL:", players[2].skill);
 
             document.getElementById("p1-skill").innerHTML =
-                players[1].skill 
-                ? "🎴 " + players[1].skill.name
-                : "🎴 Chưa có thẻ";
+                players[1].skill
+                    ? "🎴 " + players[1].skill.name
+                    : "🎴 Chưa có thẻ";
 
             document.getElementById("p2-skill").innerHTML =
                 players[2].skill
-                ? "🎴 " + players[2].skill.name
-                : "🎴 Chưa có thẻ";
+                    ? "🎴 " + players[2].skill.name
+                    : "🎴 Chưa có thẻ";
         }
-        
+
+
         // ================================================================
-        // 🆕 KHỞI TẠO TELEPORT CHO NGƯỜI CHƠI
+        // 🌀 KHỞI TẠO TELEPORT CHO NGƯỜI CHƠI
         // ================================================================
         for (let i = 1; i <= 2; i++) {
+
             if (players[i]) {
-                if (players[i].teleportCooldown === undefined) {
-                    players[i].teleportCooldown = 0;
-                    players[i].teleportMaxCooldown = 5;
-                    players[i].teleportAvailable = true;
-                }
+
+                // 🔥 Reset teleport của trận mới
+                players[i].teleportCooldown = 0;
+                players[i].teleportMaxCooldown = 5;
+                players[i].teleportAvailable = true;
             }
         }
+
         if (typeof updateTeleportUI === 'function') {
             updateTeleportUI();
         }
-        
-        // ===== KHỞI TẠO BÀN CỜ =====
+
+
+        // ================================================================
+        // 🎲 RESET THÊM STATE PLAYER
+        // ================================================================
+        for (let i = 1; i <= 2; i++) {
+
+            if (players[i]) {
+
+                players[i].rounds = 0;
+                players[i].skillUsed = false;
+
+                // Nếu game của bạn có position thì reset về START
+                players[i].position = 0;
+            }
+        }
+
+        console.log("🔄 Đã reset vị trí và round của P1/P2");
+
+
+        // ================================================================
+        // 🏠 KHỞI TẠO BÀN CỜ
+        // ================================================================
         initializeBoard();
-        
-        // ===== ĐỢI 1.5 GIÂY ĐỂ SKIN VÀ UI ỔN ĐỊNH, RỒI MỚI PHÂN ĐỊNH LƯỢT =====
+
+
+        // ================================================================
+        // ⏳ ĐỢI SKIN + UI ỔN ĐỊNH
+        // ================================================================
         setTimeout(() => {
-            // Cập nhật rank lần cuối
+
+            // Kiểm tra phòng mới có còn hợp lệ không
+            if (window.gameEnding) {
+                console.log("⛔ Trận đã kết thúc trước khi determineTurn");
+                return;
+            }
+
+            // Cập nhật rank
             if (typeof updateRankDisplay === 'function') {
                 updateRankDisplay();
             }
-            
-            // ✅ GỌI DETERMINE TURN (SẼ BẬT NÚT ROLL)
+
+            // Xác định lượt đầu
             if (typeof determineTurn === 'function') {
+
                 console.log("🎲 Gọi determineTurn từ startGame");
+
                 determineTurn();
+
             } else {
+
                 console.error("❌ Hàm determineTurn không tồn tại!");
+
             }
-            
-            console.log("✅ Đã hoàn tất khởi tạo game!");
-            console.log(`💣 Bom hạt nhân tại ô: ${window.nuclearBombIndex}`);
-        }, 1500); // Tăng lên 1500ms để đảm bảo
+
+            console.log("✅ ===== HOÀN TẤT KHỞI TẠO TRẬN MỚI =====");
+            console.log(`💣 Bom hạt nhân: ${window.nuclearBombIndex}`);
+            console.log(`🕷️ Mạng nhện: ${spiderWebIndex}`);
+            console.log(`⚡ Sấm sét: ${lightningIndex}`);
+
+        }, 1500);
     });
     // ===== THIÊN TAI XUẤT HIỆN =====
     socket.off('lightningSummoned').on('lightningSummoned', (data) => {

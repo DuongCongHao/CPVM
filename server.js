@@ -1786,152 +1786,444 @@ io.on('connection', (socket) => {
         console.log(`🗑️ Đã xóa hoàn toàn trận ${roomId} do disconnect`);
     });
     // ===== XỬ LÝ KHI NGƯỜI CHƠI CHỦ ĐỘNG RỜI PHÒNG =====
-    socket.on('leave-room', (data) => {
+    socket.on('leave-room', async (data) => {
+
         console.log(`🚪 Người chơi ${socket.id} chủ động rời phòng`);
-        
+
         const roomId = socket.roomId;
+
+        // ============================================================
+        // 1. KIỂM TRA ROOM
+        // ============================================================
+
         if (!roomId || !rooms[roomId]) {
+
             console.log(`⚠️ Không tìm thấy phòng ${roomId}`);
+
             return;
         }
-        
+
+        // ============================================================
+        // 2. CHỐNG XỬ LÝ LEAVE 2 LẦN
+        // ============================================================
+
         if (finishedRooms.has(roomId)) {
-            console.log(`⚠️ Phòng ${roomId} đã kết thúc, bỏ qua xử lý leave-room`);
+
+            console.log(
+                `⚠️ Phòng ${roomId} đã kết thúc, bỏ qua leave-room`
+            );
+
             if (rooms[roomId]) {
-                if (rooms[roomId].timer) clearInterval(rooms[roomId].timer);
+
+                if (rooms[roomId].timer) {
+                    clearInterval(rooms[roomId].timer);
+                }
+
                 delete rooms[roomId];
             }
+
+            socket.roomId = null;
+
             return;
         }
-        
-        const leaver = rooms[roomId].players.find(p => p.id === socket.id);
+
+        const room = rooms[roomId];
+
+        // ============================================================
+        // 3. TÌM NGƯỜI RỜI + ĐỐI THỦ
+        // ============================================================
+
+        const leaver = room.players.find(
+            p => p.id === socket.id
+        );
+
+        const opponent = room.players.find(
+            p => p.id !== socket.id
+        );
+
         if (!leaver) {
-            console.log(`⚠️ Không tìm thấy người chơi ${socket.id} trong phòng`);
+
+            console.log(
+                `⚠️ Không tìm thấy người chơi ${socket.id} trong phòng`
+            );
+
             return;
         }
-        
-        const opponent = rooms[roomId].players.find(p => p.id !== socket.id);
-        
-        if (opponent) {
-            console.log(`🏆 ${opponent.name} được xử thắng vì ${leaver.name} đã rời trận!`);
-            
-            // ================================================================
-            // 🆕 XỬ LÝ TRỪ ĐIỂM CHO NGƯỜI RỜI TRẬN (leaver)
-            // ================================================================
-            const leaverUserId = leaver.userId;
-            const opponentUserId = opponent.userId;
-            
-            // ✅ ĐÚNG: Thêm /api vào trước URL
-            const API_BASE = `http://localhost:${PORT}/api`;
-            
-            // ================================================================
-            // 1. TRỪ ĐIỂM CHO NGƯỜI RỜI TRẬN
-            // ================================================================
-            axios.get(`${API_BASE}/user/${leaverUserId}`)
-                .then(async (response) => {
-                    const user = response.data;
-                    if (user && user.success !== false) {
-                        console.log(`📊 Người rời: ${user.username}, Points cũ: ${user.points}`);
-                        
-                        // TRỪ ĐIỂM RANK CHO NGƯỜI RỜI TRẬN (KHÔNG NHẬN EXP/COIN)
-                        const newPoints = Math.max(0, (user.points || 0) - 25);
-                        const newRank = getRankFromPoints(newPoints);
-                        
-                        // ✅ SỬA: DÙNG user.id (UUID) THAY VÌ leaverUserId (username)
-                        await axios.post(`${API_BASE}/update-result`, {
-                            id: user.id,  // ← UUID THẬT
-                            level: user.level || 1,
-                            exp: user.exp || 0, // ⭐ KHÔNG CỘNG EXP
-                            points: newPoints,
-                            rank: newRank,
-                            coins: user.coin || 0 // ⭐ KHÔNG CỘNG COIN
-                        });
-                        console.log(`✅ Đã trừ 25 RP cho ${leaver.name} (rời trận chủ động)`);
-                    }
-                })
-                .catch(err => {
-                    console.error(`❌ Lỗi trừ điểm cho ${leaver.name}:`, err.message);
-                });
-            
-            // ================================================================
-            // 2. THƯỞNG CHO ĐỐI THỦ (opponent)
-            // ================================================================
-            axios.get(`${API_BASE}/user/${opponentUserId}`)
-                .then(async (response) => {
-                    const user = response.data;
-                    if (user && user.success !== false) {
-                        console.log(`📊 Đối thủ: ${user.username}, Points cũ: ${user.points}`);
-                        
-                        // Người thắng nhận thưởng bình thường
-                        const newExp = (user.exp || 0) + 150;
-                        const newPoints = (user.points || 0) + 25;
-                        const newCoins = (user.coin || 0) + 50;
-                        const newLevel = Math.floor(newExp / 1000) + 1;
-                        const newRank = getRankFromPoints(newPoints);
-                        
-                        // ✅ SỬA: DÙNG user.id (UUID) THAY VÌ opponentUserId (username)
-                        await axios.post(`${API_BASE}/update-result`, {
-                            id: user.id,  // ← UUID THẬT
-                            level: newLevel,
-                            exp: newExp,
-                            points: newPoints,
-                            rank: newRank,
-                            coins: newCoins
-                        });
-                        console.log(`✅ Đã thưởng cho ${opponent.name}: +150 EXP, +25 RP, +50 Coin`);
-                    }
-                })
-                .catch(err => {
-                    console.error(`❌ Lỗi thưởng cho ${opponent.name}:`, err.message);
-                });
-            
-            // ================================================================
-            // 3. GỬI SỰ KIỆN CHO ĐỐI THỦ
-            // ================================================================
-            const opponentSocket = io.sockets.sockets.get(opponent.id);
-            if (opponentSocket) {
-                // Gửi gameOver cho đối thủ (để cập nhật điểm)
-                opponentSocket.emit('gameOver', {
-                    winnerId: opponent.playerNumber,
-                    reason: 'leave',
-                    message: `${leaver.name} đã rời trận. Bạn được xử thắng!`,
-                    isLoser: false
-                });
-                console.log(`📤 Đã gửi gameOver cho ${opponent.name}`);
-                
-                // Gửi sự kiện đối thủ rời trận (để client xử lý UI)
-                opponentSocket.emit('opponent-left', {
-                    message: `${leaver.name} đã rời trận. Bạn được xử thắng!`
-                });
-                console.log(`📤 Đã gửi opponent-left cho ${opponent.name}`);
-            }
-        }
-        
+
+        console.log(
+            `🚪 ${leaver.name} rời trận`
+        );
+
+        // ============================================================
+        // 4. ĐÁNH DẤU ROOM ĐANG KẾT THÚC NGAY
+        // ============================================================
+
+        room.gameEnding = true;
+
         finishedRooms.add(roomId);
 
-        // Hủy timer
-        if (rooms[roomId]?.timer) {
-            clearInterval(rooms[roomId].timer);
+        if (room.timer) {
+
+            clearInterval(room.timer);
+
+            room.timer = null;
         }
 
-        // 🔥 Ép người rời khỏi room Socket.io cũ
+        // ============================================================
+        // 5. NẾU CÓ ĐỐI THỦ
+        // ============================================================
+
+        if (opponent) {
+
+            console.log(
+                `🏆 ${opponent.name} được xử thắng vì ${leaver.name} rời trận`
+            );
+
+            // ========================================================
+            // API URL
+            // QUAN TRỌNG: DÙNG API_URL ĐỂ CHẠY ĐƯỢC CẢ LOCAL + RENDER
+            // ========================================================
+
+            const API_BASE =
+                `${(process.env.API_URL || `http://localhost:${PORT}`)
+                    .replace(/\/$/, '')}/api`;
+
+            console.log(
+                `🌐 API_BASE khi xử lý leave-room: ${API_BASE}`
+            );
+
+            // ========================================================
+            // 6. LẤY USER + UPDATE DATABASE
+            // ========================================================
+
+            const updateDatabase = async () => {
+
+                try {
+
+                    const [
+                        leaverResponse,
+                        opponentResponse
+                    ] = await Promise.all([
+
+                        axios.get(
+                            `${API_BASE}/user/${leaver.userId}`
+                        ),
+
+                        axios.get(
+                            `${API_BASE}/user/${opponent.userId}`
+                        )
+                    ]);
+
+                    const leaverUser = leaverResponse.data;
+                    const opponentUser = opponentResponse.data;
+
+                    // =================================================
+                    // 💀 NGƯỜI RỜI TRẬN
+                    // =================================================
+
+                    if (
+                        leaverUser &&
+                        leaverUser.success !== false
+                    ) {
+
+                        console.log(
+                            `📊 Người rời: ${leaverUser.username}`
+                        );
+
+                        console.log(
+                            `📊 RP cũ: ${leaverUser.points}`
+                        );
+
+                        const newLeaverPoints =
+                            Math.max(
+                                0,
+                                (leaverUser.points || 0) - 25
+                            );
+
+                        const newLeaverRank =
+                            getRankFromPoints(
+                                newLeaverPoints
+                            );
+
+                        await axios.post(
+                            `${API_BASE}/update-result`,
+                            {
+                                id: leaverUser.id,
+
+                                level:
+                                    leaverUser.level || 1,
+
+                                exp:
+                                    leaverUser.exp || 0,
+
+                                points:
+                                    newLeaverPoints,
+
+                                rank:
+                                    newLeaverRank,
+
+                                coins:
+                                    leaverUser.coin || 0
+                            }
+                        );
+
+                        console.log(
+                            `✅ ${leaver.name} -25 RP`
+                        );
+                    }
+
+                    // =================================================
+                    // 🏆 NGƯỜI THẮNG
+                    // =================================================
+
+                    if (
+                        opponentUser &&
+                        opponentUser.success !== false
+                    ) {
+
+                        console.log(
+                            `📊 Người thắng: ${opponentUser.username}`
+                        );
+
+                        console.log(
+                            `📊 RP cũ: ${opponentUser.points}`
+                        );
+
+                        const newOpponentExp =
+                            (opponentUser.exp || 0) + 150;
+
+                        const newOpponentPoints =
+                            (opponentUser.points || 0) + 25;
+
+                        const newOpponentCoins =
+                            (opponentUser.coin || 0) + 50;
+
+                        const newOpponentLevel =
+                            Math.floor(
+                                newOpponentExp / 1000
+                            ) + 1;
+
+                        const newOpponentRank =
+                            getRankFromPoints(
+                                newOpponentPoints
+                            );
+
+                        await axios.post(
+                            `${API_BASE}/update-result`,
+                            {
+                                id: opponentUser.id,
+
+                                level:
+                                    newOpponentLevel,
+
+                                exp:
+                                    newOpponentExp,
+
+                                points:
+                                    newOpponentPoints,
+
+                                rank:
+                                    newOpponentRank,
+
+                                coins:
+                                    newOpponentCoins
+                            }
+                        );
+
+                        console.log(
+                            `✅ ${opponent.name}: ` +
+                            `+150 EXP, +25 RP, +50 Coin`
+                        );
+                    }
+
+                    console.log(
+                        `💾 DATABASE LEAVE-ROOM ĐÃ CẬP NHẬT XONG`
+                    );
+
+                } catch (err) {
+
+                    console.error(
+                        `❌ DATABASE LEAVE-ROOM FAILED:`,
+                        err.response?.data ||
+                        err.message
+                    );
+                }
+            };
+
+            // ========================================================
+            // 🚀 CHẠY UPDATE DATABASE KHÔNG CHẶN POPUP
+            // ========================================================
+
+            updateDatabase();
+
+            // ========================================================
+            // 7. TẠO MATCH RESULT
+            // ========================================================
+
+            const matchResult = {
+
+                winnerId:
+                    opponent.playerNumber,
+
+                winnerName:
+                    opponent.name,
+
+                loserId:
+                    leaver.playerNumber,
+
+                reason:
+                    'leave',
+
+                totalRounds:
+                    Math.max(
+                        opponent.rounds || 0,
+                        leaver.rounds || 0
+                    ),
+
+                reward: {
+
+                    winner: {
+
+                        exp: 150,
+
+                        coins: 50,
+
+                        points: 25
+                    },
+
+                    loser: {
+
+                        exp: 0,
+
+                        coins: 0,
+
+                        points: -25
+                    }
+                }
+            };
+
+            console.log(
+                `📊 MATCH RESULT LEAVE:`,
+                matchResult
+            );
+
+            // ========================================================
+            // 8. GỬI KẾT QUẢ CHO NGƯỜI RỜI
+            // 💀 NGƯỜI RỜI = THUA
+            // ========================================================
+
+            socket.emit(
+                'matchResult',
+                matchResult
+            );
+
+            console.log(
+                `📤 Đã gửi matchResult THUA cho ${leaver.name}`
+            );
+
+            // ========================================================
+            // 9. GỬI KẾT QUẢ CHO ĐỐI THỦ
+            // 🏆 ĐỐI THỦ = THẮNG
+            // ========================================================
+
+            const opponentSocket =
+                io.sockets.sockets.get(
+                    opponent.id
+                );
+
+            if (opponentSocket) {
+
+                opponentSocket.emit(
+                    'matchResult',
+                    matchResult
+                );
+
+                console.log(
+                    `📤 Đã gửi matchResult THẮNG cho ${opponent.name}`
+                );
+
+                // Thông báo phụ
+                opponentSocket.emit(
+                    'opponent-left',
+                    {
+                        message:
+                            `${leaver.name} đã rời trận. Bạn được xử thắng!`
+                    }
+                );
+            }
+
+        } else {
+
+            // ========================================================
+            // 10. KHÔNG CÒN ĐỐI THỦ
+            // ========================================================
+
+            console.log(
+                `⚠️ ${leaver.name} rời trận nhưng không còn đối thủ`
+            );
+        }
+
+        // ============================================================
+        // 11. ÉP NGƯỜI RỜI KHỎI ROOM CŨ
+        // ============================================================
+
         socket.leave(roomId);
+
         socket.roomId = null;
 
-        // 🔥 Ép đối thủ rời room cũ
-        const remainingOpponentSocket = opponent
-            ? io.sockets.sockets.get(opponent.id)
-            : null;
+        console.log(
+            `🚪 ${leaver.name} đã rời Socket.io room ${roomId}`
+        );
 
-        if (remainingOpponentSocket) {
-            remainingOpponentSocket.leave(roomId);
-            remainingOpponentSocket.roomId = null;
+        // ============================================================
+        // 12. ÉP ĐỐI THỦ RỜI ROOM CŨ
+        // ============================================================
+
+        if (opponent) {
+
+            const remainingOpponentSocket =
+                io.sockets.sockets.get(
+                    opponent.id
+                );
+
+            if (remainingOpponentSocket) {
+
+                remainingOpponentSocket.leave(
+                    roomId
+                );
+
+                remainingOpponentSocket.roomId =
+                    null;
+
+                console.log(
+                    `🚪 Đã đưa ${opponent.name} ra khỏi room cũ`
+                );
+            }
         }
 
-        // 🔥 Xóa room cũ hoàn toàn
-        delete rooms[roomId];
+        // ============================================================
+        // 13. XÓA ROOM CŨ
+        // ============================================================
 
-        console.log(`🗑️ Đã hủy hoàn toàn trận cũ: ${roomId}`);
+        if (rooms[roomId]) {
+
+            if (rooms[roomId].timer) {
+
+                clearInterval(
+                    rooms[roomId].timer
+                );
+            }
+
+            delete rooms[roomId];
+        }
+
+        console.log(
+            `🗑️ Đã hủy hoàn toàn trận cũ: ${roomId}`
+        );
+
+        console.log(
+            `✅ LEAVE-ROOM HOÀN TẤT - SẴN SÀNG GHÉP TRẬN MỚI`
+        );
     });
 });
 server.listen(PORT, () => {

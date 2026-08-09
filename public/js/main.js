@@ -781,7 +781,13 @@
         console.log("window.nuclearBombDetonated =", window.nuclearBombDetonated);
         const boardEl = document.getElementById('board');
         if (!boardEl) return;
-        
+        // 🌸 TẠO HIỆU ỨNG CÁNH HOA ĐÀO CHO SKIN ANIME
+        if (
+            boardEl.classList.contains('board_anime') &&
+            typeof createAnimePetals === 'function'
+        ) {
+            createAnimePetals();
+        }
         const oldCells = boardEl.querySelectorAll('.cell');
         oldCells.forEach(cell => cell.remove());
 
@@ -2552,7 +2558,6 @@ function updateBombBlink() {
     
     // ✅ KIỂM TRA CÓ BOM ĐANG ACTIVE KHÔNG
     if (!window.bombData || !window.bombData.active) {
-        console.log('🔴 Không có bom active, xóa hiệu ứng');
         return;
     }
     

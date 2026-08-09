@@ -450,7 +450,6 @@ function useSkill(){
     updateUI();
 }
 function updateSkillUI(){
-    console.log("===== updateSkillUI =====");
     console.log(players[myPlayerNumber]);
 
     // ===== PLAYER 1 =====
