@@ -779,118 +779,408 @@
         console.log("window.lightningIndex =", window.lightningIndex);
         console.log("window.nuclearBombIndex =", window.nuclearBombIndex);
         console.log("window.nuclearBombDetonated =", window.nuclearBombDetonated);
+
         const boardEl = document.getElementById('board');
         if (!boardEl) return;
+
+        // ============================================================
+        // ⚡ CACHE DOM BÀN CỜ
+        // ============================================================
+        // Mỗi lần initializeBoard() chạy lại thì xóa cache cũ
+        // và tạo cache mới tương ứng với các cell mới.
+        // Không thay đổi gameplay.
+        // ============================================================
+        window.boardCells = [];
+        window.p1Slots = [];
+        window.p2Slots = [];
+        window.priceElements = [];
+
+        // ============================================================
         // 🌸 TẠO HIỆU ỨNG CÁNH HOA ĐÀO CHO SKIN ANIME
+        // ============================================================
         if (
             boardEl.classList.contains('board_anime') &&
             typeof createAnimePetals === 'function'
         ) {
             createAnimePetals();
         }
+
+        // ============================================================
+        // 🧹 XÓA CÁC CELL CŨ
+        // ============================================================
         const oldCells = boardEl.querySelectorAll('.cell');
         oldCells.forEach(cell => cell.remove());
 
+        // ============================================================
+        // 🎲 VẼ LẠI BÀN CỜ
+        // ============================================================
         cellsData.forEach((cell, index) => {
+
             const cellEl = document.createElement('div');
-            const isWeb = (index === Number(spiderWebIndex));
-            const isLightning = (index === Number(window.lightningIndex));
-            const isNuclearBomb = (index === Number(window.nuclearBombIndex) && !window.nuclearBombDetonated);
-            const isRadioactive = cell.isRadioactive || false;
-            
-            cellEl.className = `cell ${index === 0 ? 'start-cell' : ''} ${isWeb ? 'has-spider-web' : ''} ${isLightning ? 'has-lightning' : ''} ${isNuclearBomb ? 'has-nuclear-bomb' : ''} ${isRadioactive ? 'is-radioactive' : ''}`;
+
+            const isWeb =
+                (index === Number(spiderWebIndex));
+
+            const isLightning =
+                (index === Number(window.lightningIndex));
+
+            const isNuclearBomb =
+                (
+                    index === Number(window.nuclearBombIndex) &&
+                    !window.nuclearBombDetonated
+                );
+
+            const isRadioactive =
+                cell.isRadioactive || false;
+
+            // ========================================================
+            // CLASS CELL
+            // ========================================================
+            cellEl.className =
+                `cell ` +
+                `${index === 0 ? 'start-cell' : ''} ` +
+                `${isWeb ? 'has-spider-web' : ''} ` +
+                `${isLightning ? 'has-lightning' : ''} ` +
+                `${isNuclearBomb ? 'has-nuclear-bomb' : ''} ` +
+                `${isRadioactive ? 'is-radioactive' : ''}`;
+
             cellEl.id = `cell-${index}`;
-            cellEl.style.gridRow = mapCoords[index].r;
-            cellEl.style.gridColumn = mapCoords[index].c;
-            
-            // Cập nhật lại màu sắc background viền hoặc tag của chủ đất nếu đã bị mua (Không ghi đè tên)
+
+            cellEl.style.gridRow =
+                mapCoords[index].r;
+
+            cellEl.style.gridColumn =
+                mapCoords[index].c;
+
+            // ========================================================
+            // 👑 OWNER
+            // ========================================================
+            // Giữ nguyên logic owner hiện tại.
+            // ========================================================
             if (cell.owner) {
-                cellEl.classList.add(`owner-p${cell.owner}`); 
+                cellEl.classList.add(`owner-p${cell.owner}`);
             }
 
-            if(index === 0) {
-                cellEl.innerHTML = '<span class="cell-title" style="font-weight:900;">START</span><br><span style="font-size:9px;color:#0f172a;position:relative;z-index:1;">+300$</span>';
-            } else if (isWeb) {
-                cellEl.innerHTML = `<span class="cell-title" style="color:#a855f7; font-weight:900;">MẠNG NHỆN</span><span class="cell-price" id="price-${index}">MẤT LƯỢT</span>`;
-                const webIcon = document.createElement('div');
-                webIcon.className = 'spider-icon'; webIcon.innerText = '🕸️';
-                webIcon.style.position = 'absolute'; webIcon.style.fontSize = '24px';
+            // ========================================================
+            // 🏁 START
+            // ========================================================
+            if (index === 0) {
+
+                cellEl.innerHTML =
+                    '<span class="cell-title" style="font-weight:900;">START</span>' +
+                    '<br>' +
+                    '<span style="font-size:9px;color:#0f172a;position:relative;z-index:1;">+300$</span>';
+
+            }
+
+            // ========================================================
+            // 🕸️ MẠNG NHỆN
+            // ========================================================
+            else if (isWeb) {
+
+                cellEl.innerHTML =
+                    `<span class="cell-title" style="color:#a855f7; font-weight:900;">MẠNG NHỆN</span>` +
+                    `<span class="cell-price" id="price-${index}">MẤT LƯỢT</span>`;
+
+                const webIcon =
+                    document.createElement('div');
+
+                webIcon.className =
+                    'spider-icon';
+
+                webIcon.innerText =
+                    '🕸️';
+
+                webIcon.style.position =
+                    'absolute';
+
+                webIcon.style.fontSize =
+                    '24px';
+
                 cellEl.appendChild(webIcon);
-            } else if (isLightning) {
-                cellEl.innerHTML = `<span class="cell-title" style="color:#eab308; font-weight:900;">🚨 THIÊN TAI</span><span class="cell-price" id="price-${index}">⚡ SẤM SÉT</span>`;
-                const lightningIcon = document.createElement('div');
-                lightningIcon.className = 'lightning-icon'; lightningIcon.innerText = '⚡';
-                lightningIcon.style.position = 'absolute'; lightningIcon.style.fontSize = '26px'; lightningIcon.style.top = '5px';
+            }
+
+            // ========================================================
+            // ⚡ SẤM SÉT
+            // ========================================================
+            else if (isLightning) {
+
+                cellEl.innerHTML =
+                    `<span class="cell-title" style="color:#eab308; font-weight:900;">🚨 THIÊN TAI</span>` +
+                    `<span class="cell-price" id="price-${index}">⚡ SẤM SÉT</span>`;
+
+                const lightningIcon =
+                    document.createElement('div');
+
+                lightningIcon.className =
+                    'lightning-icon';
+
+                lightningIcon.innerText =
+                    '⚡';
+
+                lightningIcon.style.position =
+                    'absolute';
+
+                lightningIcon.style.fontSize =
+                    '26px';
+
+                lightningIcon.style.top =
+                    '5px';
+
                 cellEl.appendChild(lightningIcon);
-            } else if (isNuclearBomb) {
-                // 🆕 BOM HẠT NHÂN - CHƯA NỔ
-                cellEl.innerHTML = `<span class="cell-title" style="color:#ef4444; font-weight:900;">💣 BOM HẠT NHÂN</span><span class="cell-price" id="price-${index}">☢️ NGUY HIỂM</span>`;
-                const bombIcon = document.createElement('div');
-                bombIcon.className = 'nuclear-icon'; bombIcon.innerText = '💣';
-                bombIcon.style.position = 'absolute'; bombIcon.style.fontSize = '30px'; bombIcon.style.top = '5px';
-                bombIcon.style.animation = 'bombPulse 1s infinite alternate';
+            }
+
+            // ========================================================
+            // 💣 BOM HẠT NHÂN
+            // ========================================================
+            else if (isNuclearBomb) {
+
+                cellEl.innerHTML =
+                    `<span class="cell-title" style="color:#ef4444; font-weight:900;">💣 BOM HẠT NHÂN</span>` +
+                    `<span class="cell-price" id="price-${index}">☢️ NGUY HIỂM</span>`;
+
+                const bombIcon =
+                    document.createElement('div');
+
+                bombIcon.className =
+                    'nuclear-icon';
+
+                bombIcon.innerText =
+                    '💣';
+
+                bombIcon.style.position =
+                    'absolute';
+
+                bombIcon.style.fontSize =
+                    '30px';
+
+                bombIcon.style.top =
+                    '5px';
+
+                bombIcon.style.animation =
+                    'bombPulse 1s infinite alternate';
+
                 cellEl.appendChild(bombIcon);
-            } else if (isRadioactive) {
-                // 🆕 NHIỄM PHÓNG XẠ
-                cellEl.innerHTML = `<span class="cell-title" style="color:#22d3ee; font-weight:900;">☢️ PHÓNG XẠ</span><span class="cell-price" id="price-${index}">⚠️ -50$/lượt</span>`;
-                const radIcon = document.createElement('div');
-                radIcon.className = 'radioactive-icon'; radIcon.innerText = '☢️';
-                radIcon.style.position = 'absolute'; radIcon.style.fontSize = '26px'; radIcon.style.top = '5px';
-                radIcon.style.animation = 'radioactiveGlow 0.8s infinite alternate';
+            }
+
+            // ========================================================
+            // ☢️ PHÓNG XẠ
+            // ========================================================
+            else if (isRadioactive) {
+
+                cellEl.innerHTML =
+                    `<span class="cell-title" style="color:#22d3ee; font-weight:900;">☢️ PHÓNG XẠ</span>` +
+                    `<span class="cell-price" id="price-${index}">⚠️ -50$/lượt</span>`;
+
+                const radIcon =
+                    document.createElement('div');
+
+                radIcon.className =
+                    'radioactive-icon';
+
+                radIcon.innerText =
+                    '☢️';
+
+                radIcon.style.position =
+                    'absolute';
+
+                radIcon.style.fontSize =
+                    '26px';
+
+                radIcon.style.top =
+                    '5px';
+
+                radIcon.style.animation =
+                    'radioactiveGlow 0.8s infinite alternate';
+
                 cellEl.appendChild(radIcon);
-            } else {
-                // Giữ nguyên tiêu đề "Khu Đất {index}" bất kể đất đã thuộc về ai hay vừa được mua lại
-                cellEl.innerHTML = `<span class="cell-title">Khu Đất ${index}</span><span class="cell-price" id="price-${index}">${cell.price}$</span>`;
             }
-            
-            const giftEl = document.createElement('div');
-            giftEl.className = 'gift-box'; giftEl.innerText = '🎁';
-            // 🆕 KHÔNG SINH HỘP QUÀ Ở Ô BOM VÀ PHÓNG XẠ
-            if (index === 0 || isWeb || isLightning || isNuclearBomb || isRadioactive) {
-                giftEl.style.display = 'none'; cellsData[index].hasGift = false;
+
+            // ========================================================
+            // 🏠 KHU ĐẤT
+            // ========================================================
+            else {
+
+                // Giữ nguyên tên Khu Đất
+                // Không phụ thuộc owner.
+                cellEl.innerHTML =
+                    `<span class="cell-title">Khu Đất ${index}</span>` +
+                    `<span class="cell-price" id="price-${index}">${cell.price}$</span>`;
             }
+
+            // ========================================================
+            // 🎁 HỘP QUÀ
+            // ========================================================
+            const giftEl =
+                document.createElement('div');
+
+            giftEl.className =
+                'gift-box';
+
+            giftEl.innerText =
+                '🎁';
+
+            // Không sinh hộp quà ở:
+            // START / MẠNG NHỆN / SẤM SÉT / BOM / PHÓNG XẠ
+            if (
+                index === 0 ||
+                isWeb ||
+                isLightning ||
+                isNuclearBomb ||
+                isRadioactive
+            ) {
+                giftEl.style.display =
+                    'none';
+
+                cellsData[index].hasGift =
+                    false;
+            }
+
             cellEl.appendChild(giftEl);
-            
-            const slotP1 = document.createElement('div');
-            slotP1.className = 'token-slot slot-p1'; slotP1.id = `slot-p1-${index}`;
-            slotP1.innerHTML = '<span class="p-tag" id="p1-tag-board">P1</span><span class="p-avatar">🏃‍♂️</span>';
+
+            // ========================================================
+            // 🏃 P1
+            // ========================================================
+            const slotP1 =
+                document.createElement('div');
+
+            slotP1.className =
+                'token-slot slot-p1';
+
+            slotP1.id =
+                `slot-p1-${index}`;
+
+            slotP1.innerHTML =
+                '<span class="p-tag" id="p1-tag-board">P1</span>' +
+                '<span class="p-avatar">🏃‍♂️</span>';
+
             cellEl.appendChild(slotP1);
 
-            const slotP2 = document.createElement('div');
-            slotP2.className = 'token-slot slot-p2'; slotP2.id = `slot-p2-${index}`;
-            slotP2.innerHTML = '<span class="p-tag" id="p2-tag-board">P2</span><span class="p-avatar">🏃‍♂️</span>';
+            // ========================================================
+            // 🏃 P2
+            // ========================================================
+            const slotP2 =
+                document.createElement('div');
+
+            slotP2.className =
+                'token-slot slot-p2';
+
+            slotP2.id =
+                `slot-p2-${index}`;
+
+            slotP2.innerHTML =
+                '<span class="p-tag" id="p2-tag-board">P2</span>' +
+                '<span class="p-avatar">🏃‍♂️</span>';
+
             cellEl.appendChild(slotP2);
-            
+
+            // ========================================================
+            // ⚡ CACHE DOM
+            // ========================================================
+            // Lưu trực tiếp reference tới các element đã tạo.
+            // updateUI() có thể dùng lại mà không cần
+            // document.getElementById() liên tục.
+            // ========================================================
+
+            window.boardCells[index] =
+                cellEl;
+
+            window.p1Slots[index] =
+                slotP1;
+
+            window.p2Slots[index] =
+                slotP2;
+
+            window.priceElements[index] =
+                cellEl.querySelector('.cell-price');
+
+            // ========================================================
+            // ➕ THÊM CELL VÀO BOARD
+            // ========================================================
             boardEl.appendChild(cellEl);
         });
-        // 🆕 SAU KHI VẼ LẠI BÀN CỜ, KIỂM TRA BẢN THỂ HẮC ÁM
-        // ================================================================
-        if (window.darkChaseActive && window.darkChasePos !== null && window.darkChasePos !== undefined) {
-            // Vẽ lại bản thể hắc ám
-            renderDarkChaser(window.darkChasePos, window.darkChaseOwner);
-            console.log(`👹 Đã vẽ lại Bản thể Hắc Ám tại ô ${window.darkChasePos} sau khi vẽ lại bàn cờ`);
+
+        // ============================================================
+        // 👹 BẢN THỂ HẮC ÁM
+        // ============================================================
+        // GIỮ NGUYÊN
+        // ============================================================
+        if (
+            window.darkChaseActive &&
+            window.darkChasePos !== null &&
+            window.darkChasePos !== undefined
+        ) {
+
+            renderDarkChaser(
+                window.darkChasePos,
+                window.darkChaseOwner
+            );
+
+            console.log(
+                `👹 Đã vẽ lại Bản thể Hắc Ám tại ô ${window.darkChasePos} sau khi vẽ lại bàn cờ`
+            );
         }
-        // ===== 🆕 THÊM: ÁP DỤNG SKIN SAU KHI VẼ BÀN CỜ =====
-        if (typeof updatePlayerSkin === 'function') {
+
+        // ============================================================
+        // 👤 ÁP DỤNG SKIN NGƯỜI CHƠI
+        // ============================================================
+        if (
+            typeof updatePlayerSkin === 'function'
+        ) {
+
             setTimeout(function() {
+
                 updatePlayerSkin();
-                console.log("✅ Đã áp dụng skin vào bàn cờ");
+
+                console.log(
+                    "✅ Đã áp dụng skin vào bàn cờ"
+                );
+
             }, 150);
         }
-        // ===== 🆕 SAU KHI VẼ XONG, ÁP DỤNG SKIN XÚC XẮC =====
-        if (typeof updateDiceSkin === 'function') {
+
+        // ============================================================
+        // 🎲 ÁP DỤNG SKIN XÚC XẮC
+        // ============================================================
+        if (
+            typeof updateDiceSkin === 'function'
+        ) {
+
             setTimeout(() => {
+
                 updateDiceSkin();
-                console.log("✅ Đã áp dụng dice skin trong initializeBoard");
+
+                console.log(
+                    "✅ Đã áp dụng dice skin trong initializeBoard"
+                );
+
             }, 150);
         }
-        // ===== 🆕 SAU KHI VẼ XONG, ÁP DỤNG SKIN BÀN CỜ =====
-        if (typeof updateBoardSkin === 'function') {
+
+        // ============================================================
+        // 🎨 ÁP DỤNG SKIN BÀN CỜ
+        // ============================================================
+        if (
+            typeof updateBoardSkin === 'function'
+        ) {
+
             setTimeout(() => {
+
                 updateBoardSkin();
-                console.log("✅ Đã áp dụng board skin trong initializeBoard");
+
+                console.log(
+                    "✅ Đã áp dụng board skin trong initializeBoard"
+                );
+
             }, 150);
         }
+
+        // ============================================================
+        // ✅ CACHE ĐÃ HOÀN TẤT
+        // ============================================================
+        console.log(
+            `⚡ Board DOM cache: ${window.boardCells.length} cells`
+        );
     }
     function syncGameToRemote() {
 

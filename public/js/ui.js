@@ -1,11 +1,16 @@
 function updateUI() {
-    // ===== KIỂM TRA PLAYERS =====
+
+    // =========================================================
+    // 1. KIỂM TRA PLAYERS
+    // =========================================================
     if (!players || !players[1] || !players[2]) {
         console.warn("⚠️ Players chưa sẵn sàng!");
         return;
     }
-    
-    // ===== KIỂM TRA ELEMENT TỒN TẠI =====
+
+    // =========================================================
+    // 2. LẤY ELEMENT
+    // =========================================================
     const p1Money = document.getElementById('p1-money');
     const p2Money = document.getElementById('p2-money');
     const p1Land = document.getElementById('p1-land-value');
@@ -15,227 +20,513 @@ function updateUI() {
     const p1Skip = document.getElementById('p1-skip');
     const p2Skip = document.getElementById('p2-skip');
     const turnTxt = document.getElementById('turn-txt');
-    
+
     if (!p1Money || !p2Money || !p1Round || !p2Round) {
         console.warn("⚠️ UI elements chưa được render!");
         return;
     }
-    // Reset toàn bộ token trước khi vẽ lại
-    for (let i = 0; i < TOTAL_CELLS; i++) {
 
-        const p1Slot = document.getElementById(`slot-p1-${i}`);
-        if (p1Slot) {
-            p1Slot.style.display = "";
-            p1Slot.style.opacity = "";
-            p1Slot.classList.remove("moving");
-        }
+    // =========================================================
+    // 3. CẬP NHẬT THÔNG TIN NGƯỜI CHƠI
+    // =========================================================
 
-        const p2Slot = document.getElementById(`slot-p2-${i}`);
-        if (p2Slot) {
-            p2Slot.style.display = "";
-            p2Slot.style.opacity = "";
-            p2Slot.classList.remove("moving");
-        }
-    }
-    // ===== TÍNH GIÁ TRỊ ĐẤT =====
     const p1LandValue = calculateTotalLandValue(1);
     const p2LandValue = calculateTotalLandValue(2);
-    
-    // ===== CẬP NHẬT TIỀN MẶT =====
-    p1Money.innerText = players[1].money;
-    p2Money.innerText = players[2].money;
-    
-    // ===== 🆕 CẬP NHẬT GIÁ TRỊ ĐẤT =====
+
+    // Chỉ ghi DOM khi giá trị thực sự thay đổi
+    if (p1Money.textContent !== String(players[1].money)) {
+        p1Money.textContent = players[1].money;
+    }
+
+    if (p2Money.textContent !== String(players[2].money)) {
+        p2Money.textContent = players[2].money;
+    }
+
+    if (p1Land && p1Land.textContent !== String(p1LandValue)) {
+        p1Land.textContent = p1LandValue;
+    }
+
+    if (p2Land && p2Land.textContent !== String(p2LandValue)) {
+        p2Land.textContent = p2LandValue;
+    }
+
     if (p1Land) {
-        p1Land.innerText = p1LandValue;
         p1Land.style.color = '#34d399';
         p1Land.style.fontWeight = 'bold';
     }
+
     if (p2Land) {
-        p2Land.innerText = p2LandValue;
         p2Land.style.color = '#34d399';
         p2Land.style.fontWeight = 'bold';
     }
-    
-    p1Round.innerText = `Vòng: ${players[1].rounds}`;
-    p2Round.innerText = `Vòng: ${players[2].rounds}`;
-    
-    if (p1Skip) p1Skip.style.display = players[1].skipNextTurn ? 'block' : 'none';
-    if (p2Skip) p2Skip.style.display = players[2].skipNextTurn ? 'block' : 'none';
 
-    if (gameStarted && currentTurn && players[currentTurn]) {
-        if (turnTxt) {
-            const isMyTurnText = (typeof myPlayerNumber !== 'undefined' && myPlayerNumber === currentTurn) ? " (BẠN)" : "";
-            turnTxt.innerText = `LƯỢT ĐI: ${players[currentTurn].name}${isMyTurnText}`;
-            turnTxt.style.background = currentTurn === 1 ? '#ef4444' : '#3b82f6';
+    const p1RoundText = `Vòng: ${players[1].rounds}`;
+    const p2RoundText = `Vòng: ${players[2].rounds}`;
+
+    if (p1Round.textContent !== p1RoundText) {
+        p1Round.textContent = p1RoundText;
+    }
+
+    if (p2Round.textContent !== p2RoundText) {
+        p2Round.textContent = p2RoundText;
+    }
+
+    // Skip turn
+    if (p1Skip) {
+        const display = players[1].skipNextTurn ? 'block' : 'none';
+
+        if (p1Skip.style.display !== display) {
+            p1Skip.style.display = display;
         }
     }
 
-    // ===== CẬP NHẬT VỊ TRÍ QUÂN CỜ =====
-    for(let i = 0; i < TOTAL_CELLS; i++) {
+    if (p2Skip) {
+        const display = players[2].skipNextTurn ? 'block' : 'none';
+
+        if (p2Skip.style.display !== display) {
+            p2Skip.style.display = display;
+        }
+    }
+
+    // =========================================================
+    // 4. LƯỢT ĐI
+    // =========================================================
+
+    if (gameStarted && currentTurn && players[currentTurn] && turnTxt) {
+
+        const isMyTurnText =
+            (typeof myPlayerNumber !== 'undefined' &&
+             myPlayerNumber === currentTurn)
+                ? " (BẠN)"
+                : "";
+
+        const turnText =
+            `LƯỢT ĐI: ${players[currentTurn].name}${isMyTurnText}`;
+
+        if (turnTxt.textContent !== turnText) {
+            turnTxt.textContent = turnText;
+        }
+
+        const turnColor =
+            currentTurn === 1
+                ? '#ef4444'
+                : '#3b82f6';
+
+        if (turnTxt.style.background !== turnColor) {
+            turnTxt.style.background = turnColor;
+        }
+    }
+
+    // =========================================================
+    // 5. LẤY BOARD MỘT LẦN
+    // =========================================================
+
+    const board = document.getElementById("board");
+
+    if (!board) return;
+
+    const isLava = board.classList.contains("board_lava");
+
+    // =========================================================
+    // 6. TÍNH TRẠNG THÁI TÀNG HÌNH
+    // =========================================================
+
+    let hideP1 = false;
+    let hideP2 = false;
+
+    if (window.isInvisible) {
+
+        if (
+            window.invisiblePlayer === 1 &&
+            myPlayerNumber !== 1
+        ) {
+            hideP1 = true;
+        }
+
+        if (
+            window.invisiblePlayer === 2 &&
+            myPlayerNumber !== 2
+        ) {
+            hideP2 = true;
+        }
+    }
+
+    // =========================================================
+    // 7. CẬP NHẬT CÁC Ô
+    // =========================================================
+    //
+    // QUAN TRỌNG:
+    // Không reset tất cả slot nữa.
+    // Chỉ thay đổi ô mà trạng thái thực sự thay đổi.
+    //
+    // Nhân vật vẫn được hiển thị.
+    // Màu đất vẫn được giữ.
+    // =========================================================
+
+    for (let i = 0; i < TOTAL_CELLS; i++) {
+
+        const cell = cellsData[i];
+
+        if (!cell) continue;
+
         const el = document.getElementById(`cell-${i}`);
+
         if (!el) continue;
 
-        // ===== XÓA TẤT CẢ CLASS CŨ =====
-        el.classList.remove('has-p1', 'has-p2');
-        
-        // ===== KIỂM TRA TÀNG HÌNH =====
-        let hideP1 = false;
-        let hideP2 = false;
+        // -----------------------------------------------------
+        // TRẠNG THÁI NHÂN VẬT
+        // -----------------------------------------------------
 
-        // Nếu đang có người tàng hình
-        if (window.isInvisible) {
+        const shouldHaveP1 =
+            players[1].pos === i && !hideP1;
 
-            // Chỉ đối thủ mới bị ẩn.
-            // Máy của chính người dùng skill vẫn luôn nhìn thấy mình.
-            if (window.invisiblePlayer === 1 && myPlayerNumber !== 1) {
-                hideP1 = true;
-            }
+        const shouldHaveP2 =
+            players[2].pos === i && !hideP2;
 
-            if (window.invisiblePlayer === 2 && myPlayerNumber !== 2) {
-                hideP2 = true;
-            }
+        // Chỉ thay đổi class khi cần
+        if (el.classList.contains('has-p1') !== shouldHaveP1) {
+            el.classList.toggle('has-p1', shouldHaveP1);
         }
 
-        // ===== CẬP NHẬT CLASS =====
-        if (players[1] && players[1].pos === i && !hideP1) {
-            el.classList.add("has-p1");
+        if (el.classList.contains('has-p2') !== shouldHaveP2) {
+            el.classList.toggle('has-p2', shouldHaveP2);
         }
 
-        if (players[2] && players[2].pos === i && !hideP2) {
-            el.classList.add("has-p2");
+        // -----------------------------------------------------
+        // HỘP QUÀ
+        // -----------------------------------------------------
+
+        const shouldHaveGift = !!cell.hasGift;
+
+        if (el.classList.contains('has-gift') !== shouldHaveGift) {
+            el.classList.toggle('has-gift', shouldHaveGift);
         }
-        
-        el.classList.toggle('has-gift', cellsData[i] && cellsData[i].hasGift);
+
+        // -----------------------------------------------------
+        // CÁC Ô ĐẶC BIỆT / GIÁ
+        // -----------------------------------------------------
 
         if (i > 0) {
-            const priceEl = document.getElementById(`price-${i}`);
+
+            const priceEl =
+                document.getElementById(`price-${i}`);
+
             if (priceEl) {
-                if (i === spiderWebIndex) {
-                    priceEl.innerText = "KHOÁ LƯỢT";
-                } else if (typeof lightningIndex !== 'undefined' && i === lightningIndex) {
-                    priceEl.innerText = "⚡ SẤM SÉT";
-                } else if (i === Number(window.nuclearBombIndex) && !window.nuclearBombDetonated) {
-                    priceEl.innerText = "💣 BOM";
-                } else if (cellsData[i]?.isRadioactive) {
-                    priceEl.innerText = "☢️ PHÓNG XẠ";
+
+                let priceText;
+
+                if (i === Number(spiderWebIndex)) {
+
+                    priceText = "KHOÁ LƯỢT";
+
+                } else if (
+                    typeof lightningIndex !== 'undefined' &&
+                    i === lightningIndex
+                ) {
+
+                    priceText = "⚡ SẤM SÉT";
+
+                } else if (
+                    i === Number(window.nuclearBombIndex) &&
+                    !window.nuclearBombDetonated
+                ) {
+
+                    priceText = "💣 BOM";
+
+                } else if (cell.isRadioactive) {
+
+                    priceText = "☢️ PHÓNG XẠ";
+
                 } else {
-                    priceEl.innerText = `${cellsData[i].price}$`;
+
+                    priceText = `${cell.price}$`;
+                }
+
+                // Chỉ sửa text nếu khác
+                if (priceEl.textContent !== priceText) {
+                    priceEl.textContent = priceText;
                 }
             }
 
-            el.style.borderTop = "none"; 
+            // -------------------------------------------------
+            // MÀU ĐẤT
+            // -------------------------------------------------
 
-            const board = document.getElementById("board");
-            const isLava = board && board.classList.contains("board_lava");
+            let owner = cell.owner;
 
-            if (cellsData[i] && cellsData[i].owner === 1) {
+            // ===== P1 =====
 
-                el.classList.add("owner-p1");
-                el.classList.remove("owner-p2");
+            if (owner === 1) {
 
-                el.style.color = "#ffffff";
+                if (!el.classList.contains('owner-p1')) {
+                    el.classList.add('owner-p1');
+                }
 
-                // Bàn cờ mặc định giữ màu cũ
+                if (el.classList.contains('owner-p2')) {
+                    el.classList.remove('owner-p2');
+                }
+
+                // Giữ nguyên màu chữ
+                if (el.style.color !== "rgb(255, 255, 255)") {
+                    el.style.color = "#ffffff";
+                }
+
+                // Giữ nguyên màu đất mặc định
                 if (!isLava) {
-                    el.style.background =
+
+                    const currentBg = el.style.background;
+
+                    const targetBg =
                         "linear-gradient(135deg, #7f1d1d, #ef4444)";
+
+                    if (currentBg !== targetBg) {
+                        el.style.background = targetBg;
+                    }
+
                 } else {
-                    // Lava để CSS .owner-p1 quyết định màu
-                    el.style.removeProperty("background");
+
+                    // Lava để CSS skin xử lý
+                    if (el.style.background) {
+                        el.style.removeProperty("background");
+                    }
                 }
 
-            } else if (cellsData[i] && cellsData[i].owner === 2) {
+            }
 
-                el.classList.add("owner-p2");
-                el.classList.remove("owner-p1");
+            // ===== P2 =====
 
-                el.style.color = "#ffffff";
+            else if (owner === 2) {
 
-                // Bàn cờ mặc định giữ màu cũ
+                if (!el.classList.contains('owner-p2')) {
+                    el.classList.add('owner-p2');
+                }
+
+                if (el.classList.contains('owner-p1')) {
+                    el.classList.remove('owner-p1');
+                }
+
+                // Giữ nguyên màu chữ
+                if (el.style.color !== "rgb(255, 255, 255)") {
+                    el.style.color = "#ffffff";
+                }
+
+                // Giữ nguyên màu đất mặc định
                 if (!isLava) {
-                    el.style.background =
+
+                    const currentBg = el.style.background;
+
+                    const targetBg =
                         "linear-gradient(135deg, #1e3a8a, #3b82f6)";
+
+                    if (currentBg !== targetBg) {
+                        el.style.background = targetBg;
+                    }
+
                 } else {
-                    // Lava để CSS .owner-p2 quyết định màu
-                    el.style.removeProperty("background");
+
+                    // Lava để CSS skin xử lý
+                    if (el.style.background) {
+                        el.style.removeProperty("background");
+                    }
                 }
 
-            } else {
+            }
 
-                el.classList.remove("owner-p1", "owner-p2");
+            // ===== CHƯA CÓ CHỦ =====
 
-                el.style.background = "";
-                el.style.color = "";
+            else {
+
+                if (el.classList.contains('owner-p1')) {
+                    el.classList.remove('owner-p1');
+                }
+
+                if (el.classList.contains('owner-p2')) {
+                    el.classList.remove('owner-p2');
+                }
+
+                if (el.style.background) {
+                    el.style.background = "";
+                }
+
+                if (el.style.color) {
+                    el.style.color = "";
+                }
             }
         }
     }
 
-    // ===== CẬP NHẬT NÚT DÙNG KỸ NĂNG =====
-    const skillBtn = document.getElementById("use-skill-btn");
+    // =========================================================
+    // 8. NÚT SKILL
+    // =========================================================
+
+    const skillBtn =
+        document.getElementById("use-skill-btn");
+
     if (skillBtn) {
-        const mySkill = players[myPlayerNumber]?.skill;
-        if (gameStarted && currentTurn === myPlayerNumber && mySkill && !players[myPlayerNumber].skillUsed) {
-            skillBtn.disabled = false;
-            skillBtn.innerText = "🎴 " + mySkill.name;
+
+        const mySkill =
+            players[myPlayerNumber]?.skill;
+
+        const canUseSkill =
+            gameStarted &&
+            currentTurn === myPlayerNumber &&
+            mySkill &&
+            !players[myPlayerNumber].skillUsed;
+
+        const newDisabled = !canUseSkill;
+
+        if (skillBtn.disabled !== newDisabled) {
+            skillBtn.disabled = newDisabled;
+        }
+
+        let skillText;
+
+        if (mySkill && !players[myPlayerNumber].skillUsed) {
+            skillText = "🎴 " + mySkill.name;
         } else {
-            skillBtn.disabled = true;
-            if (mySkill && !players[myPlayerNumber].skillUsed) {
-                skillBtn.innerText = "🎴 " + mySkill.name;
-            } else {
-                skillBtn.innerText = "🎴 Đã dùng";
-            }
+            skillText = "🎴 Đã dùng";
+        }
+
+        if (skillBtn.textContent !== skillText) {
+            skillBtn.textContent = skillText;
         }
     }
 
-    // ===== HIỂN THỊ TRẠNG THÁI PHÓNG XẠ =====
-    let p1Rad = document.getElementById('p1-radiation');
-    if (players[1].radiationEffect && players[1].radiationEffect > 0) {
+    // =========================================================
+    // 9. PHÓNG XẠ P1
+    // =========================================================
+
+    let p1Rad =
+        document.getElementById('p1-radiation');
+
+    if (
+        players[1].radiationEffect &&
+        players[1].radiationEffect > 0
+    ) {
+
         if (!p1Rad) {
-            const p1Card = document.querySelector('.p1-card');
+
+            const p1Card =
+                document.querySelector('.p1-card');
+
             if (p1Card) {
-                const radDiv = document.createElement('div');
+
+                const radDiv =
+                    document.createElement('div');
+
                 radDiv.id = 'p1-radiation';
-                radDiv.style.cssText = 'color: #22d3ee; font-weight: bold; font-size: 12px; margin-top: 4px; animation: radPulse 0.5s infinite alternate;';
-                radDiv.textContent = `☢️ PHÓNG XẠ: ${players[1].radiationEffect} lượt`;
+
+                radDiv.style.cssText =
+                    'color:#22d3ee;' +
+                    'font-weight:bold;' +
+                    'font-size:12px;' +
+                    'margin-top:4px;' +
+                    'animation:radPulse 0.5s infinite alternate;';
+
+                radDiv.textContent =
+                    `☢️ PHÓNG XẠ: ${players[1].radiationEffect} lượt`;
+
                 p1Card.appendChild(radDiv);
+
                 p1Rad = radDiv;
             }
+
         } else {
-            p1Rad.textContent = `☢️ PHÓNG XẠ: ${players[1].radiationEffect} lượt`;
-            p1Rad.style.display = 'block';
+
+            const text =
+                `☢️ PHÓNG XẠ: ${players[1].radiationEffect} lượt`;
+
+            if (p1Rad.textContent !== text) {
+                p1Rad.textContent = text;
+            }
+
+            if (p1Rad.style.display !== 'block') {
+                p1Rad.style.display = 'block';
+            }
         }
+
     } else if (p1Rad) {
-        p1Rad.style.display = 'none';
+
+        if (p1Rad.style.display !== 'none') {
+            p1Rad.style.display = 'none';
+        }
     }
 
-    let p2Rad = document.getElementById('p2-radiation');
-    if (players[2].radiationEffect && players[2].radiationEffect > 0) {
+    // =========================================================
+    // 10. PHÓNG XẠ P2
+    // =========================================================
+
+    let p2Rad =
+        document.getElementById('p2-radiation');
+
+    if (
+        players[2].radiationEffect &&
+        players[2].radiationEffect > 0
+    ) {
+
         if (!p2Rad) {
-            const p2Card = document.querySelector('.p2-card');
+
+            const p2Card =
+                document.querySelector('.p2-card');
+
             if (p2Card) {
-                const radDiv = document.createElement('div');
+
+                const radDiv =
+                    document.createElement('div');
+
                 radDiv.id = 'p2-radiation';
-                radDiv.style.cssText = 'color: #22d3ee; font-weight: bold; font-size: 12px; margin-top: 4px; animation: radPulse 0.5s infinite alternate;';
-                radDiv.textContent = `☢️ PHÓNG XẠ: ${players[2].radiationEffect} lượt`;
+
+                radDiv.style.cssText =
+                    'color:#22d3ee;' +
+                    'font-weight:bold;' +
+                    'font-size:12px;' +
+                    'margin-top:4px;' +
+                    'animation:radPulse 0.5s infinite alternate;';
+
+                radDiv.textContent =
+                    `☢️ PHÓNG XẠ: ${players[2].radiationEffect} lượt`;
+
                 p2Card.appendChild(radDiv);
+
                 p2Rad = radDiv;
             }
+
         } else {
-            p2Rad.textContent = `☢️ PHÓNG XẠ: ${players[2].radiationEffect} lượt`;
-            p2Rad.style.display = 'block';
+
+            const text =
+                `☢️ PHÓNG XẠ: ${players[2].radiationEffect} lượt`;
+
+            if (p2Rad.textContent !== text) {
+                p2Rad.textContent = text;
+            }
+
+            if (p2Rad.style.display !== 'block') {
+                p2Rad.style.display = 'block';
+            }
         }
+
     } else if (p2Rad) {
-        p2Rad.style.display = 'none';
+
+        if (p2Rad.style.display !== 'none') {
+            p2Rad.style.display = 'none';
+        }
     }
 
-    // ===== 🆕 CẬP NHẬT UI TELEPORT =====
+    // =========================================================
+    // 11. TELEPORT
+    // =========================================================
+
     if (typeof updateTeleportUI === 'function') {
         updateTeleportUI();
     }
 
-    // ===== 🆕 CẬP NHẬT HIỆU ỨNG NHẤP NHÁY NHÂN VẬT MANG BOM =====
-    updateBombBlink();
+    // =========================================================
+    // 12. BOM
+    // =========================================================
+
+    if (typeof updateBombBlink === 'function') {
+        updateBombBlink();
+    }
 }
 // ===== NHẬT KÝ TRẬN ĐẤU =====
 function addLog(text) {
