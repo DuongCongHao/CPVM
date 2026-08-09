@@ -284,6 +284,10 @@
         }
 
         if (socket && socket.connected) {
+            // 🔥 Reset trạng thái trận cũ
+            window.currentRoomId = null;
+            window.currentPlayerNumber = null;
+            window.players = {};
             disableLobbyButtons();
 
             // Reset bộ đếm
@@ -2093,7 +2097,9 @@
         window.haoWarningPlayed = false;
         window.extraTurns = 0;
         window.skillUsedThisTurn = false;
-        
+        // 🔥 XÓA HOÀN TOÀN DỮ LIỆU NGƯỜI CHƠI CỦA TRẬN CŨ
+        window.players = {};
+        console.log("🗑️ Đã xóa players của trận cũ");
         // Reset determineTurnData
         determineTurnData = {
             p1Roll: null,

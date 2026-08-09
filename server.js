@@ -620,7 +620,12 @@ io.on('connection', (socket) => {
                 console.error(`❌ Lỗi lấy rank cho ${data.userId}:`, err.message);
             }
         }
-        quickMatchQueue = quickMatchQueue.filter(s => s.connected && s.id !== socket.id);
+        quickMatchQueue = quickMatchQueue.filter(s =>
+            s &&
+            s.connected &&
+            s.id !== socket.id &&
+            !s.roomId
+        );
         
         // Nếu có người đang xếp hàng đợi hợp lệ
         if (quickMatchQueue.length > 0) {
@@ -1457,7 +1462,7 @@ io.on('connection', (socket) => {
 
                 const [winnerUpdate, loserUpdate] = await Promise.all([
 
-                    axios.post(`${process.env.API_URL}/api/update-result`, {
+                    axios.post(`${process.env.API_URL.replace(/\/$/, '')}/api/update-result`, {
                         id: winnerCurrentData.id || winner.userId,
                         level: winnerReward.level,
                         exp: winnerReward.exp,
@@ -1466,7 +1471,7 @@ io.on('connection', (socket) => {
                         coins: winnerReward.coin
                     }),
 
-                    axios.post(`${process.env.API_URL}/api/update-result`, {
+                    axios.post(`${process.env.API_URL.replace(/\/$/, '')}/api/update-result`, {
                         id: loserCurrentData.id || loser.userId,
                         level: loserReward.level,
                         exp: loserReward.exp,
@@ -1766,16 +1771,20 @@ io.on('connection', (socket) => {
         }
         
         finishedRooms.add(roomId);
-        
-        if (rooms[roomId].timer) {
+
+        if (rooms[roomId]?.timer) {
             clearInterval(rooms[roomId].timer);
             console.log(`⏰ Đã hủy timer của phòng ${roomId}`);
         }
-        
+
+        // Socket đã mất kết nối
+        socket.roomId = null;
+
+        // 🔥 Xóa hoàn toàn trận cũ
         delete rooms[roomId];
-        console.log(`🗑️ Đã xóa phòng ${roomId}`);
+
+        console.log(`🗑️ Đã xóa hoàn toàn trận ${roomId} do disconnect`);
     });
-    // ===== XỬ LÝ KHI NGƯỜI CHƠI CHỦ ĐỘNG RỜI PHÒNG =====
     // ===== XỬ LÝ KHI NGƯỜI CHƠI CHỦ ĐỘNG RỜI PHÒNG =====
     socket.on('leave-room', (data) => {
         console.log(`🚪 Người chơi ${socket.id} chủ động rời phòng`);
@@ -1899,10 +1908,30 @@ io.on('connection', (socket) => {
         }
         
         finishedRooms.add(roomId);
-        
-        if (rooms[roomId].timer) clearInterval(rooms[roomId].timer);
+
+        // Hủy timer
+        if (rooms[roomId]?.timer) {
+            clearInterval(rooms[roomId].timer);
+        }
+
+        // 🔥 Ép người rời khỏi room Socket.io cũ
+        socket.leave(roomId);
+        socket.roomId = null;
+
+        // 🔥 Ép đối thủ rời room cũ
+        const remainingOpponentSocket = opponent
+            ? io.sockets.sockets.get(opponent.id)
+            : null;
+
+        if (remainingOpponentSocket) {
+            remainingOpponentSocket.leave(roomId);
+            remainingOpponentSocket.roomId = null;
+        }
+
+        // 🔥 Xóa room cũ hoàn toàn
         delete rooms[roomId];
-        console.log(`🗑️ Đã xóa phòng ${roomId}`);
+
+        console.log(`🗑️ Đã hủy hoàn toàn trận cũ: ${roomId}`);
     });
 });
 server.listen(PORT, () => {

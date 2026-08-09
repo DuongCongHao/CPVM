@@ -236,6 +236,10 @@ if (typeof socket !== 'undefined' && socket) {
     });
     // ===== NHẬN THÔNG TIN PHÒNG =====
     socket.on('room-joined', (data) => {
+        // 🔥 Lưu room mới
+        window.currentRoomId = data.roomId;
+
+        console.log(`🆕 Đã vào trận mới: ${data.roomId}`);
         if (matchmakingTimer) {
             clearInterval(matchmakingTimer);
             matchmakingTimer = null;
